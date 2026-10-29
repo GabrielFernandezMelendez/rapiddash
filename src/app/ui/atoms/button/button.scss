@@ -1,0 +1,52 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--rd-radius);
+  font-family: var(--rd-font-display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.08s ease,
+    filter 0.15s ease;
+}
+
+:host(:active) {
+  transform: translateY(1px) scale(0.98);
+}
+
+:host(:hover) {
+  filter: brightness(1.08);
+}
+
+:host(.rd-button--primary) {
+  background: var(--rd-signal);
+  color: #1a1408;
+  box-shadow: 0 4px 0 #b88d1e;
+}
+
+:host(.rd-button--secondary) {
+  background: var(--rd-asphalt-3);
+  color: var(--rd-chalk);
+  box-shadow: inset 0 0 0 1px var(--rd-line);
+}
+
+:host(.rd-button--ghost) {
+  background: rgb(10 12 15 / 0.55);
+  color: var(--rd-chalk);
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+:host(.rd-button--block) {
+  width: 100%;
+}

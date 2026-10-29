@@ -1,0 +1,59 @@
+:host {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 18px
+    calc(18px + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  background: radial-gradient(120% 60% at 50% 0%, #2a3340 0%, transparent 70%), var(--rd-asphalt);
+}
+
+header,
+.content,
+footer {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.content {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+// Carretera de fondo con líneas que avanzan
+.road {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 190%;
+  height: 58%;
+  transform: translateX(-50%) perspective(260px) rotateX(58deg);
+  transform-origin: bottom;
+  background: linear-gradient(90deg, var(--rd-kerb) 0 3%, #232931 3% 97%, var(--rd-kerb) 97%);
+  opacity: 0.75;
+  mask-image: linear-gradient(transparent, #000 45%);
+}
+
+.lanes {
+  position: absolute;
+  inset: 0 3%;
+  background:
+    repeating-linear-gradient(transparent 0 26px, rgb(236 232 222 / 0.7) 26px 52px) 25% 0 / 3px 100%
+      no-repeat,
+    repeating-linear-gradient(transparent 0 26px, rgb(236 232 222 / 0.7) 26px 52px) 50% 0 / 3px 100%
+      no-repeat,
+    repeating-linear-gradient(transparent 0 26px, rgb(236 232 222 / 0.7) 26px 52px) 75% 0 / 3px 100%
+      no-repeat;
+  animation: drive 0.6s linear infinite;
+}
+
+@keyframes drive {
+  to {
+    background-position-y: 52px;
+  }
+}

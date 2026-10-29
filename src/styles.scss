@@ -1,1 +1,62 @@
-/* You can add global styles to this file, and also import other style files */
+// Tokens de diseño globales: asfalto, tiza y bordillo
+:root {
+  --rd-asphalt: #171b21;
+  --rd-asphalt-2: #20262e;
+  --rd-asphalt-3: #2a313b;
+  --rd-line: #353e49;
+  --rd-chalk: #ece8de;
+  --rd-muted: #9aa3ad;
+  --rd-kerb: #e2483a;
+  --rd-signal: #f3c13a;
+  --rd-go: #46c06a;
+  --rd-boost: #ffb347;
+  --rd-ghost: #8fd3ff;
+
+  --rd-font-display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --rd-font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --rd-radius: 10px;
+  --rd-kerb-stripe: repeating-linear-gradient(
+    90deg,
+    var(--rd-kerb) 0 10px,
+    var(--rd-chalk) 10px 20px
+  );
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: #0d1014;
+  color: var(--rd-chalk);
+  font-family: var(--rd-font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rd-signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

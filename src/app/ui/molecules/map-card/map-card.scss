@@ -1,0 +1,98 @@
+.card {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--rd-radius);
+  background: var(--rd-asphalt-2);
+  box-shadow: inset 0 0 0 1px var(--rd-line);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: inset 0 0 0 1px var(--rd-muted);
+}
+
+.card:active {
+  transform: scale(0.985);
+}
+
+// Miniatura: cielo, suelo y una carretera en perspectiva
+.art {
+  position: relative;
+  height: 72px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: linear-gradient(var(--sky) 0 45%, var(--ground) 45% 100%);
+}
+
+.art::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 70%;
+  height: 55%;
+  transform: translateX(-50%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  background: linear-gradient(90deg, var(--wall) 0 6%, #3d424b 6% 94%, var(--wall) 94%);
+}
+
+.theme-bay {
+  --sky: #bfe1dc;
+  --ground: #86b46b;
+  --wall: #d64933;
+}
+
+.theme-canyon {
+  --sky: #f3cfa4;
+  --ground: #c98a5a;
+  --wall: #d64933;
+}
+
+.theme-summit {
+  --sky: #d3e2ef;
+  --ground: #e8eef3;
+  --wall: #2f6fd6;
+}
+
+.info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--rd-font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--rd-muted);
+}
+
+.best {
+  font-size: 13px;
+  color: var(--rd-muted);
+
+  b {
+    color: var(--rd-chalk);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}

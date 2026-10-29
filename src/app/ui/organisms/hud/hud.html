@@ -1,0 +1,24 @@
+<div class="top">
+  <button rdButton variant="ghost" type="button" class="exit" (click)="exit.emit()">
+    ✕ <span class="sr">{{ 'hud.exit' | t }}</span>
+  </button>
+  <div class="center">
+    <span class="map">{{ mapName() }}</span>
+    <span class="time">{{ time() }}</span>
+    <span class="row">
+      <rd-stat [label]="'hud.best' | t" [value]="best()" />
+      @if (ghost(); as g) {
+        <rd-stat [label]="'hud.ghost' | t" [value]="g.label" [tone]="g.tone" />
+      }
+    </span>
+  </div>
+</div>
+
+@if (state().crashed) {
+  <p class="crash">{{ 'race.crash' | t }}</p>
+}
+
+<div class="speed" [class.boost]="state().accelerating">
+  <span class="bar"><i [style.width.%]="speedPct()"></i></span>
+  <span class="kmh">{{ kmh() }} km/h</span>
+</div>
