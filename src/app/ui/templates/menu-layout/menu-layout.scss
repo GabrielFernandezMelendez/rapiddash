@@ -20,7 +20,7 @@ footer {
 
 .content {
   display: grid;
-  align-content: center;
+  align-content: safe center;
   gap: 12px;
   overflow-y: auto;
 }
