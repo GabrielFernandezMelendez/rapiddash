@@ -1,7 +1,7 @@
 import { arc, right, straight } from '../track/track-segment';
 import { Track } from '../track/track';
 import { CarState, createCar, DriveInput, Swipe, stepCar } from './car';
-import { laneCenter } from '../track/track-constants';
+import { LANE_COUNT, laneCenter } from '../track/track-constants';
 import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
 
 const DT = 1 / 60;
@@ -71,59 +71,75 @@ describe('Car', () => {
     expect(result.car.yawTarget).toBeCloseTo(QUARTER_TURN);
   });
 
-  describe('curvas de 90°', () => {
-    const track = Track.fromSegments([straight(30), right(), straight(100)]);
+  describe('cruces cuadrados (curvas de 90°)', () => {
+    const track = Track.fromSegments([straight(40), right(), straight(120)]);
+    const entry = track.legs[0].length;
 
-    it('sin swipe, choca al llegar a la curva', () => {
-      const car = run(createCar(track), track, 4);
+    /** Acelera hasta llegar a `distance` del primer tramo (o del cruce, si supera su longitud). */
+    function driveTo(distance: number): CarState {
+      let car = createCar(track);
+      while (car.leg === 0 && car.distance < distance && car.mode === 'driving')
+        car = stepCar(car, hold, track, DT).car;
+      return car;
+    }
+
+    it('sin swipe, choca de frente contra el muro del cruce', () => {
+      const car = run(createCar(track), track, 5);
       expect(car.mode).toBe('crashed');
-      expect(car.cornerIndex).toBe(0);
+      expect(car.wallSide).toBe(0);
+      expect(car.leg).toBe(0);
+      expect(car.distance).toBeGreaterThan(entry);
     });
 
-    it('con swipe en la ventana, toma la curva y sale conduciendo', () => {
-      let car = createCar(track);
-      while (car.distance < track.corners[0].start - 4) car = stepCar(car, hold, track, DT).car;
-      const taken = stepCar(car, swipe('right'), track, DT);
-      expect(taken.events).toContain('corner-taken');
-      car = run(taken.car, track, 3);
+    it('deslizar al entrar en el cruce sale por el carril interior', () => {
+      let car = stepCar(driveTo(entry + 0.5), swipe('right'), track, DT).car;
+      car = run(car, track, 2);
+      expect(car.leg).toBe(1);
       expect(car.mode).toBe('driving');
-      expect(car.distance).toBeGreaterThan(track.corners[0].end);
+      // Giro a la derecha: el interior es la derecha del tramo nuevo
+      expect(car.lateral).toBeCloseTo(laneCenter(LANE_COUNT - 1));
     });
 
-    it('el swipe en sentido contrario no toma la curva, gira hacia el muro', () => {
-      let car = createCar(track);
-      while (car.distance < track.corners[0].start - 4) car = stepCar(car, hold, track, DT).car;
-      car = stepCar(car, swipe('left'), track, DT).car;
+    it('deslizar tarde sale por un carril más exterior', () => {
+      let car = stepCar(driveTo(entry + 6), swipe('right'), track, DT).car;
+      car = run(car, track, 2);
+      expect(car.leg).toBe(1);
+      expect(car.lateral).toBeLessThan(0);
+    });
+
+    it('girar hacia la salida justo antes del cruce cuenta como entrar', () => {
+      let car = stepCar(driveTo(entry - 1), swipe('right'), track, DT).car;
+      car = run(car, track, 2);
+      expect(car.leg).toBe(1);
       expect(car.mode).toBe('driving');
-      expect(car.yawTarget).toBeCloseTo(-QUARTER_TURN);
     });
 
-    it('un swipe justo al entrar en la curva todavía la toma', () => {
-      let car = createCar(track);
-      const start = track.corners[0].start;
-      while (car.distance < start + 2) car = stepCar(car, hold, track, DT).car;
-      expect(car.mode).toBe('driving');
-      const taken = stepCar(car, swipe('right'), track, DT);
-      expect(taken.events).toContain('corner-taken');
-      expect(run(taken.car, track, 3).mode).toBe('driving');
+    it('girar demasiado pronto lleva contra el muro lateral', () => {
+      let car = stepCar(driveTo(entry - 10), swipe('right'), track, DT).car;
+      car = run(car, track, 1);
+      expect(car.mode).toBe('crashed');
+      expect(car.wallSide).toBe(1);
     });
 
-    it('el swipe en el sentido de la curva la toma aunque el coche esté girado', () => {
-      let car = createCar(track);
-      while (car.distance < track.corners[0].start - 3) car = stepCar(car, hold, track, DT).car;
-      car = stepCar(car, swipe('left'), track, DT).car;
-      expect(car.yawTarget).toBeCloseTo(-QUARTER_TURN);
-      const taken = stepCar(car, swipe('right'), track, DT);
-      expect(taken.car.mode).toBe('cornering');
-      expect(taken.car.yawTarget).toBe(0);
-    });
-
-    it('tras chocar en la curva, un swipe en su sentido la toma', () => {
-      const crashed = run(createCar(track), track, 4);
+    it('tras el choque frontal, un swipe hacia la salida continúa la carrera', () => {
+      const crashed = run(createCar(track), track, 5);
       const result = stepCar(crashed, swipe('right'), track, DT);
-      expect(result.car.mode).toBe('cornering');
-      const out = run(result.car, track, 5);
-      expect(out.distance).toBeGreaterThan(track.corners[0].end);
+      expect(result.events).toContain('recovered');
+      const out = run(result.car, track, 3);
+      expect(out.leg).toBe(1);
+      expect(out.mode).toBe('driving');
+    });
+
+    it('tras el choque frontal, el swipe al lado cerrado también despega el coche', () => {
+      const crashed = run(createCar(track), track, 5);
+      let car = stepCar(crashed, swipe('left'), track, DT).car;
+      expect(car.mode).toBe('driving');
+      car = run(car, track, 3);
+      // Llega al muro cerrado; desde ahí, hacia la salida
+      expect(car.mode).toBe('crashed');
+      expect(car.wallSide).toBe(-1);
+      car = run(stepCar(car, swipe('right'), track, DT).car, track, 4);
+      expect(car.leg).toBe(1);
     });
   });
 
@@ -160,7 +176,13 @@ describe('Car', () => {
       expect(Math.abs(car.lateral)).toBeLessThan(0.01);
     });
 
-    it('en un arco cerrado empuja hacia el muro exterior', () => {
+    it('sin acelerar, el coche se queda pegado a su carril en un arco cerrado', () => {
+      const tight = Track.fromSegments([straight(10), arc(60, 40), straight(10)]);
+      const car = run({ ...createCar(tight), speed: 20 }, tight, 1.5, idle);
+      expect(Math.abs(car.lateral)).toBeLessThan(0.5);
+    });
+
+    it('acelerando en un arco cerrado salta de carril hacia el muro exterior', () => {
       const tight = Track.fromSegments([straight(10), arc(60, 40), straight(10)]);
       const car = run({ ...createCar(tight), speed: 20 }, tight, 1.5);
       // Curva a la derecha: el exterior es la izquierda (lateral negativo)
