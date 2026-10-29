@@ -81,9 +81,9 @@ export class ThreeRendererAdapter extends RendererPort {
     if (frame.ghost) this.place(this.ghost, frame.ghost);
     this.exhaust?.update(dt, frame.car.accelerating);
 
-    // La cámara sigue el rumbo de la pista (no el morro), suavizado
-    const p = track.worldAt(frame.car.distance, frame.car.lateral);
-    const target = track.pointAt(frame.car.distance).heading;
+    // La cámara sigue el rumbo del tramo (no el morro), suavizado: al salir de un cruce gira 90°
+    const p = track.worldAt(frame.car.leg, frame.car.distance, frame.car.lateral);
+    const target = p.heading;
     this.cameraHeading ??= target;
     this.cameraHeading += (target - this.cameraHeading) * Math.min(1, dt * CAMERA.follow);
     const fx = Math.sin(this.cameraHeading);
@@ -130,7 +130,7 @@ export class ThreeRendererAdapter extends RendererPort {
   private place(obj: Group, pose: CarPose): void {
     const track = this.track;
     if (!track) return;
-    const p = track.worldAt(pose.distance, pose.lateral);
+    const p = track.worldAt(pose.leg, pose.distance, pose.lateral);
     obj.position.set(p.x, 0, p.z);
     obj.rotation.y = -(p.heading + pose.yaw);
   }

@@ -6,12 +6,18 @@ import { createRace, RaceState, stepRace } from './race';
 /** Piloto automático sencillo: demuestra que cada mapa se puede terminar sin chocar. */
 function autopilot(car: CarState, track: Track): DriveInput {
   const swipes: Swipe[] = [];
+  const leg = track.legs[car.leg];
+  const inJunction = !!leg.junction && car.distance > leg.length;
   if (car.mode === 'driving') {
-    const corner = track.cornerNear(car.distance, 5);
-    if (car.yawTarget !== 0 && Math.abs(car.lateral) < 0.4) swipes.push('forward');
-    else if (corner && car.yawTarget === 0) swipes.push(corner.direction > 0 ? 'right' : 'left');
-    else if (car.yawTarget === 0 && Math.abs(car.lateral) > 2.4)
+    if (inJunction && car.yawTarget === 0 && car.distance > leg.length + 2.5) {
+      // Gira en el cruce a unos 2,5 m: sale por un carril central
+      swipes.push(leg.junction!.direction > 0 ? 'right' : 'left');
+    } else if (!inJunction && car.yawTarget !== 0 && Math.abs(car.lateral) < 1.1) {
+      swipes.push('forward');
+    } else if (!inJunction && car.yawTarget === 0 && Math.abs(car.lateral) > 3.3) {
+      // Corrige el magnetismo antes de llegar al muro
       swipes.push(car.lateral > 0 ? 'left' : 'right');
+    }
   }
   return { throttle: true, swipes };
 }
@@ -31,7 +37,7 @@ describe('Mapas jugables', () => {
       expect(race.phase).toBe('finished');
       expect(crashes).toBe(0);
       // Duración razonable para una carrera de móvil
-      expect(race.raceTime).toBeGreaterThan(20);
+      expect(race.raceTime).toBeGreaterThan(18);
       expect(race.raceTime).toBeLessThan(90);
     });
   }

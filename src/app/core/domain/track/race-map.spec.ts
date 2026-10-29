@@ -1,5 +1,5 @@
 import { RACE_MAPS } from './race-map';
-import { TRACK_HALF_WIDTH } from './track-constants';
+import { SAMPLE_STEP, TRACK_HALF_WIDTH } from './track-constants';
 import { Track } from './track';
 
 describe('RACE_MAPS', () => {
@@ -11,18 +11,23 @@ describe('RACE_MAPS', () => {
   for (const map of RACE_MAPS) {
     it(`${map.id}: la pista no se cruza consigo misma`, () => {
       const track = Track.fromSegments(map.segments);
-      const pts = track.samples.filter((_, i) => i % 4 === 0);
-      // Dos tramos que no son vecinos en la pista deben estar a más de dos anchos de distancia
+      // Puntos del eje de cada tramo con su progreso; los cruces se cubren con su centro
+      const pts = track.legs.flatMap((leg) =>
+        leg.samples
+          .filter((_, i) => i % 4 === 0)
+          .map((p, i) => ({ x: p.x, z: p.z, progress: leg.startProgress + i * 4 * SAMPLE_STEP })),
+      );
+      // Dos zonas que no son vecinas en la pista deben estar a más de dos anchos de distancia
       const minGap = TRACK_HALF_WIDTH * 2 + 3;
-      const neighbourWindow = 60; // metros de pista que se consideran "el mismo tramo"
-      const step = track.length / (track.samples.length - 1);
+      const neighbourWindow = 60;
       for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
-          if ((j - i) * 4 * step < neighbourWindow) continue;
+          if (pts[j].progress - pts[i].progress < neighbourWindow) continue;
           const d = Math.hypot(pts[i].x - pts[j].x, pts[i].z - pts[j].z);
-          expect(d, `${map.id} se cruza en ${i * 4 * step}m / ${j * 4 * step}m`).toBeGreaterThan(
-            minGap,
-          );
+          expect(
+            d,
+            `${map.id} se cruza en ${pts[i].progress}m / ${pts[j].progress}m`,
+          ).toBeGreaterThan(minGap);
         }
       }
     });

@@ -58,10 +58,12 @@ export function stepRace(
 
   const { car, events } = stepCar(race.car, input, track, dt);
   const raceTime = race.raceTime + dt;
-  if (car.distance >= track.finishDistance) {
+  const before = track.progress(race.car.leg, race.car.distance);
+  const after = track.progress(car.leg, car.distance);
+  if (after >= track.finishProgress) {
     // Interpolamos el instante exacto de cruce para que el tiempo no dependa de los fps
-    const covered = car.distance - race.car.distance;
-    const fraction = covered > 0 ? (track.finishDistance - race.car.distance) / covered : 1;
+    const covered = after - before;
+    const fraction = covered > 0 ? (track.finishProgress - before) / covered : 1;
     return {
       race: { ...race, phase: 'finished', car, raceTime: race.raceTime + dt * fraction },
       events: [...events, 'finish'],

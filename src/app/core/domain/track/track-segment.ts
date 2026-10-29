@@ -4,7 +4,7 @@ export type TurnDirection = 1 | -1;
 /**
  * Piezas con las que se describe un mapa.
  * - straight: recta.
- * - corner: curva cerrada de 90°; solo se toma con un swipe.
+ * - corner: cruce cuadrado de 90°; el swipe en el cruce decide por qué carril sales.
  * - arc: curva suave; no se gira, pero el magnetismo empuja hacia el muro exterior.
  */
 export type TrackSegment =

@@ -30,6 +30,8 @@ export interface RaceViewState {
   readonly speed: number;
   readonly accelerating: boolean;
   readonly crashed: boolean;
+  /** Choque contra el muro frontal de un cruce: se sale deslizando hacia la salida. */
+  readonly crashedFront: boolean;
   readonly bestTime: number | null;
   /** Segundos respecto al fantasma: negativo = vas por delante. */
   readonly ghostDelta: number | null;
@@ -89,14 +91,16 @@ export class RaceSession {
     const { race, events } = stepRace(this.race, input, this.track, dt);
     this.race = race;
     const car = race.car;
+    const progress = this.track.progress(car.leg, car.distance);
 
-    if (race.phase === 'racing') this.recorder.record(race.raceTime, car);
+    if (race.phase === 'racing') this.recorder.record(race.raceTime, progress, car);
     if (events.includes('crash')) this.ports.renderer.impact();
     if (events.includes('finish')) void this.finish();
 
     this.ports.renderer.render(
       {
         car: {
+          leg: car.leg,
           distance: car.distance,
           lateral: car.lateral,
           yaw: car.yaw,
@@ -121,7 +125,11 @@ export class RaceSession {
       const run: BestRun = {
         mapId: this.map.id,
         time,
-        frames: this.recorder.finish(time, this.race.car),
+        frames: this.recorder.finish(
+          time,
+          this.track.progress(this.race.car.leg, this.race.car.distance),
+          this.race.car,
+        ),
         recordedAt: new Date().toISOString(),
       };
       this.best = run;
@@ -133,7 +141,9 @@ export class RaceSession {
     const race = this.race;
     let ghostDelta: number | null = null;
     if (this.ghost && race.phase === 'racing') {
-      const ghostTime = this.ghost.timeAtDistance(race.car.distance);
+      const ghostTime = this.ghost.timeAtProgress(
+        this.track.progress(race.car.leg, race.car.distance),
+      );
       if (ghostTime !== null) ghostDelta = race.raceTime - ghostTime;
     }
     return {
@@ -144,6 +154,7 @@ export class RaceSession {
       speed: race.car.speed,
       accelerating: race.car.accelerating,
       crashed: race.car.mode === 'crashed',
+      crashedFront: race.car.mode === 'crashed' && race.car.wallSide === 0,
       bestTime: this.result?.previousBest ?? this.best?.time ?? null,
       ghostDelta,
       result: this.result,
