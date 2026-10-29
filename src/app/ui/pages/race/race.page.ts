@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
 import { GameLoopPort } from '../../../core/application/ports/out/game-loop.port';
 import { InputPort } from '../../../core/application/ports/out/input.port';
@@ -59,6 +60,7 @@ export class RacePage {
   private readonly controls = inject(InputPort);
   private readonly loop = inject(GameLoopPort);
   private readonly bestRuns = inject(BestRunRepository);
+  private readonly audio = inject(AudioPort);
 
   private readonly scene = viewChild.required<ElementRef<HTMLElement>>('scene');
   private readonly surface = viewChild.required(RaceLayout, { read: ElementRef<HTMLElement> });
@@ -78,6 +80,7 @@ export class RacePage {
       this.session?.stop();
       this.controls.dispose();
       this.renderer.dispose();
+      this.audio.dispose();
     });
   }
 
@@ -99,6 +102,7 @@ export class RacePage {
       input: this.controls,
       loop: this.loop,
       bestRuns: this.bestRuns,
+      audio: this.audio,
     });
     await this.session.start((s) => this.state.set(s));
   }

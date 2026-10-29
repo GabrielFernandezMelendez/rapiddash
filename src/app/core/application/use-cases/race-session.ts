@@ -8,8 +8,10 @@ import {
   showsGo,
   stepRace,
 } from '../../domain/race/race';
+import { CAR_TUNING } from '../../domain/car/car-tuning';
 import { RaceMap } from '../../domain/track/race-map';
 import { Track } from '../../domain/track/track';
+import { AudioPort } from '../ports/out/audio.port';
 import { BestRunRepository } from '../ports/out/best-run.repository';
 import { GameLoopPort } from '../ports/out/game-loop.port';
 import { InputPort } from '../ports/out/input.port';
@@ -43,6 +45,7 @@ export interface RaceSessionPorts {
   readonly input: InputPort;
   readonly loop: GameLoopPort;
   readonly bestRuns: BestRunRepository;
+  readonly audio: AudioPort;
 }
 
 /**
@@ -67,6 +70,7 @@ export class RaceSession {
     this.listener = listener;
     this.best = await this.ports.bestRuns.get(this.map.id);
     this.reset();
+    this.ports.audio.start();
     this.ports.loop.start((dt) => this.tick(dt));
   }
 
@@ -113,6 +117,11 @@ export class RaceSession {
       dt,
     );
 
+    this.ports.audio.update({
+      phase: race.phase,
+      accelerating: car.accelerating,
+      speedRatio: car.speed / CAR_TUNING.maxSpeed,
+    });
     this.listener(this.viewState());
   }
 
