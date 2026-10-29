@@ -1,6 +1,7 @@
 import { arc, right, straight } from '../track/track-segment';
 import { Track } from '../track/track';
 import { CarState, createCar, DriveInput, Swipe, stepCar } from './car';
+import { laneCenter } from '../track/track-constants';
 import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
 
 const DT = 1 / 60;
@@ -97,12 +98,58 @@ describe('Car', () => {
       expect(car.yawTarget).toBeCloseTo(-QUARTER_TURN);
     });
 
+    it('un swipe justo al entrar en la curva todavía la toma', () => {
+      let car = createCar(track);
+      const start = track.corners[0].start;
+      while (car.distance < start + 2) car = stepCar(car, hold, track, DT).car;
+      expect(car.mode).toBe('driving');
+      const taken = stepCar(car, swipe('right'), track, DT);
+      expect(taken.events).toContain('corner-taken');
+      expect(run(taken.car, track, 3).mode).toBe('driving');
+    });
+
+    it('el swipe en el sentido de la curva la toma aunque el coche esté girado', () => {
+      let car = createCar(track);
+      while (car.distance < track.corners[0].start - 3) car = stepCar(car, hold, track, DT).car;
+      car = stepCar(car, swipe('left'), track, DT).car;
+      expect(car.yawTarget).toBeCloseTo(-QUARTER_TURN);
+      const taken = stepCar(car, swipe('right'), track, DT);
+      expect(taken.car.mode).toBe('cornering');
+      expect(taken.car.yawTarget).toBe(0);
+    });
+
     it('tras chocar en la curva, un swipe en su sentido la toma', () => {
       const crashed = run(createCar(track), track, 4);
       const result = stepCar(crashed, swipe('right'), track, DT);
       expect(result.car.mode).toBe('cornering');
       const out = run(result.car, track, 5);
       expect(out.distance).toBeGreaterThan(track.corners[0].end);
+    });
+  });
+
+  describe('imán de carril', () => {
+    it('al enderezar, el coche se centra en el carril más cercano', () => {
+      let car = run(createCar(longStraight), longStraight, 1);
+      car = stepCar(car, swipe('right'), longStraight, DT).car;
+      car = run(car, longStraight, 0.12);
+      car = stepCar(car, swipe('forward'), longStraight, DT).car;
+      car = run(car, longStraight, 1.5);
+      const lanes = [0, 1, 2, 3, 4].map(laneCenter);
+      expect(lanes.some((c) => Math.abs(c - car.lateral) < 0.01)).toBe(true);
+      expect(Math.abs(car.lateral)).toBeGreaterThan(1);
+    });
+
+    it('tras salir de un choque contra el muro acaba en un carril', () => {
+      let car = run(createCar(longStraight), longStraight, 1);
+      car = stepCar(car, swipe('left'), longStraight, DT).car;
+      car = run(car, longStraight, 3);
+      car = stepCar(car, swipe('right'), longStraight, DT).car;
+      car = run(car, longStraight, 0.3);
+      car = stepCar(car, swipe('forward'), longStraight, DT).car;
+      car = run(car, longStraight, 1.5);
+      expect([0, 1, 2, 3, 4].map(laneCenter).some((c) => Math.abs(c - car.lateral) < 0.01)).toBe(
+        true,
+      );
     });
   });
 

@@ -7,8 +7,9 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Mantener pulsado (o Espacio) acelera. No hay freno: al soltar se pierde velocidad poco a poco.
 - Cualquier swipe lateral (o ← →) gira el coche 90°. Mientras está girado no acelera.
 - Swipe adelante (o ↑) endereza el coche.
-- Curvas de 90°: se toman con un swipe en su sentido dentro de la ventana previa. Sin swipe, choque frontal.
-- Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Por debajo del umbral, nada.
+- Curvas de 90°: se toman con un swipe en su sentido desde 12 m antes hasta 3,5 m después de la entrada. Ese swipe tiene prioridad aunque el coche esté girado. Sin swipe, choque frontal.
+- Imán de carril: con el morro recto el coche se centra en el carril más cercano (como en Race Time). Nunca se queda entre dos carriles.
+- Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Si empuja menos que el imán de carril, el coche se mantiene en su carril; si empuja más, va saltando de carril hacia el muro.
 - Choque: no se pierde la partida. El coche se queda parado; swipe al lado contrario del muro (o en el sentido de la curva) y luego adelante.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.

@@ -1,4 +1,5 @@
 import { Track } from '../track/track';
+import { nearestLaneCenter } from '../track/track-constants';
 import { TurnDirection } from '../track/track-segment';
 import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
 
@@ -85,10 +86,11 @@ function applySwipe(car: CarState, swipe: Swipe, track: Track, events: CarEvent[
 
   const dir = directionOf(swipe);
   const corner = track.cornerNear(car.distance, CAR_TUNING.cornerWindow);
-  // Solo se toma la curva si el coche va recto y el swipe coincide con su sentido
-  if (corner && corner.direction === dir && car.yawTarget === 0) {
+  // Un swipe en el sentido de la curva la toma siempre, aunque el coche estuviera girado
+  // corrigiendo el magnetismo: al tomarla se endereza
+  if (corner && corner.direction === dir && car.distance < corner.start + CAR_TUNING.cornerGrace) {
     events.push('corner-taken');
-    return { ...car, mode: 'cornering', cornerIndex: corner.index, yaw: 0 };
+    return { ...car, mode: 'cornering', cornerIndex: corner.index, yaw: 0, yawTarget: 0 };
   }
   // Cualquier otro swipe lateral gira el coche 90°
   return { ...car, yawTarget: dir * QUARTER_TURN };
@@ -131,7 +133,18 @@ export function stepCar(
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
 
-  // Magnetismo: en tramos curvos el coche se desvía hacia el muro exterior
+  // Imán de carril: con el morro recto el coche tiende al centro del carril más cercano
+  if (car.yawTarget === 0 && Math.abs(yaw) < 0.05) {
+    const offset = nearestLaneCenter(lateral) - lateral;
+    const pull = Math.max(
+      -CAR_TUNING.lanePull,
+      Math.min(CAR_TUNING.lanePull, offset * CAR_TUNING.laneSpring),
+    );
+    lateral += Math.abs(pull * dt) > Math.abs(offset) ? offset : pull * dt;
+  }
+
+  // Magnetismo: en tramos curvos el coche se desvía hacia el muro exterior.
+  // Si empuja más que el imán de carril, el coche va saltando de carril hacia el muro
   const sample = track.sampleAt(car.distance);
   if (car.mode === 'driving' && sample.kind === 'arc') {
     const excess = Math.abs(sample.curvature) - CAR_TUNING.magnetThreshold;
@@ -149,15 +162,16 @@ export function stepCar(
 
   // Llegar a una curva de 90° sin haberla tomado: choque frontal
   if (mode === 'driving') {
+    const grace = CAR_TUNING.cornerGrace;
     const missed = track.corners.find(
-      (c) => car.distance < c.start + 0.25 && distance >= c.start + 0.25,
+      (c) => car.distance < c.start + grace && distance >= c.start + grace,
     );
     if (missed) {
       events.push('crash');
       return {
         car: {
           ...car,
-          distance: missed.start + 0.25,
+          distance: missed.start + grace,
           lateral: Math.max(-WALL_LIMIT, Math.min(WALL_LIMIT, lateral)),
           speed: 0,
           yaw: 0,
