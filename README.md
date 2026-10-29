@@ -1,59 +1,24 @@
-# Rapiddash
+# RapidDash
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.3.
+Juego de carreras 3D low-poly para móvil en vertical, hecho con Angular 22 y Three.js.
+Elige un mapa, espera al semáforo y haz el mejor tiempo. Tu mejor vuelta queda como fantasma.
 
-## Development server
+## Controles
 
-To start a local development server, run:
+| Acción | Móvil | Ordenador |
+| --- | --- | --- |
+| Acelerar | Mantener pulsado | Espacio |
+| Girar 90° | Deslizar a izquierda o derecha | ← → |
+| Enderezar | Deslizar hacia arriba | ↑ |
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Desarrollo
 
 ```bash
-ng generate component component-name
+npm install
+npm start               # http://localhost:4200
+npm run start:movil     # desde el móvil en la misma wifi: http://<IP-del-PC>:4200
+npm test -- --watch=false
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+La arquitectura (hexagonal + atomic design) y las convenciones están en [CLAUDE.md](CLAUDE.md).
