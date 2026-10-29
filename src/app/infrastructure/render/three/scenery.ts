@@ -18,7 +18,7 @@ const MAX_PROPS = 320;
 /** Suelo, árboles y rocas instanciados alrededor de la pista. */
 export function buildScenery(track: Track, palette: ScenePalette): Group {
   const group = new Group();
-  const s = track.samples;
+  const s = track.legs.flatMap((l) => l.samples);
   let minX = Infinity;
   let maxX = -Infinity;
   let minZ = Infinity;
