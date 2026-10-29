@@ -7,10 +7,11 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Mantener pulsado (o Espacio) acelera. No hay freno: al soltar se pierde velocidad poco a poco.
 - Cualquier swipe lateral (o ← →) gira el coche 90°. Mientras está girado no acelera.
 - Swipe adelante (o ↑) endereza el coche.
-- Curvas de 90°: se toman con un swipe en su sentido desde 12 m antes hasta 3,5 m después de la entrada. Ese swipe tiene prioridad aunque el coche esté girado. Sin swipe, choque frontal.
-- Imán de carril: con el morro recto el coche se centra en el carril más cercano (como en Race Time). Nunca se queda entre dos carriles.
-- Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Si empuja menos que el imán de carril, el coche se mantiene en su carril; si empuja más, va saltando de carril hacia el muro.
-- Choque: no se pierde la partida. El coche se queda parado; swipe al lado contrario del muro (o en el sentido de la curva) y luego adelante.
+- Curvas de 90° = cruces cuadrados (11 × 11 m). La pista son tramos (rectas y arcos) unidos por cruces. En el cruce, el swipe hacia la salida gira el coche y el momento decide el carril de salida: al entrar, carril interior; tarde, exterior; demasiado tarde, choque contra el muro frontal. Girar hacia la salida hasta 1,5 m antes del cruce cuenta como entrar; antes, muro lateral.
+- Imán de carril fuerte: con el morro recto el coche se centra en el carril más cercano (como en Race Time). Nunca se queda entre dos carriles.
+- Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Sin acelerar el coche va pegado al suelo (el magnetismo se reduce y no vence al imán de carril); acelerando, en curvas cerradas salta de carril hacia el muro.
+- Choque lateral: el coche se queda parado; swipe al lado contrario del muro y luego adelante.
+- Choque frontal en un cruce: swipe a cualquier lado despega el coche; hacia la salida continúa la carrera.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
 

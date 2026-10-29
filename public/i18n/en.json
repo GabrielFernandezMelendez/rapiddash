@@ -29,6 +29,7 @@
   "race.hint.touch": "Hold to accelerate · swipe to turn",
   "race.hint.keys": "Space accelerates · ← → turn · ↑ straightens",
   "race.crash": "Crash! Swipe towards the centre",
+  "race.crashFront": "Crash! Swipe towards the exit",
   "results.title": "Finish",
   "results.time": "Time",
   "results.previous": "Previous",

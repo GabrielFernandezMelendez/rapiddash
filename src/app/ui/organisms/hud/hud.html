@@ -15,7 +15,7 @@
 </div>
 
 @if (state().crashed) {
-  <p class="crash">{{ 'race.crash' | t }}</p>
+  <p class="crash">{{ (state().crashedFront ? 'race.crashFront' : 'race.crash') | t }}</p>
 }
 
 <div class="speed" [class.boost]="state().accelerating">
