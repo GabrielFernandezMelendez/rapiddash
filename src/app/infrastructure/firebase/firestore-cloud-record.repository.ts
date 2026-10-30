@@ -9,11 +9,12 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
 import { CloudRecordRepository } from '../../core/application/ports/out/cloud-record.repository';
-import { isCountryCode } from '../../core/domain/profile/country';
+import { CountryCode, isCountryCode } from '../../core/domain/profile/country';
 import { CloudRecord } from '../../core/domain/race/cloud-record';
 import { GhostFrame } from '../../core/domain/race/ghost';
 import { decodeGhost, encodeGhost } from '../../core/domain/race/ghost-codec';
@@ -67,6 +68,39 @@ export class FirestoreCloudRecordRepository extends CloudRecordRepository {
       query(runs(db, mapId), where('physicsVersion', '==', PHYSICS_VERSION), where('time', '<', time)),
     );
     return faster.data().count + 1;
+  }
+
+  async above(mapId: string, time: number): Promise<CloudRecord | null> {
+    const db = await firestore();
+    const snap = await getDocs(
+      query(
+        runs(db, mapId),
+        where('physicsVersion', '==', PHYSICS_VERSION),
+        where('time', '<', time),
+        orderBy('time', 'desc'),
+        limit(1),
+      ),
+    );
+    const d = snap.docs[0];
+    return d ? toRecord(mapId, d.id, d.data()) : null;
+  }
+
+  async count(mapId: string): Promise<number> {
+    const db = await firestore();
+    const snap = await getCountFromServer(
+      query(runs(db, mapId), where('physicsVersion', '==', PHYSICS_VERSION)),
+    );
+    return snap.data().count;
+  }
+
+  async updateIdentity(
+    mapId: string,
+    uid: string,
+    nickname: string,
+    country: CountryCode | null,
+  ): Promise<void> {
+    const db = await firestore();
+    await updateDoc(doc(db, 'records', mapId, 'runs', uid), { nickname, country });
   }
 
   async ghost(mapId: string, uid: string): Promise<GhostFrame[] | null> {

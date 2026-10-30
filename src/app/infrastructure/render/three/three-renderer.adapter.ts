@@ -18,6 +18,7 @@ import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic'
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
+import { GhostLabel } from './ghost-label';
 import { buildScenery } from './scenery';
 import { PALETTES } from './themes';
 import { SYNTH_PALETTES } from './synthwave/synth-palettes';
@@ -56,6 +57,7 @@ export class ThreeRendererAdapter extends RendererPort {
   private scrape: ScrapeFx | null = null;
   private carBounce = new CarBounce();
   private ghostBounce = new CarBounce();
+  private ghostLabel: GhostLabel | null = null;
   private lastDistance = 0;
   private resizeObserver: ResizeObserver | null = null;
   private host: HTMLElement | null = null;
@@ -90,6 +92,9 @@ export class ThreeRendererAdapter extends RendererPort {
     this.cameraLeg = -1;
     this.ghost.visible = false;
     this.scene.add(this.ghost, this.car);
+    // Color del fantasma de cada estética (--rd-ghost)
+    this.ghostLabel = new GhostLabel(isSynthwave(aesthetic) ? '#2de2e6' : '#8fd3ff');
+    this.scene.add(this.ghostLabel.sprite);
     this.exhaust = new ExhaustFx(this.car, this.scene);
     this.scrape = new ScrapeFx(this.car, this.scene);
     this.cameraHeading = null;
@@ -143,6 +148,11 @@ export class ThreeRendererAdapter extends RendererPort {
       this.place(this.ghost, frame.ghost);
       this.ghostBounce.apply(this.ghost, dt, frame.ghost.leg, frame.ghost.lateral);
     }
+    this.ghostLabel?.update(
+      frame.ghost ? frame.ghostLabel : null,
+      this.ghost.position.x,
+      this.ghost.position.z,
+    );
     this.exhaust?.update(dt, frame.car.accelerating);
     // Velocidad aproximada para la intensidad de las chispas
     const moved = dt > 0 ? Math.abs(frame.car.distance - this.lastDistance) / dt : 0;

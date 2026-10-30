@@ -49,10 +49,18 @@ service cloud.firestore {
 
       allow read: if signedIn();
       allow create: if validRun();
-      allow update: if validRun()
-        && (request.resource.data.physicsVersion > resource.data.physicsVersion
-          || (request.resource.data.physicsVersion == resource.data.physicsVersion
-            && request.resource.data.time < resource.data.time));
+      allow update: if (validRun()
+          && (request.resource.data.physicsVersion > resource.data.physicsVersion
+            || (request.resource.data.physicsVersion == resource.data.physicsVersion
+              && request.resource.data.time < resource.data.time)))
+        // Al cambiar el apodo o el país en el perfil: solo esos dos campos, iguales al perfil
+        || (signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname', 'country'])
+          && request.resource.data.nickname
+            == get(/databases/$(database)/documents/users/$(uid)).data.nickname
+          && request.resource.data.country
+            == get(/databases/$(database)/documents/users/$(uid)).data.country);
       allow delete: if false;
     }
 
