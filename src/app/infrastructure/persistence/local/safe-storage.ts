@@ -15,3 +15,11 @@ export function writeJson(key: string, value: unknown): void {
     // Sin almacenamiento: se pierde el dato, el juego sigue
   }
 }
+
+export function removeKey(key: string): void {
+  try {
+    globalThis.localStorage?.removeItem(key);
+  } catch {
+    // Sin almacenamiento: nada que borrar
+  }
+}
