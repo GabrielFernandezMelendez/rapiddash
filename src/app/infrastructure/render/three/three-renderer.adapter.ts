@@ -16,7 +16,7 @@ import { RenderFrame, RendererPort } from '../../../core/application/ports/out/r
 import { CarPose } from '../../../core/domain/race/ghost';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
-import { buildCar, ExhaustFx } from './car-mesh';
+import { buildCar, ExhaustFx, ScrapeFx } from './car-mesh';
 import { buildScenery } from './scenery';
 import { PALETTES } from './themes';
 import { buildTrackMesh } from './track-mesh';
@@ -32,6 +32,8 @@ export class ThreeRendererAdapter extends RendererPort {
   private car = buildCar();
   private ghost = buildCar(true);
   private exhaust: ExhaustFx | null = null;
+  private scrape: ScrapeFx | null = null;
+  private lastDistance = 0;
   private resizeObserver: ResizeObserver | null = null;
   private host: HTMLElement | null = null;
   private cameraHeading: number | null = null;
@@ -64,6 +66,7 @@ export class ThreeRendererAdapter extends RendererPort {
     this.ghost.visible = false;
     this.scene.add(this.ghost, this.car);
     this.exhaust = new ExhaustFx(this.car, this.scene);
+    this.scrape = new ScrapeFx(this.car, this.scene);
     this.cameraHeading = null;
 
     this.resize();
@@ -80,6 +83,12 @@ export class ThreeRendererAdapter extends RendererPort {
     this.ghost.visible = frame.ghost !== null;
     if (frame.ghost) this.place(this.ghost, frame.ghost);
     this.exhaust?.update(dt, frame.car.accelerating);
+    // Velocidad aproximada para la intensidad de las chispas
+    const moved = dt > 0 ? Math.abs(frame.car.distance - this.lastDistance) / dt : 0;
+    this.lastDistance = frame.car.distance;
+    this.scrape?.update(dt, frame.car.scrapeSide, Math.min(1, moved / 26));
+    // El roce hace vibrar la cámara un poco, mucho menos que un choque
+    if (frame.car.scrapeSide !== 0) this.shake = Math.max(this.shake, 0.12);
 
     // La cámara sigue el rumbo del tramo (no el morro), suavizado: al salir de un cruce gira 90°
     const p = track.worldAt(frame.car.leg, frame.car.distance, frame.car.lateral);

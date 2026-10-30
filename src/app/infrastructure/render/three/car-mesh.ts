@@ -180,3 +180,86 @@ export class ExhaustFx {
     );
   }
 }
+
+const SCRAPE_SPARK_COUNT = 60;
+const SCRAPE_SPARKS_PER_SECOND = 70;
+
+/** Chispas amarillas que salen del lado del coche que roza el muro. */
+export class ScrapeFx {
+  private readonly texture: Texture;
+  private readonly sparks: Spark[] = [];
+  private cursor = 0;
+  private pending = 0;
+  private readonly tmp = new Vector3();
+  private readonly back = new Vector3();
+
+  constructor(
+    private readonly car: Group,
+    scene: Scene,
+  ) {
+    this.texture = canvasTexture(32, 32, (g) => {
+      const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grad.addColorStop(0, 'rgba(255,255,240,1)');
+      grad.addColorStop(0.4, 'rgba(255,220,90,0.9)');
+      grad.addColorStop(1, 'rgba(255,160,40,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 32, 32);
+    });
+    for (let i = 0; i < SCRAPE_SPARK_COUNT; i++) {
+      const sprite = new Sprite(
+        new SpriteMaterial({
+          map: this.texture,
+          blending: AdditiveBlending,
+          depthWrite: false,
+          transparent: true,
+        }),
+      );
+      sprite.visible = false;
+      scene.add(sprite);
+      this.sparks.push({ sprite, life: 0, max: 1, velocity: new Vector3() });
+    }
+  }
+
+  /** `side`: 1 roza a la derecha, -1 a la izquierda, 0 sin roce. */
+  update(dt: number, side: -1 | 0 | 1, speed01: number): void {
+    if (side !== 0) {
+      this.pending += dt * SCRAPE_SPARKS_PER_SECOND * (0.4 + 0.6 * speed01);
+      while (this.pending > 1) {
+        this.pending--;
+        this.emit(side);
+      }
+    }
+    for (const spark of this.sparks) {
+      if (!spark.sprite.visible) continue;
+      spark.life -= dt;
+      if (spark.life <= 0) {
+        spark.sprite.visible = false;
+        continue;
+      }
+      spark.velocity.y -= 9 * dt;
+      spark.sprite.position.addScaledVector(spark.velocity, dt);
+      const k = spark.life / spark.max;
+      const size = 0.12 + k * 0.22;
+      spark.sprite.scale.set(size, size, 1);
+      (spark.sprite.material as SpriteMaterial).opacity = k;
+    }
+  }
+
+  private emit(side: 1 | -1): void {
+    const spark = this.sparks[this.cursor];
+    this.cursor = (this.cursor + 1) % this.sparks.length;
+    // Punto de contacto: costado del coche, a lo largo de la carrocería
+    this.tmp.set(side * 0.75, 0.35, (Math.random() - 0.3) * 2.2);
+    this.car.localToWorld(this.tmp);
+    this.car.getWorldDirection(this.back);
+    const speed = 4 + Math.random() * 4;
+    spark.velocity.set(
+      this.back.x * speed + (Math.random() - 0.5) * 2,
+      1.5 + Math.random() * 2.5,
+      this.back.z * speed + (Math.random() - 0.5) * 2,
+    );
+    spark.sprite.position.copy(this.tmp);
+    spark.max = spark.life = 0.25 + Math.random() * 0.25;
+    spark.sprite.visible = true;
+  }
+}
