@@ -79,7 +79,7 @@ Atomic design:
 - Probar una PR en local: `gh pr checkout <n> && npm run start:movil`.
 - Despliegue: cada PR se publica en una URL de prueba (el bot de Firebase la comenta en la PR); cada merge en `main` publica en https://rapiddash-gabo.web.app.
 - Las PRs van siempre contra `main`, sin encadenarlas.
-- Reglas de Firestore en `firestore.rules`; no las despliega el CI: `npx -y firebase-tools@latest deploy --only firestore:rules --project rapiddash-gabo`.
+- Reglas e índices de Firestore en `firestore.rules` y `firestore.indexes.json`; no los despliega el CI: `npx -y firebase-tools@latest deploy --only firestore --project rapiddash-gabo`.
 - Skills de Firebase en `.agents/skills/`: leer la que toque (hosting, firestore, auth, reglas) antes de trabajar con Firebase.
 
 ## Comandos
