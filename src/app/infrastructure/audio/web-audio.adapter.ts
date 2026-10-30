@@ -9,7 +9,8 @@ export const AUDIO_FILES = {
 const MUSIC_VOLUME = 0.45;
 /** Tras la meta la música baja para no tapar la pantalla de resultados. */
 const MUSIC_FINISHED_VOLUME = 0.2;
-const ENGINE_VOLUME = 0.7;
+/** El motor queda por debajo de la música: acompaña sin tapar. */
+const ENGINE_VOLUME = 0.22;
 /** Constantes de tiempo (s) de los fundidos: subida suave, bajada rápida al soltar. */
 const ENGINE_FADE_IN = 0.12;
 const ENGINE_FADE_OUT = 0.06;
