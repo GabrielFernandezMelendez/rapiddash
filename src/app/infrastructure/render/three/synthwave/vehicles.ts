@@ -175,6 +175,7 @@ export function buildShip(ghost = false): Group {
       g.add(jet);
     }
   }
-  g.add(underglow(ghost));
+  // Sin luz de bajos: con la forma de flecha se veía como un cuadrado claro debajo de la nave.
+  // El brillo lo ponen los propulsores (efecto de escape)
   return g;
 }
