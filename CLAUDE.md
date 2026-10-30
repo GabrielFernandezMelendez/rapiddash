@@ -18,6 +18,7 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Mapas en dos formatos a comparar: clásicos (cruces sueltos) y zigzag (series de 3 a 8 cruces seguidos con tramos cortos). Cada mapa tiene dos mitades (unos 0,9-1,3 km): la segunda añade embudos, tramos de 3 carriles y cruces estrechos. Los giros alternan derecha/izquierda para que la pista avance en escalera y no se cruce.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles (3 en los tramos estrechos), cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
+- Estéticas (Ajustes): clásico (por defecto), retro y futurista. Retro y futurista comparten el mundo synthwave en 3D (cielo violeta, sol a franjas, montañas en alambre, rejilla y muros de neón; una paleta por mapa) y solo cambia el vehículo: deportivo de los 80 o nave. Nunca cambian la física ni los mapas. Fuentes synthwave: portada Russo One + Mr Dafoe, menús Kanit, carrera Audiowide + Chakra Petch.
 - Sonido: música en bucle durante la carrera; el motor suena solo al acelerar, por debajo de la música, con volumen y vueltas según la velocidad. Archivos en `public/audio/` (ver su README); sin ellos, silencio.
 
 ## Arquitectura hexagonal
@@ -37,7 +38,8 @@ Reglas de dependencia:
 - `core/application` solo importa `core/domain`.
 - `infrastructure` implementa puertos; nunca la importan `core` ni los componentes de `ui` (salvo `infrastructure/di` desde las páginas o `app.config`).
 - Los puertos son clases abstractas: sirven de token de DI sin acoplar el núcleo a Angular.
-- Three.js solo vive en `infrastructure/render/three` y se carga de forma diferida con la página de carrera.
+- Three.js solo vive en `infrastructure/render/three` y se carga de forma diferida con la página de carrera (y con el fondo 3D del menú en las estéticas synthwave).
+- Estética: tokens CSS bajo `:root[data-aesthetic=…]` en `styles.scss` (los componentes solo usan tokens) y, en 3D, `render/three/synthwave/` frente a la escena clásica.
 
 Atomic design:
 - atoms: piezas sin lógica (botón, luz, estadística).
