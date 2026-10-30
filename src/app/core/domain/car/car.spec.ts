@@ -72,12 +72,18 @@ describe('Car', () => {
       expect(car.speed).toBeGreaterThan(start.speed);
     });
 
-    it('dos swipes seguidos cambian dos carriles', () => {
+    it('un swipe = un carril: durante el cambio se ignoran los demás swipes', () => {
       const car = run(
         stepCar(cruising(), swipe('left', 'left'), longStraight, DT).car,
         longStraight,
         0.6,
       );
+      expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE - 1));
+    });
+
+    it('terminado el cambio, otro swipe cambia otro carril', () => {
+      let car = run(stepCar(cruising(), swipe('left'), longStraight, DT).car, longStraight, 0.3);
+      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
       expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE - 2));
     });
 
@@ -89,7 +95,8 @@ describe('Car', () => {
 
     it('contra el muro: golpecito, pierde algo de velocidad y se queda en su carril', () => {
       let car = cruising();
-      car = run(stepCar(car, swipe('left', 'left'), longStraight, DT).car, longStraight, 0.6);
+      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
+      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
       const before = car.speed;
       car = stepCar(car, swipe('left'), longStraight, DT).car;
       const r = runUntil(car, longStraight, (c) => c.laneTarget === null, hold, 1);

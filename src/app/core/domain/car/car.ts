@@ -86,7 +86,7 @@ function approach(value: number, target: number, maxDelta: number): number {
  * - En el cruce (o hasta `junctionEarlyEntry` m antes), hacia la salida: gira 90°.
  * - En cualquier otro caso: cambia un carril a ese lado (como en Subway Surfers). Si ya está en
  *   el carril pegado al muro, va hacia el muro y se lleva un golpecito.
- * Con el coche ya girado se ignora.
+ * Con el coche ya girado o en mitad de un cambio de carril se ignora.
  */
 function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
   if (car.yawTarget !== 0) return car;
@@ -96,9 +96,9 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
   if (inTurnZone && side === junction.direction) {
     return { ...car, yawTarget: side * QUARTER_TURN, laneTarget: null };
   }
-  // Varios swipes seguidos se acumulan: cada uno parte del carril al que ya se iba
-  const base = nearestLaneCenter(car.laneTarget ?? car.lateral);
-  const target = base + side * LANE_WIDTH;
+  // Un swipe = un carril: mientras dura un cambio de carril se ignoran los demás swipes
+  if (car.laneTarget !== null) return car;
+  const target = nearestLaneCenter(car.lateral) + side * LANE_WIDTH;
   return { ...car, laneTarget: Math.abs(target) > WALL_LIMIT ? side * WALL_LIMIT : target };
 }
 
