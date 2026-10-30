@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'light' | 'link';
 
 /** Botón base. Uso: <button rdButton variant="secondary">…</button> */
 @Component({
@@ -12,6 +12,8 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
     '[class.rd-button--primary]': "variant() === 'primary'",
     '[class.rd-button--secondary]': "variant() === 'secondary'",
     '[class.rd-button--ghost]': "variant() === 'ghost'",
+    '[class.rd-button--light]': "variant() === 'light'",
+    '[class.rd-button--link]': "variant() === 'link'",
     '[class.rd-button--block]': 'block()',
   },
   styleUrl: './button.scss',

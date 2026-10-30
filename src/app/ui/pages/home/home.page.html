@@ -1,6 +1,9 @@
 <rd-menu-layout>
   <div menu-backdrop #backdrop class="backdrop" aria-hidden="true"></div>
   <div menu-header class="top">
+    @if (account.profile(); as profile) {
+      <rd-pilot-chip class="chip" [profile]="profile" (open)="openProfile()" />
+    }
     <button
       rdButton
       variant="ghost"
@@ -40,5 +43,20 @@
     [aesthetic]="aesthetic.aesthetic()"
     (aestheticChange)="setAesthetic($event)"
     (closed)="settingsOpen.set(false)"
+  />
+}
+
+@if (reminderOpen() && account.profile(); as profile) {
+  <rd-link-reminder
+    [profile]="profile"
+    [records]="reminderRecords()"
+    [busy]="reminderBusy()"
+    [error]="reminderError()"
+    [notice]="reminderNotice()"
+    (google)="linkGoogle()"
+    (create)="createAccount()"
+    (resend)="resendVerification()"
+    (verified)="checkVerified()"
+    (later)="remindLater()"
   />
 }
