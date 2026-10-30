@@ -5,16 +5,15 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 ## Mecánicas (no cambiar sin acordarlo)
 
 - Mantener pulsado (o Espacio) acelera. No hay freno: al soltar se pierde velocidad poco a poco.
-- Cualquier swipe lateral (o ← →) gira el coche 90°. Mientras está girado no acelera.
-- Swipe adelante (o ↑) endereza el coche.
-- Curvas de 90° = cruces cuadrados (11 × 11 m). La pista son tramos (rectas y arcos) unidos por cruces. En el cruce, el swipe hacia la salida gira el coche y el momento decide el carril de salida: al entrar, carril interior; tarde, exterior; demasiado tarde, choque contra el muro frontal. Girar hacia la salida hasta 1,5 m antes del cruce cuenta como entrar; antes, muro lateral.
+- Solo se gira en los cruces. Fuera de ellos, un swipe lateral (o ← →) cambia un carril a ese lado, como en Subway Surfers (~0,2 s, sin dejar de acelerar). Varios swipes seguidos se acumulan.
+- Swipe hacia el muro desde el carril pegado a él: golpecito (chispas, conserva el 90 % de la velocidad) y se queda en su carril. No es un choque.
+- Curvas de 90° = cruces cuadrados (11 × 11 m). La pista son tramos (rectas y arcos) unidos por cruces. En el cruce, el swipe hacia la salida gira el coche 90° (mientras está girado no acelera) y el momento decide el carril de salida: al entrar, carril interior; tarde, exterior; demasiado tarde, choque contra el muro frontal. Girar hacia la salida hasta 1,5 m antes del cruce cuenta como entrar; antes, es un cambio de carril. En el cruce, el swipe hacia el lado cerrado cambia de carril. Ya girado, se ignoran los swipes.
+- No hay swipe adelante: el coche sale del cruce ya recto.
 - Imán de carril fuerte: con el morro recto el coche se centra en el carril más cercano (como en Race Time). Nunca se queda entre dos carriles.
 - Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Sin acelerar el coche va pegado al suelo (el magnetismo se reduce y no vence al imán de carril); acelerando, en curvas cerradas salta de carril hacia el muro.
 - Juego continuo, sin pausas: ningún choque detiene el coche.
-- Roce (contacto casi paralelo con el muro, < ~35°): no es choque; el rozamiento frena cada vez más (con chispas). Se despega con un swipe hacia el centro o soltando el acelerador (el imán lo lleva al carril más cercano).
-- Choque lateral (coche girado contra el muro): conserva el 40 % de la velocidad y en 0,7 s se endereza solo en el carril pegado al muro.
-- Choque frontal (o contra el lado cerrado) en un cruce: en 0,6 s pivota solo hacia la salida a 10 m/s y sale por el carril exterior.
-- Durante esas animaciones se ignoran los swipes.
+- Roce (el magnetismo de un arco pega el coche al muro): no es choque; el rozamiento frena cada vez más (con chispas). Se despega con un swipe hacia el centro o soltando el acelerador (el imán lo lleva al carril más cercano).
+- Choque frontal en un cruce: en 0,6 s pivota solo hacia la salida a 10 m/s y sale por el carril exterior. Durante la animación se ignoran los swipes.
 - Mapas en dos formatos a comparar: clásicos (cruces sueltos) y zigzag (series de 3 a 8 cruces seguidos con tramos cortos). Los giros alternan derecha/izquierda para que la pista avance en escalera y no se cruce.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
