@@ -63,7 +63,7 @@ export class DeviceInputAdapter extends InputPort {
 
   private readonly onPointerMove = (e: PointerEvent) => {
     if (e.pointerId !== this.pointerId) return;
-    const swipe = this.detector.move(e.clientX, e.clientY);
+    const swipe = this.detector.move(e.clientX, e.clientY, e.timeStamp);
     if (swipe) this.queue.push(swipe);
   };
 
