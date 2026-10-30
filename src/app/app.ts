@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { AccountService } from './shared/account/account.service';
 
 /**
  * Marco de la app: en móvil ocupa toda la pantalla; en el ordenador simula un móvil vertical
@@ -41,4 +42,16 @@ import { RouterOutlet } from '@angular/router';
     }
   `,
 })
-export class App {}
+export class App {
+  constructor() {
+    const account = inject(AccountService);
+    const router = inject(Router);
+    // Si al confirmar la sesión el perfil desaparece (sesión cerrada en otro sitio), a la bienvenida
+    let had = account.profile() !== null;
+    effect(() => {
+      const has = account.profile() !== null;
+      if (had && !has && !router.url.startsWith('/welcome')) void router.navigate(['/welcome']);
+      had = has;
+    });
+  }
+}
