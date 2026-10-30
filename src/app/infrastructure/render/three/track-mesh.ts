@@ -12,13 +12,12 @@ import {
   PlaneGeometry,
 } from 'three';
 import {
-  JUNCTION_SIZE,
   LANE_COUNT,
   LANE_WIDTH,
   SAMPLE_STEP,
   TRACK_HALF_WIDTH,
 } from '../../../core/domain/track/track-constants';
-import { Junction, Leg, Track } from '../../../core/domain/track/track';
+import { Junction, Leg, Taper, Track } from '../../../core/domain/track/track';
 import { ScenePalette } from './themes';
 
 const WALL_HEIGHT = 0.85;
@@ -38,6 +37,10 @@ export function canvasTexture(w: number, h: number, draw: (g: CanvasRenderingCon
 
 function pushQuad(out: number[], a: Vec3, b: Vec3, c: Vec3, d: Vec3): void {
   out.push(...a, ...b, ...c, ...b, ...d, ...c);
+}
+
+function pushTri(out: number[], a: Vec3, b: Vec3, c: Vec3): void {
+  out.push(...a, ...b, ...c);
 }
 
 function pushColor(out: number[], c: Color, vertices: number): void {
@@ -79,7 +82,11 @@ class TrackBuffers {
   }
 }
 
-/** Asfalto, muros y líneas de carril de un tramo. */
+/**
+ * Asfalto, muros y líneas de carril de un tramo. El ancho sigue al de cada muestra: en los
+ * embudos las paredes se cierran en diagonal y las líneas de los carriles que desaparecen se
+ * acaban.
+ */
 function addLeg(buf: TrackBuffers, leg: Leg): void {
   const s = leg.samples;
   const laneOffsets = Array.from(
@@ -94,14 +101,17 @@ function addLeg(buf: TrackBuffers, leg: Leg): void {
       const r = k === i ? r0 : r1;
       return [s[k].x + r[0] * o, y, s[k].z + r[1] * o];
     };
-    const w = TRACK_HALF_WIDTH;
-    pushQuad(buf.road, at(i, -w, 0.01), at(i, w, 0.01), at(j, -w, 0.01), at(j, w, 0.01));
+    const wi = s[i].halfWidth;
+    const wj = s[j].halfWidth;
+    pushQuad(buf.road, at(i, -wi, 0.01), at(i, wi, 0.01), at(j, -wj, 0.01), at(j, wj, 0.01));
     // Bandas alternas en el asfalto para notar la velocidad
     pushColor(buf.roadColors, Math.floor((i * SAMPLE_STEP) / 4) % 2 ? buf.roadB : buf.roadA, 6);
     const stripe = Math.floor((i * SAMPLE_STEP) / 2) % 2 === 0;
-    for (const side of [-1, 1]) buf.wallSegment(at(i, side * w, 0), at(j, side * w, 0), stripe);
+    for (const side of [-1, 1]) buf.wallSegment(at(i, side * wi, 0), at(j, side * wj, 0), stripe);
     if (Math.floor((i * SAMPLE_STEP) / 1.5) % 2 === 0) {
       for (const lx of laneOffsets) {
+        // La línea solo se pinta mientras el carril de fuera cabe entre ella y la pared
+        if (Math.abs(lx) + 0.45 > Math.min(wi, wj)) continue;
         pushQuad(
           buf.lanes,
           at(i, lx - 0.08, 0.02),
@@ -126,12 +136,13 @@ function addJunction(buf: TrackBuffers, j: Junction): void {
     y,
     j.z + f[1] * fw + r[1] * lt,
   ];
-  const H = TRACK_HALF_WIDTH;
-  const S = JUNCTION_SIZE;
+  const H = j.halfWidth;
+  const S = 2 * H;
+  const lanes = Math.round(S / LANE_WIDTH);
   pushQuad(buf.road, at(0, -H, 0.01), at(0, H, 0.01), at(S, -H, 0.01), at(S, H, 0.01));
   pushColor(buf.roadColors, buf.roadA, 6);
 
-  for (let k = 1; k < LANE_COUNT; k++) {
+  for (let k = 1; k < lanes; k++) {
     const o = -H + LANE_WIDTH * k;
     for (let a = 0; a < S; a += 1.5) {
       pushQuad(
@@ -163,13 +174,61 @@ function addJunction(buf: TrackBuffers, j: Junction): void {
   wallLine(at(0, -j.direction * H, 0), at(S, -j.direction * H, 0));
 }
 
-/** Pista completa: tramos, cruces, salida, meta y carteles. */
+/** Flechas de "carril que se cierra": tallo recto que se tuerce hacia dentro, con punta. */
+function addMergeArrow(buf: TrackBuffers, track: Track, leg: number, d: number, lane: number) {
+  const k = -Math.sign(lane);
+  const p = (x: number, y: number): Vec3 => {
+    const w = track.worldAt(leg, d + y, lane + x);
+    return [w.x, 0.02, w.z];
+  };
+  pushQuad(buf.lanes, p(-0.16, 0), p(0.16, 0), p(-0.16, 2), p(0.16, 2));
+  pushQuad(buf.lanes, p(-0.16, 2), p(0.16, 2), p(-0.16 + k * 0.9, 3.1), p(0.16 + k * 0.9, 3.1));
+  pushTri(buf.lanes, p(k * 0.5, 3), p(k * 1.5, 2.6), p(k * 1.25, 3.9));
+}
+
+/** Avisos de un embudo: flechas en los carriles que se cierran y paneles de chevrones. */
+function taperWarnings(
+  buf: TrackBuffers,
+  track: Track,
+  leg: Leg,
+  taper: Taper,
+  palette: ScenePalette,
+): Group {
+  const g = new Group();
+  if (taper.toHalfWidth >= taper.fromHalfWidth) return g;
+  const closing = [-1, 1].flatMap((side) =>
+    Array.from({ length: LANE_COUNT }, (_, i) => -TRACK_HALF_WIDTH + LANE_WIDTH * (i + 0.5))
+      .filter((c) => Math.abs(c) < taper.fromHalfWidth && Math.abs(c) > taper.toHalfWidth - 1)
+      .filter((c) => Math.sign(c) === side),
+  );
+  for (const back of [20, 9]) {
+    const d = taper.start - back;
+    if (d < 1) continue;
+    for (const lane of closing) addMergeArrow(buf, track, leg.index, d, lane);
+  }
+  for (const side of [-1, 1] as const) {
+    const board = new Mesh(
+      new PlaneGeometry(3.4, 0.85),
+      new MeshBasicMaterial({ map: chevronTexture(-side, palette), side: DoubleSide }),
+    );
+    const p = track.worldAt(leg.index, taper.start + 1, side * (taper.fromHalfWidth + 1.2));
+    board.position.set(p.x, 1.15, p.z);
+    board.rotation.y = -p.heading;
+    const post = new Mesh(new BoxGeometry(0.12, 0.8, 0.12), flat(0x2b2f36));
+    post.position.set(p.x, 0.4, p.z);
+    g.add(board, post);
+  }
+  return g;
+}
+
+/** Pista completa: tramos, cruces, embudos, salida, meta y carteles. */
 export function buildTrackMesh(track: Track, palette: ScenePalette): Group {
   const group = new Group();
   const buf = new TrackBuffers(palette);
   for (const leg of track.legs) {
     addLeg(buf, leg);
     if (leg.junction) addJunction(buf, leg.junction);
+    for (const taper of leg.tapers) group.add(taperWarnings(buf, track, leg, taper, palette));
   }
   group.add(
     new Mesh(
@@ -211,7 +270,7 @@ function checkerTexture(w: number, h: number, size: number): CanvasTexture {
 
 function checkeredLine(track: Track, leg: number, distance: number): Mesh {
   const mesh = new Mesh(
-    new PlaneGeometry(TRACK_HALF_WIDTH * 2, 1.4),
+    new PlaneGeometry(track.halfWidthAt(leg, distance) * 2, 1.4),
     new MeshBasicMaterial({ map: checkerTexture(176, 24, 12) }),
   );
   const p = track.pointAt(leg, distance);
@@ -224,16 +283,17 @@ function checkeredLine(track: Track, leg: number, distance: number): Mesh {
 function finishBanner(track: Track): Group {
   const g = new Group();
   const p = track.pointAt(track.legs.length - 1, track.finishDistance);
+  const half = track.halfWidthAt(track.legs.length - 1, track.finishDistance);
   const [rx, rz] = [Math.cos(p.heading), Math.sin(p.heading)];
   const postMat = flat(0x2b2f36);
   for (const side of [-1, 1]) {
     const post = new Mesh(new BoxGeometry(0.35, 5, 0.35), postMat);
-    const o = side * (TRACK_HALF_WIDTH + 0.4);
+    const o = side * (half + 0.4);
     post.position.set(p.x + rx * o, 2.5, p.z + rz * o);
     g.add(post);
   }
   const banner = new Mesh(
-    new PlaneGeometry(TRACK_HALF_WIDTH * 2 + 0.8, 1),
+    new PlaneGeometry(half * 2 + 0.8, 1),
     new MeshBasicMaterial({ map: checkerTexture(256, 32, 16), side: DoubleSide }),
   );
   banner.position.set(p.x, 4.6, p.z);
@@ -242,11 +302,9 @@ function finishBanner(track: Track): Group {
   return g;
 }
 
-/** Cartel de chevrones sobre el muro frontal del cruce, indicando hacia dónde sale la carretera. */
-function junctionSign(j: Junction, palette: ScenePalette): Group {
-  const g = new Group();
-  const direction = j.direction;
-  const tex = canvasTexture(192, 48, (c) => {
+/** Chevrones negros sobre el color de los carteles, apuntando a `direction` (1 derecha). */
+function chevronTexture(direction: number, palette: ScenePalette): CanvasTexture {
+  return canvasTexture(192, 48, (c) => {
     c.fillStyle = palette.sign;
     c.fillRect(0, 0, 192, 48);
     c.fillStyle = '#14110f';
@@ -275,18 +333,26 @@ function junctionSign(j: Junction, palette: ScenePalette): Group {
       c.fill();
     }
   });
-  const d = JUNCTION_SIZE + 1.2;
+}
+
+/** Cartel de chevrones sobre el muro frontal del cruce, indicando hacia dónde sale la carretera. */
+function junctionSign(j: Junction, palette: ScenePalette): Group {
+  const g = new Group();
+  const tex = chevronTexture(j.direction, palette);
+  // El cartel se ajusta al ancho del cruce (más pequeño en un tramo de 3 carriles)
+  const width = Math.min(10, j.halfWidth * 2 - 1);
+  const d = j.halfWidth * 2 + 1.2;
   const bx = j.x + Math.sin(j.heading) * d;
   const bz = j.z - Math.cos(j.heading) * d;
   const board = new Mesh(
-    new PlaneGeometry(10, 2.4),
+    new PlaneGeometry(width, width * 0.24),
     new MeshBasicMaterial({ map: tex, side: DoubleSide }),
   );
   board.position.set(bx, 2, bz);
   board.rotation.y = -j.heading;
   g.add(board);
   const postMat = flat(0x3a3a3a);
-  for (const off of [-4, 4]) {
+  for (const off of [-width * 0.4, width * 0.4]) {
     const post = new Mesh(new BoxGeometry(0.2, 1, 0.2), postMat);
     post.position.set(bx + Math.cos(j.heading) * off, 0.5, bz + Math.sin(j.heading) * off);
     g.add(post);
