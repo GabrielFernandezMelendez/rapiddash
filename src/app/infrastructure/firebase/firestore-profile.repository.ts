@@ -1,17 +1,11 @@
-import {
-  doc,
-  Firestore,
-  getDoc,
-  getFirestore,
-  runTransaction,
-} from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import {
   SaveProfileResult,
   StoredProfile,
 } from '../../core/application/ports/out/profile.repository';
 import { isCountryCode } from '../../core/domain/profile/country';
 import { nicknameKey } from '../../core/domain/profile/nickname';
-import { firebaseApp } from './firebase-app';
+import { firestore } from './firestore-db';
 
 /**
  * Perfiles en Firestore:
@@ -20,10 +14,9 @@ import { firebaseApp } from './firebase-app';
  * Las reglas (firestore.rules) solo dejan escribir el propio perfil y reservar a nombre propio.
  */
 export class FirestoreProfileRepository {
-  private readonly db: Firestore = getFirestore(firebaseApp());
-
   async get(uid: string): Promise<StoredProfile | null> {
-    const snap = await getDoc(doc(this.db, 'users', uid));
+    const db = await firestore();
+    const snap = await getDoc(doc(db, 'users', uid));
     const data = snap.data();
     if (!data || typeof data['nickname'] !== 'string') return null;
     return {
@@ -38,13 +31,14 @@ export class FirestoreProfileRepository {
   async save(profile: StoredProfile, previous: StoredProfile | null): Promise<SaveProfileResult> {
     const key = nicknameKey(profile.nickname);
     const oldKey = previous ? nicknameKey(previous.nickname) : null;
-    return runTransaction(this.db, async (tx) => {
-      const claim = doc(this.db, 'nicknames', key);
+    const db = await firestore();
+    return runTransaction(db, async (tx) => {
+      const claim = doc(db, 'nicknames', key);
       const owner = (await tx.get(claim)).data()?.['uid'];
       if (owner && owner !== profile.uid) return 'taken' as const;
       if (!owner) tx.set(claim, { uid: profile.uid });
-      if (oldKey && oldKey !== key) tx.delete(doc(this.db, 'nicknames', oldKey));
-      tx.set(doc(this.db, 'users', profile.uid), {
+      if (oldKey && oldKey !== key) tx.delete(doc(db, 'nicknames', oldKey));
+      tx.set(doc(db, 'users', profile.uid), {
         nickname: profile.nickname,
         nicknameKey: key,
         country: profile.country,
@@ -56,7 +50,8 @@ export class FirestoreProfileRepository {
   }
 
   async isNicknameFree(nickname: string): Promise<boolean> {
-    const snap = await getDoc(doc(this.db, 'nicknames', nicknameKey(nickname)));
+    const db = await firestore();
+    const snap = await getDoc(doc(db, 'nicknames', nicknameKey(nickname)));
     return !snap.exists();
   }
 }

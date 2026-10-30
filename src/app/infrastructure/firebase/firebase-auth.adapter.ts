@@ -144,6 +144,9 @@ const CODES: Record<string, AuthErrorCode> = {
   'auth/popup-blocked': 'popup-blocked',
   'auth/too-many-requests': 'too-many-requests',
   'auth/network-request-failed': 'network',
+  // El modo de entrada no está activado en la consola de Firebase
+  'auth/operation-not-allowed': 'provider-disabled',
+  'auth/admin-restricted-operation': 'provider-disabled',
 };
 
 /** Traduce los errores de Firebase a AuthError: el núcleo no conoce Firebase. */
