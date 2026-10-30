@@ -62,6 +62,7 @@
 
 .crash {
   align-self: center;
+  animation: crash-pop 0.7s ease-out forwards;
   margin: 0;
   padding: 6px 12px;
   border-radius: 6px;
@@ -99,4 +100,22 @@
 
 .boost .bar i {
   filter: brightness(1.35) drop-shadow(0 0 4px var(--rd-boost));
+}
+
+// Destello breve: aparece grande y se desvanece; no bloquea la carrera
+@keyframes crash-pop {
+  0% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
