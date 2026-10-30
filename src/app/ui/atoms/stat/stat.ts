@@ -13,6 +13,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       gap: 6px;
       align-items: baseline;
       font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.05em;

@@ -55,6 +55,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     }
     .title {
       font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
       font-weight: 800;
       font-size: 30px;
       line-height: 1;

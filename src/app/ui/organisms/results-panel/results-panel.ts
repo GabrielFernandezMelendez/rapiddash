@@ -43,6 +43,7 @@ import { Modal } from '../../molecules/modal/modal';
       background: var(--rd-signal);
       color: #1a1408;
       font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -55,6 +56,7 @@ import { Modal } from '../../molecules/modal/modal';
     }
     .time {
       font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
       font-weight: 800;
       font-size: 64px;
       line-height: 1;

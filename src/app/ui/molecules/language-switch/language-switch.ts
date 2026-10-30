@@ -51,6 +51,7 @@ import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
     }
     .code {
       font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
