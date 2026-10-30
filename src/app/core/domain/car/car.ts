@@ -1,11 +1,6 @@
-import {
-  JUNCTION_SIZE,
-  LANE_WIDTH,
-  nearestLaneCenter,
-  TRACK_HALF_WIDTH,
-} from '../track/track-constants';
+import { LANE_WIDTH, nearestLaneCenter, TRACK_HALF_WIDTH } from '../track/track-constants';
 import { Leg, Track } from '../track/track';
-import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
+import { CAR_TUNING, QUARTER_TURN } from './car-tuning';
 
 export type Swipe = 'left' | 'right';
 
@@ -38,6 +33,12 @@ export interface CarState {
   readonly distance: number;
   /** Desplazamiento lateral respecto al eje del tramo (positivo = derecha). */
   readonly lateral: number;
+  /**
+   * Centro del carril al que pertenece el coche. Normalmente es el carril en el que va, pero si
+   * acelera contra la pared de un embudo sigue siendo el carril que se cierra: la pared lo empuja
+   * y roza hasta que el jugador cambia al carril de al lado o suelta el acelerador.
+   */
+  readonly lane: number;
   readonly speed: number;
   /** Ángulo actual del morro respecto al tramo. */
   readonly yaw: number;
@@ -61,6 +62,7 @@ export function createCar(track: Track): CarState {
     leg: 0,
     distance: track.startDistance,
     lateral: 0,
+    lane: 0,
     speed: 0,
     yaw: 0,
     yawTarget: 0,
@@ -84,14 +86,23 @@ function approach(value: number, target: number, maxDelta: number): number {
   return value + Math.sign(target - value) * maxDelta;
 }
 
+/** Desplazamiento lateral máximo antes de tocar el muro en ese punto (depende del ancho). */
+const wallLimitAt = (track: Track, leg: number, distance: number) =>
+  track.halfWidthAt(leg, distance) - CAR_TUNING.carHalfWidth;
+
+/** Carril disponible (el coche cabe en él) más cercano a un desplazamiento lateral. */
+const nearestOpenLane = (lateral: number, wallLimit: number) =>
+  nearestLaneCenter(lateral, wallLimit);
+
 /**
  * Swipe lateral:
  * - En el cruce (o hasta `junctionEarlyEntry` m antes), hacia la salida: gira 90°.
- * - En cualquier otro caso: cambia un carril a ese lado (como en Subway Surfers). Si ya está en
- *   el carril pegado al muro, va hacia el muro y se lleva un golpecito.
+ * - En cualquier otro caso: cambia un carril a ese lado (como en Subway Surfers), partiendo del
+ *   carril al que pertenece el coche. Si a ese lado no hay carril, va hacia el muro y se lleva
+ *   un golpecito.
  * Con el coche ya girado o en mitad de un cambio de carril se ignora.
  */
-function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
+function applySwipe(car: CarState, swipe: Swipe, leg: Leg, track: Track): CarState {
   if (car.yawTarget !== 0) return car;
   const side = directionOf(swipe);
   const junction = leg.junction;
@@ -107,9 +118,13 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
   ) {
     return car;
   }
-  const target = nearestLaneCenter(car.lateral) + side * LANE_WIDTH;
-  // Hacia el muro: apunta más allá para que llegue con impulso y rebote
-  return { ...car, laneTarget: Math.abs(target) > WALL_LIMIT ? side * TRACK_HALF_WIDTH : target };
+  const wallLimit = wallLimitAt(track, car.leg, car.distance);
+  const target = car.lane + side * LANE_WIDTH;
+  if (Math.abs(target) > wallLimit + 0.01) {
+    // Hacia el muro: apunta más allá para que llegue con impulso y rebote
+    return { ...car, laneTarget: side * (wallLimit + CAR_TUNING.carHalfWidth) };
+  }
+  return { ...car, laneTarget: target, lane: target };
 }
 
 /** Lo que sobresale el morro del coche hacia delante según su giro. */
@@ -117,12 +132,21 @@ const noseReach = (yaw: number) =>
   CAR_TUNING.carHalfLength * Math.abs(Math.cos(yaw)) +
   CAR_TUNING.carHalfWidth * Math.abs(Math.sin(yaw));
 
-/** Paso al tramo siguiente al salir por el lado abierto del cruce. */
-function exitJunction(car: CarState, lateral: number, f: number, d: 1 | -1, yaw: number) {
+/** Paso al tramo siguiente al salir por el lado abierto del cruce (de lado `2 × H`). */
+function exitJunction(
+  car: CarState,
+  lateral: number,
+  f: number,
+  d: 1 | -1,
+  yaw: number,
+  H: number,
+) {
+  const next = d * (H - f);
   return {
     leg: car.leg + 1,
-    distance: d * lateral - TRACK_HALF_WIDTH,
-    lateral: d * (TRACK_HALF_WIDTH - f),
+    distance: d * lateral - H,
+    lateral: next,
+    lane: nearestOpenLane(next, H - CAR_TUNING.carHalfWidth),
     yaw: yaw - d * QUARTER_TURN,
     laneTarget: null,
     lateralVelocity: 0,
@@ -155,6 +179,8 @@ function stepRecovery(car: CarState, track: Track, dt: number) {
   const leg = track.legs[car.leg];
   const junction = leg.junction;
   const elapsed = rec.elapsed + dt;
+  const H = junction?.halfWidth ?? TRACK_HALF_WIDTH;
+  const wallLimit = H - CAR_TUNING.carHalfWidth;
 
   const d = junction?.direction ?? 1;
   const k = ease(Math.min(1, elapsed / CAR_TUNING.frontRecoveryTime));
@@ -163,15 +189,15 @@ function stepRecovery(car: CarState, track: Track, dt: number) {
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
   // El morro no atraviesa el muro frontal ni el lado cerrado mientras gira
-  distance = Math.min(distance, leg.length + JUNCTION_SIZE - noseReach(yaw) - 0.01);
-  if (lateral * -d > WALL_LIMIT) lateral = -d * WALL_LIMIT;
+  distance = Math.min(distance, leg.length + 2 * H - noseReach(yaw) - 0.01);
+  if (lateral * -d > wallLimit) lateral = -d * wallLimit;
 
-  if (junction && distance > leg.length && lateral * d > TRACK_HALF_WIDTH) {
+  if (junction && distance > leg.length && lateral * d > H) {
     events.push('junction-exit', 'recovered');
     return {
       car: {
         ...car,
-        ...exitJunction(car, lateral, distance - leg.length, d, yaw),
+        ...exitJunction(car, lateral, distance - leg.length, d, yaw, H),
         speed,
         yawTarget: 0,
         mode: 'driving' as const,
@@ -207,7 +233,7 @@ export function stepCar(
   const leg = track.legs[state.leg];
   const junction = leg.junction;
   let car = state;
-  for (const swipe of input.swipes) car = applySwipe(car, swipe, leg);
+  for (const swipe of input.swipes) car = applySwipe(car, swipe, leg, track);
 
   const yaw = approach(car.yaw, car.yawTarget, CAR_TUNING.turnRate * dt);
   const facingForward = car.yawTarget === 0 && Math.abs(yaw) < 0.05;
@@ -221,6 +247,8 @@ export function stepCar(
 
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
+  const wallLimit = wallLimitAt(track, car.leg, distance);
+  let lane = car.lane;
 
   // Cambio de carril en curso: muelle hacia el carril elegido. Llega rápido, se pasa un poco y
   // rebota hasta asentarse, como una pelota
@@ -233,14 +261,15 @@ export function stepCar(
     lateralVelocity += force * dt;
     lateral += lateralVelocity * dt;
 
-    if (Math.abs(lateral) >= WALL_LIMIT) {
-      // Golpecito contra el muro: pierde algo de velocidad y rebota hacia su carril
+    if (Math.abs(lateral) >= wallLimit) {
+      // Golpecito contra el muro: pierde velocidad y rebota hacia el carril disponible
       const side = Math.sign(lateral);
       events.push('bump');
       speed *= CAR_TUNING.bumpKeep;
-      lateral = side * (WALL_LIMIT - 0.001);
+      lateral = side * (wallLimit - 0.001);
       lateralVelocity = -lateralVelocity * CAR_TUNING.bumpBounce;
-      laneTarget = nearestLaneCenter(lateral);
+      laneTarget = nearestOpenLane(lateral, wallLimit);
+      lane = laneTarget;
     } else if (Math.abs(laneTarget - lateral) < 0.01 && Math.abs(lateralVelocity) < 0.05) {
       // Asentado: a partir de aquí manda el imán de carril
       lateral = laneTarget;
@@ -250,47 +279,54 @@ export function stepCar(
   } else if (laneTarget === null) {
     lateralVelocity = 0;
   }
-  const next: CarState = { ...car, yaw, speed, accelerating, laneTarget, lateralVelocity };
+  const next: CarState = { ...car, yaw, speed, accelerating, laneTarget, lateralVelocity, lane };
 
   // ----- Dentro del cruce cuadrado -----
   if (junction && distance > leg.length) {
     const f = distance - leg.length;
     const d = junction.direction;
+    const H = junction.halfWidth;
 
     // Sale por el lado abierto: el momento del giro decide el carril del tramo siguiente
-    if (lateral * d > TRACK_HALF_WIDTH) {
+    if (lateral * d > H) {
       events.push('junction-exit');
       return {
         car: {
           ...next,
           ...NO_SCRAPE,
-          ...exitJunction(car, lateral, f, d, yaw),
+          ...exitJunction(car, lateral, f, d, yaw, H),
           yawTarget: car.yawTarget - d * QUARTER_TURN,
         },
         events,
       };
     }
 
-    // Muro frontal (solo si avanza hacia él) o lado cerrado: pivota solo hacia la salida
-    if (distance > car.distance && f + noseReach(yaw) >= JUNCTION_SIZE) {
+    // Muro frontal (solo si avanza hacia él): pivota solo hacia la salida
+    if (distance > car.distance && f + noseReach(yaw) >= 2 * H) {
       return startExitRecovery(
-        { ...next, distance: leg.length + JUNCTION_SIZE - noseReach(yaw) - 0.01, lateral },
+        { ...next, distance: leg.length + 2 * H - noseReach(yaw) - 0.01, lateral },
         events,
       );
     }
-    if (lateral * -d >= WALL_LIMIT) lateral = -d * WALL_LIMIT;
+    if (lateral * -d >= wallLimit) lateral = -d * wallLimit;
     return { car: { ...next, ...NO_SCRAPE, distance, lateral }, events };
   }
 
   // ----- En un tramo -----
   if (facingForward && laneTarget === null) {
-    // Imán de carril: con el morro recto el coche tiende al centro del carril más cercano
-    const offset = nearestLaneCenter(lateral) - lateral;
-    const pull = Math.max(
-      -CAR_TUNING.lanePull,
-      Math.min(CAR_TUNING.lanePull, offset * CAR_TUNING.laneSpring),
-    );
-    lateral += Math.abs(pull * dt) > Math.abs(offset) ? offset : pull * dt;
+    // Acelerando contra la pared (embudo o curva) el coche sigue en su carril y la pared lo
+    // empuja. Si no, pertenece al carril disponible más cercano y el imán lo centra en él
+    const touching = Math.abs(lateral) >= wallLimit - 0.001;
+    if (!(accelerating && touching)) {
+      lane = nearestOpenLane(lateral, wallLimit);
+      // Imán de carril: con el morro recto el coche tiende al centro de su carril
+      const offset = lane - lateral;
+      const pull = Math.max(
+        -CAR_TUNING.lanePull,
+        Math.min(CAR_TUNING.lanePull, offset * CAR_TUNING.laneSpring),
+      );
+      lateral += Math.abs(pull * dt) > Math.abs(offset) ? offset : pull * dt;
+    }
 
     // Magnetismo de las curvas: empuja hacia el muro exterior. Acelerando supera al imán de
     // carril y el coche salta de carril; sin acelerar el coche se queda pegado (y se despega
@@ -303,7 +339,7 @@ export function stepCar(
     }
   }
 
-  if (Math.abs(lateral) >= WALL_LIMIT) {
+  if (Math.abs(lateral) >= wallLimit) {
     const side = lateral > 0 ? 1 : -1;
     const movingIntoWall = (lateral - car.lateral) * side > 0;
     // Girar hacia la salida justo antes del cruce cuenta como entrar en él
@@ -316,20 +352,24 @@ export function stepCar(
     ) {
       return { car: { ...next, ...NO_SCRAPE, distance: leg.length + 0.01, lateral }, events };
     }
-    lateral = side * WALL_LIMIT;
+    lateral = side * wallLimit;
 
-    // Roce: el magnetismo de la curva lo pega al muro. Frena cada vez más mientras dure
+    // Roce: frena cada vez más mientras dure. En un tramo estrecho (embudo) la pared entra en
+    // ángulo y roza más fuerte
+    const narrowed = track.halfWidthAt(car.leg, distance) < TRACK_HALF_WIDTH - 0.01;
+    const [start, max] = narrowed
+      ? [CAR_TUNING.taperFrictionStart, CAR_TUNING.taperFrictionMax]
+      : [CAR_TUNING.scrapeFrictionStart, CAR_TUNING.scrapeFrictionMax];
     const scrapeTime = car.scrapeTime + dt;
     const ramp = Math.min(1, scrapeTime / CAR_TUNING.scrapeRampTime);
-    const friction =
-      CAR_TUNING.scrapeFrictionStart +
-      (CAR_TUNING.scrapeFrictionMax - CAR_TUNING.scrapeFrictionStart) * ramp;
+    const friction = start + (max - start) * ramp;
     if (!junction) distance = Math.min(distance, leg.length);
     return {
       car: {
         ...next,
         distance,
         lateral,
+        lane,
         speed: Math.max(0, speed - friction * dt),
         scrapeTime,
         scrapeSide: side,
@@ -340,5 +380,5 @@ export function stepCar(
 
   // Sin cruce (último tramo) la pista termina
   if (!junction) distance = Math.min(distance, leg.length);
-  return { car: { ...next, ...NO_SCRAPE, distance, lateral }, events };
+  return { car: { ...next, ...NO_SCRAPE, distance, lateral, lane }, events };
 }

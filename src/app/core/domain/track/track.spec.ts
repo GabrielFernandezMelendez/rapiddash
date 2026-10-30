@@ -1,5 +1,5 @@
 import { JUNCTION_SIZE, TRACK_HALF_WIDTH } from './track-constants';
-import { left, right, straight } from './track-segment';
+import { left, narrow, right, straight, widen } from './track-segment';
 import { Track } from './track';
 
 describe('Track', () => {
@@ -43,5 +43,43 @@ describe('Track', () => {
   it('worldAt desplaza a la derecha del sentido de marcha', () => {
     const track = Track.fromSegments([straight(10)]);
     expect(track.worldAt(0, 5, 2).x).toBeCloseTo(2);
+  });
+
+  describe('embudos', () => {
+    const track = Track.fromSegments([
+      straight(20),
+      narrow(10),
+      straight(20),
+      right(),
+      straight(10),
+      widen(6),
+      straight(10),
+    ]);
+
+    it('el ancho pasa de 5 a 3 carriles a lo largo del embudo', () => {
+      expect(track.halfWidthAt(0, 10)).toBeCloseTo(5.5);
+      expect(track.halfWidthAt(0, 25)).toBeCloseTo(4.4);
+      expect(track.halfWidthAt(0, 40)).toBeCloseTo(3.3);
+      const [taper] = track.legs[0].tapers;
+      expect(track.legs[0].tapers.length).toBe(1);
+      expect(taper.start).toBeCloseTo(20);
+      expect(taper.end).toBeCloseTo(30);
+      expect(taper.fromHalfWidth).toBeCloseTo(5.5);
+      expect(taper.toHalfWidth).toBeCloseTo(3.3);
+    });
+
+    it('el cruce de un tramo estrecho es más pequeño y el tramo siguiente sale de su centro', () => {
+      expect(track.legs[0].junction!.halfWidth).toBeCloseTo(3.3);
+      expect(track.halfWidthAt(0, 52)).toBeCloseTo(3.3);
+      const start = track.pointAt(1, 0);
+      expect(start.x).toBeCloseTo(3.3);
+      expect(start.z).toBeCloseTo(-50 - 3.3);
+      expect(track.halfWidthAt(1, 0)).toBeCloseTo(3.3);
+    });
+
+    it('el ensanche vuelve a 5 carriles', () => {
+      expect(track.halfWidthAt(1, 13)).toBeCloseTo(4.4);
+      expect(track.halfWidthAt(1, 20)).toBeCloseTo(5.5);
+    });
   });
 });
