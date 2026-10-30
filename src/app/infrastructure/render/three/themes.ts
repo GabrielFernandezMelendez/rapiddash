@@ -15,6 +15,11 @@ export interface ScenePalette {
   /** Proporción de árboles frente a rocas en el decorado. */
   readonly treeRatio: number;
   readonly seed: number;
+  /**
+   * Muros de neón (estéticas synthwave): sin luz, un color por lado y un halo en el suelo.
+   * Sin este campo, los muros son de franjas como en la estética clásica.
+   */
+  readonly neon?: { readonly left: number; readonly right: number };
 }
 
 export const PALETTES: Record<MapTheme, ScenePalette> = {
