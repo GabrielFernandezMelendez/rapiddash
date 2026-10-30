@@ -1,8 +1,13 @@
-import { JUNCTION_SIZE, nearestLaneCenter, TRACK_HALF_WIDTH } from '../track/track-constants';
-import { Track } from '../track/track';
+import {
+  JUNCTION_SIZE,
+  LANE_WIDTH,
+  nearestLaneCenter,
+  TRACK_HALF_WIDTH,
+} from '../track/track-constants';
+import { Leg, Track } from '../track/track';
 import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
 
-export type Swipe = 'left' | 'right' | 'forward';
+export type Swipe = 'left' | 'right';
 
 export interface DriveInput {
   /** Dedo pulsado o espacio mantenido. */
@@ -12,27 +17,19 @@ export interface DriveInput {
 }
 
 /**
- * - driving: conducción normal; el morro mira al frente o está girado 90°.
- * - recovering: animación automática tras un choque (menos de 1 s). Se ignoran los swipes.
+ * - driving: conducción normal; el morro mira al frente o está girado 90° dentro de un cruce.
+ * - recovering: pivote automático hacia la salida tras chocar en un cruce. Se ignoran los swipes.
  */
 export type CarMode = 'driving' | 'recovering';
 
-export type CarEvent = 'crash' | 'recovered' | 'junction-exit';
+/** bump: golpecito al cambiar de carril contra el muro (no es un choque). */
+export type CarEvent = 'crash' | 'recovered' | 'junction-exit' | 'bump';
 
-/**
- * Recuperación tras un choque:
- * - lane: choque lateral; el coche se endereza y queda centrado en el carril pegado al muro.
- * - exit: choque en un cruce; el coche pivota hacia la salida y entra en la carretera nueva.
- */
-export type Recovery =
-  | {
-      readonly kind: 'lane';
-      readonly elapsed: number;
-      readonly fromYaw: number;
-      readonly fromLateral: number;
-      readonly toLateral: number;
-    }
-  | { readonly kind: 'exit'; readonly elapsed: number; readonly fromYaw: number };
+/** Choque en un cruce: el coche pivota hacia la salida y entra en la carretera nueva. */
+export interface Recovery {
+  readonly elapsed: number;
+  readonly fromYaw: number;
+}
 
 export interface CarState {
   /** Tramo de la pista en el que está el coche. */
@@ -44,8 +41,12 @@ export interface CarState {
   readonly speed: number;
   /** Ángulo actual del morro respecto al tramo. */
   readonly yaw: number;
-  /** Ángulo al que tiende el morro: 0 o ±90°. */
+  /** Ángulo al que tiende el morro: 0, o ±90° al girar en un cruce. */
   readonly yawTarget: number;
+  /** Lateral al que va un cambio de carril en curso (null = sin cambio, manda el imán). */
+  readonly laneTarget: number | null;
+  /** Velocidad lateral del cambio de carril (m/s): el muelle del cambio la necesita para rebotar. */
+  readonly lateralVelocity: number;
   readonly mode: CarMode;
   readonly recovery: Recovery | null;
   /** Segundos seguidos rozando el muro (0 = sin roce). */
@@ -63,6 +64,8 @@ export function createCar(track: Track): CarState {
     speed: 0,
     yaw: 0,
     yawTarget: 0,
+    laneTarget: null,
+    lateralVelocity: 0,
     mode: 'driving',
     recovery: null,
     scrapeTime: 0,
@@ -71,7 +74,7 @@ export function createCar(track: Track): CarState {
   };
 }
 
-const directionOf = (swipe: 'left' | 'right'): 1 | -1 => (swipe === 'right' ? 1 : -1);
+const directionOf = (swipe: Swipe): 1 | -1 => (swipe === 'right' ? 1 : -1);
 
 /** Curva de animación suave: arranca y termina despacio. */
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -81,10 +84,32 @@ function approach(value: number, target: number, maxDelta: number): number {
   return value + Math.sign(target - value) * maxDelta;
 }
 
-/** Cualquier swipe lateral gira el coche 90°: en recta cambia de carril, en el cruce sale por él. */
-function applySwipe(car: CarState, swipe: Swipe): CarState {
-  if (swipe === 'forward') return { ...car, yawTarget: 0 };
-  return { ...car, yawTarget: directionOf(swipe) * QUARTER_TURN };
+/**
+ * Swipe lateral:
+ * - En el cruce (o hasta `junctionEarlyEntry` m antes), hacia la salida: gira 90°.
+ * - En cualquier otro caso: cambia un carril a ese lado (como en Subway Surfers). Si ya está en
+ *   el carril pegado al muro, va hacia el muro y se lleva un golpecito.
+ * Con el coche ya girado o en mitad de un cambio de carril se ignora.
+ */
+function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
+  if (car.yawTarget !== 0) return car;
+  const side = directionOf(swipe);
+  const junction = leg.junction;
+  const inTurnZone = !!junction && car.distance > leg.length - CAR_TUNING.junctionEarlyEntry;
+  if (inTurnZone && side === junction.direction) {
+    return { ...car, yawTarget: side * QUARTER_TURN, laneTarget: null };
+  }
+  // Un swipe = un carril: mientras dura un cambio de carril se ignoran los demás swipes (salvo
+  // en el rebote final, cuando el coche ya está prácticamente en su carril)
+  if (
+    car.laneTarget !== null &&
+    Math.abs(car.laneTarget - car.lateral) > CAR_TUNING.laneChangeRetarget
+  ) {
+    return car;
+  }
+  const target = nearestLaneCenter(car.lateral) + side * LANE_WIDTH;
+  // Hacia el muro: apunta más allá para que llegue con impulso y rebote
+  return { ...car, laneTarget: Math.abs(target) > WALL_LIMIT ? side * TRACK_HALF_WIDTH : target };
 }
 
 /** Lo que sobresale el morro del coche hacia delante según su giro. */
@@ -99,33 +124,12 @@ function exitJunction(car: CarState, lateral: number, f: number, d: 1 | -1, yaw:
     distance: d * lateral - TRACK_HALF_WIDTH,
     lateral: d * (TRACK_HALF_WIDTH - f),
     yaw: yaw - d * QUARTER_TURN,
+    laneTarget: null,
+    lateralVelocity: 0,
   };
 }
 
 const NO_SCRAPE = { scrapeTime: 0, scrapeSide: 0 as const };
-
-function startLaneRecovery(car: CarState, side: 1 | -1, events: CarEvent[]) {
-  events.push('crash');
-  return {
-    car: {
-      ...car,
-      ...NO_SCRAPE,
-      mode: 'recovering' as const,
-      lateral: side * WALL_LIMIT,
-      speed: Math.max(CAR_TUNING.crawlSpeed, car.speed * CAR_TUNING.sideCrashKeep),
-      yawTarget: 0,
-      accelerating: false,
-      recovery: {
-        kind: 'lane' as const,
-        elapsed: 0,
-        fromYaw: car.yaw,
-        fromLateral: side * WALL_LIMIT,
-        toLateral: nearestLaneCenter(side * WALL_LIMIT),
-      },
-    },
-    events,
-  };
-}
 
 function startExitRecovery(car: CarState, events: CarEvent[]) {
   events.push('crash');
@@ -135,14 +139,16 @@ function startExitRecovery(car: CarState, events: CarEvent[]) {
       ...NO_SCRAPE,
       mode: 'recovering' as const,
       speed: CAR_TUNING.frontRecoverySpeed,
+      laneTarget: null,
+      lateralVelocity: 0,
       accelerating: false,
-      recovery: { kind: 'exit' as const, elapsed: 0, fromYaw: car.yaw },
+      recovery: { elapsed: 0, fromYaw: car.yaw },
     },
     events,
   };
 }
 
-/** Animación automática tras un choque. Los swipes se ignoran. */
+/** Pivote automático hacia la salida del cruce tras un choque. Los swipes se ignoran. */
 function stepRecovery(car: CarState, track: Track, dt: number) {
   const events: CarEvent[] = [];
   const rec = car.recovery!;
@@ -150,34 +156,6 @@ function stepRecovery(car: CarState, track: Track, dt: number) {
   const junction = leg.junction;
   const elapsed = rec.elapsed + dt;
 
-  if (rec.kind === 'lane') {
-    const k = ease(Math.min(1, elapsed / CAR_TUNING.sideRecoveryTime));
-    const yaw = rec.fromYaw * (1 - k);
-    const lateral = rec.fromLateral + (rec.toLateral - rec.fromLateral) * k;
-    const distance = car.distance + car.speed * Math.cos(yaw) * dt;
-    // Si la animación lo mete en un cruce, pasa a pivotar hacia la salida
-    if (junction && distance > leg.length) {
-      return startExitRecovery({ ...car, distance, lateral, yaw }, []);
-    }
-    if (k >= 1) {
-      events.push('recovered');
-      return {
-        car: {
-          ...car,
-          distance,
-          lateral,
-          yaw: 0,
-          yawTarget: 0,
-          mode: 'driving' as const,
-          recovery: null,
-        },
-        events,
-      };
-    }
-    return { car: { ...car, distance, lateral, yaw, recovery: { ...rec, elapsed } }, events };
-  }
-
-  // Pivote hacia la salida del cruce
   const d = junction?.direction ?? 1;
   const k = ease(Math.min(1, elapsed / CAR_TUNING.frontRecoveryTime));
   const yaw = rec.fromYaw + (d * QUARTER_TURN - rec.fromYaw) * k;
@@ -226,8 +204,10 @@ export function stepCar(
   if (state.mode === 'recovering') return stepRecovery(state, track, dt);
 
   const events: CarEvent[] = [];
+  const leg = track.legs[state.leg];
+  const junction = leg.junction;
   let car = state;
-  for (const swipe of input.swipes) car = applySwipe(car, swipe);
+  for (const swipe of input.swipes) car = applySwipe(car, swipe, leg);
 
   const yaw = approach(car.yaw, car.yawTarget, CAR_TUNING.turnRate * dt);
   const facingForward = car.yawTarget === 0 && Math.abs(yaw) < 0.05;
@@ -239,11 +219,38 @@ export function stepCar(
   // Girado el coche nunca se detiene del todo
   if (car.yawTarget !== 0) speed = Math.max(speed, CAR_TUNING.crawlSpeed);
 
-  const leg = track.legs[car.leg];
-  const junction = leg.junction;
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
-  const next: CarState = { ...car, yaw, speed, accelerating };
+
+  // Cambio de carril en curso: muelle hacia el carril elegido. Llega rápido, se pasa un poco y
+  // rebota hasta asentarse, como una pelota
+  let laneTarget = car.laneTarget;
+  let lateralVelocity = car.lateralVelocity;
+  if (laneTarget !== null && facingForward) {
+    const w = CAR_TUNING.laneChangeFrequency;
+    const force =
+      w * w * (laneTarget - lateral) - 2 * CAR_TUNING.laneChangeDamping * w * lateralVelocity;
+    lateralVelocity += force * dt;
+    lateral += lateralVelocity * dt;
+
+    if (Math.abs(lateral) >= WALL_LIMIT) {
+      // Golpecito contra el muro: pierde algo de velocidad y rebota hacia su carril
+      const side = Math.sign(lateral);
+      events.push('bump');
+      speed *= CAR_TUNING.bumpKeep;
+      lateral = side * (WALL_LIMIT - 0.001);
+      lateralVelocity = -lateralVelocity * CAR_TUNING.bumpBounce;
+      laneTarget = nearestLaneCenter(lateral);
+    } else if (Math.abs(laneTarget - lateral) < 0.01 && Math.abs(lateralVelocity) < 0.05) {
+      // Asentado: a partir de aquí manda el imán de carril
+      lateral = laneTarget;
+      laneTarget = null;
+      lateralVelocity = 0;
+    }
+  } else if (laneTarget === null) {
+    lateralVelocity = 0;
+  }
+  const next: CarState = { ...car, yaw, speed, accelerating, laneTarget, lateralVelocity };
 
   // ----- Dentro del cruce cuadrado -----
   if (junction && distance > leg.length) {
@@ -271,17 +278,12 @@ export function stepCar(
         events,
       );
     }
-    if (lateral * -d >= WALL_LIMIT) {
-      lateral = -d * WALL_LIMIT;
-      if ((lateral - car.lateral) * -d >= 0 && car.yawTarget !== 0) {
-        return startExitRecovery({ ...next, distance, lateral }, events);
-      }
-    }
+    if (lateral * -d >= WALL_LIMIT) lateral = -d * WALL_LIMIT;
     return { car: { ...next, ...NO_SCRAPE, distance, lateral }, events };
   }
 
   // ----- En un tramo -----
-  if (facingForward) {
+  if (facingForward && laneTarget === null) {
     // Imán de carril: con el morro recto el coche tiende al centro del carril más cercano
     const offset = nearestLaneCenter(lateral) - lateral;
     const pull = Math.max(
@@ -307,6 +309,7 @@ export function stepCar(
     // Girar hacia la salida justo antes del cruce cuenta como entrar en él
     if (
       junction &&
+      car.yawTarget !== 0 &&
       side === junction.direction &&
       movingIntoWall &&
       distance > leg.length - CAR_TUNING.junctionEarlyEntry
@@ -315,28 +318,24 @@ export function stepCar(
     }
     lateral = side * WALL_LIMIT;
 
-    // Contacto casi paralelo: roce. Frena cada vez más mientras dure; nunca para el coche en seco
-    if (Math.abs(yaw) < CAR_TUNING.scrapeMaxAngle) {
-      const scrapeTime = car.scrapeTime + dt;
-      const ramp = Math.min(1, scrapeTime / CAR_TUNING.scrapeRampTime);
-      const friction =
-        CAR_TUNING.scrapeFrictionStart +
-        (CAR_TUNING.scrapeFrictionMax - CAR_TUNING.scrapeFrictionStart) * ramp;
-      if (!junction) distance = Math.min(distance, leg.length);
-      return {
-        car: {
-          ...next,
-          distance,
-          lateral,
-          speed: Math.max(0, speed - friction * dt),
-          scrapeTime,
-          scrapeSide: side,
-        },
-        events,
-      };
-    }
-    // Contacto de lado con el coche girado: choque con recuperación automática
-    if (movingIntoWall) return startLaneRecovery({ ...next, distance, lateral }, side, events);
+    // Roce: el magnetismo de la curva lo pega al muro. Frena cada vez más mientras dure
+    const scrapeTime = car.scrapeTime + dt;
+    const ramp = Math.min(1, scrapeTime / CAR_TUNING.scrapeRampTime);
+    const friction =
+      CAR_TUNING.scrapeFrictionStart +
+      (CAR_TUNING.scrapeFrictionMax - CAR_TUNING.scrapeFrictionStart) * ramp;
+    if (!junction) distance = Math.min(distance, leg.length);
+    return {
+      car: {
+        ...next,
+        distance,
+        lateral,
+        speed: Math.max(0, speed - friction * dt),
+        scrapeTime,
+        scrapeSide: side,
+      },
+      events,
+    };
   }
 
   // Sin cruce (último tramo) la pista termina

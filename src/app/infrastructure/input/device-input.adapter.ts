@@ -5,13 +5,12 @@ import { SwipeDetector } from './touch/swipe-detector';
 const KEY_SWIPES: Record<string, Swipe> = {
   ArrowLeft: 'left',
   ArrowRight: 'right',
-  ArrowUp: 'forward',
 };
 
 /**
  * Controles del juego:
- * - Móvil: mantener el dedo acelera, deslizar gira (izquierda, derecha, adelante).
- * - Ordenador: espacio acelera, flechas ← → ↑ equivalen a los swipes.
+ * - Móvil: mantener el dedo acelera; deslizar a un lado cambia de carril (o gira en un cruce).
+ * - Ordenador: espacio acelera, flechas ← → equivalen a los swipes.
  *   Arrastrar con el ratón también funciona, porque se usan Pointer Events.
  */
 export class DeviceInputAdapter extends InputPort {
@@ -64,7 +63,7 @@ export class DeviceInputAdapter extends InputPort {
 
   private readonly onPointerMove = (e: PointerEvent) => {
     if (e.pointerId !== this.pointerId) return;
-    const swipe = this.detector.move(e.clientX, e.clientY);
+    const swipe = this.detector.move(e.clientX, e.clientY, e.timeStamp);
     if (swipe) this.queue.push(swipe);
   };
 

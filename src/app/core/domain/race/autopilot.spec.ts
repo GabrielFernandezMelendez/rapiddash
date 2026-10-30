@@ -12,10 +12,14 @@ function autopilot(car: CarState, track: Track): DriveInput {
     if (inJunction && car.yawTarget === 0 && car.distance > leg.length + 2.5) {
       // Gira en el cruce a unos 2,5 m: sale por un carril central
       swipes.push(leg.junction!.direction > 0 ? 'right' : 'left');
-    } else if (!inJunction && car.yawTarget !== 0 && Math.abs(car.lateral) < 1.1) {
-      swipes.push('forward');
-    } else if (!inJunction && car.yawTarget === 0 && Math.abs(car.lateral) > 3.3) {
-      // Corrige el magnetismo antes de llegar al muro
+    } else if (
+      !inJunction &&
+      car.yawTarget === 0 &&
+      car.laneTarget === null &&
+      Math.abs(car.lateral) > 3.3 &&
+      car.distance < leg.length - 3
+    ) {
+      // Corrige el magnetismo antes de llegar al muro: un carril hacia el centro
       swipes.push(car.lateral > 0 ? 'left' : 'right');
     }
   }

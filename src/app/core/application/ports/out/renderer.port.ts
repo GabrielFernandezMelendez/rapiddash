@@ -5,7 +5,7 @@ import { Track } from '../../../domain/track/track';
 export interface RenderFrame {
   readonly car: CarPose & {
     readonly accelerating: boolean;
-    /** Animación automática tras un choque. */
+    /** Pivote automático tras chocar en un cruce. */
     readonly recovering: boolean;
     /** Lado del muro que roza (chispas): 1 derecha, -1 izquierda, 0 ninguno. */
     readonly scrapeSide: -1 | 0 | 1;
@@ -23,5 +23,7 @@ export abstract class RendererPort {
   abstract render(frame: RenderFrame, dt: number): void;
   /** Sacude la cámara (choques). */
   abstract impact(): void;
+  /** Golpecito al cambiar de carril contra el muro: chispas en ese lado y vibración leve. */
+  abstract bump(side: 1 | -1): void;
   abstract dispose(): void;
 }
