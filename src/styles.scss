@@ -15,6 +15,18 @@
   --rd-font-display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
   --rd-font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
+  /** Estilo de la letra de títulos y botones (cursiva en synthwave). */
+  --rd-display-style: normal;
+  /** HUD de carrera: textos y tiempo (en clásico, la letra de títulos). */
+  --rd-font-hud-text: var(--rd-font-display);
+  --rd-font-hud-time: var(--rd-font-display);
+  /** Botones: fondo y relieve del principal; contorno del secundario. */
+  --rd-button-primary-bg: var(--rd-signal);
+  --rd-button-primary-ink: #1a1408;
+  --rd-button-primary-shadow: 0 4px 0 #b88d1e;
+  --rd-button-secondary-shadow: inset 0 0 0 1px var(--rd-line);
+  --rd-button-secondary-ink: var(--rd-chalk);
+
   --rd-radius: 10px;
   --rd-kerb-stripe: repeating-linear-gradient(
     90deg,
@@ -59,4 +71,43 @@ button {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+// Estéticas retro y futurista: noche synthwave. Solo cambian los tokens; los componentes son
+// los mismos. Las fuentes (Kanit, Chakra Petch, Audiowide, Russo One y Mr Dafoe) se cargan
+// desde AestheticService solo cuando se elige una de estas estéticas.
+:root[data-aesthetic='retro'],
+:root[data-aesthetic='futurist'] {
+  --rd-asphalt: #0d0420;
+  --rd-asphalt-2: #1a0838;
+  --rd-asphalt-3: #26104a;
+  --rd-line: #3b2766;
+  --rd-chalk: #f4ecff;
+  --rd-muted: #a99cc4;
+  --rd-kerb: #ff2a6d;
+  --rd-signal: #ffd319;
+  --rd-go: #5dff9a;
+  --rd-boost: #ff901f;
+  --rd-ghost: #2de2e6;
+  --rd-neon-pink: #ff4fd8;
+  --rd-neon-cyan: #2de2e6;
+
+  --rd-font-display: 'Kanit', 'Arial Narrow', system-ui, sans-serif;
+  --rd-font-body: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --rd-display-style: italic;
+  --rd-font-hud-text: 'Chakra Petch', system-ui, sans-serif;
+  --rd-font-hud-time: 'Audiowide', system-ui, sans-serif;
+
+  --rd-button-primary-bg: linear-gradient(#ffd319, #ff901f 55%, #ff2a6d);
+  --rd-button-primary-ink: #1a0420;
+  --rd-button-primary-shadow: 0 0 22px rgb(255 42 109 / 0.5), 0 4px 0 #8c1446;
+  --rd-button-secondary-shadow:
+    inset 0 0 0 1.5px var(--rd-neon-cyan), 0 0 12px rgb(45 226 230 / 0.35);
+  --rd-button-secondary-ink: var(--rd-neon-cyan);
+  --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff4fd8 0 10px, #2de2e6 10px 20px);
+}
+
+:root[data-aesthetic='retro'] body,
+:root[data-aesthetic='futurist'] body {
+  background: #0d0420;
 }

@@ -10,48 +10,29 @@
   margin-top: -18%;
 }
 
-.logo {
-  display: grid;
-  justify-items: center;
-  margin: 0;
-  font-family: var(--rd-font-display);
-  font-weight: 800;
-  font-style: italic;
-  line-height: 0.82;
-  text-transform: uppercase;
-  transform: skewX(-6deg);
+// En synthwave el logo va más arriba para dejar ver el sol y el coche de fondo
+:host-context([data-aesthetic='retro']) .hero,
+:host-context([data-aesthetic='futurist']) .hero {
+  margin-top: -62%;
 }
 
-.rapid {
-  font-size: 84px;
-  color: var(--rd-chalk);
-  letter-spacing: 0.01em;
+:host-context([data-aesthetic='retro']) .tagline,
+:host-context([data-aesthetic='futurist']) .tagline {
+  color: var(--rd-neon-cyan);
+  text-shadow:
+    0 0 10px rgb(45 226 230 / 0.7),
+    0 1px 0 #1d0428;
 }
 
-.dash {
-  position: relative;
-  font-size: 96px;
-  color: var(--rd-signal);
-  text-shadow: 0 6px 0 #6b4f0c;
-}
-
-// Estela de velocidad detrás de "Dash"
-.dash::before {
-  content: '';
+.backdrop {
   position: absolute;
-  right: 100%;
-  top: 50%;
-  width: 70px;
-  height: 10px;
-  margin-right: 10px;
-  transform: translateY(-50%);
-  background: linear-gradient(90deg, transparent, var(--rd-kerb));
-  border-radius: 5px;
+  inset: 0;
 }
 
 .tagline {
   margin: 0;
   font-family: var(--rd-font-display);
+  font-style: var(--rd-display-style);
   font-weight: 600;
   font-size: 16px;
   letter-spacing: 0.22em;

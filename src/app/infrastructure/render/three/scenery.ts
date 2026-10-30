@@ -15,9 +15,27 @@ import { ScenePalette, seededRandom } from './themes';
 
 const MAX_PROPS = 320;
 
-/** Suelo, árboles y rocas instanciados alrededor de la pista. */
-export function buildScenery(track: Track, palette: ScenePalette): Group {
-  const group = new Group();
+export interface ScenerySpot {
+  readonly x: number;
+  readonly z: number;
+  readonly scale: number;
+  readonly spin: number;
+  readonly tree: boolean;
+}
+
+export interface SceneryLayout {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+  readonly spots: readonly ScenerySpot[];
+}
+
+/**
+ * Límites de la pista y posiciones del decorado: aleatorias pero reproducibles, fuera de la
+ * pista y no demasiado lejos de ella. Las comparten la estética clásica y la synthwave.
+ */
+export function sceneryLayout(track: Track, palette: ScenePalette): SceneryLayout {
   const s = track.legs.flatMap((l) => l.samples);
   let minX = Infinity;
   let maxX = -Infinity;
@@ -29,18 +47,8 @@ export function buildScenery(track: Track, palette: ScenePalette): Group {
     minZ = Math.min(minZ, p.z);
     maxZ = Math.max(maxZ, p.z);
   }
-
-  const ground = new Mesh(
-    new PlaneGeometry(maxX - minX + 400, maxZ - minZ + 400),
-    flat(palette.ground),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set((minX + maxX) / 2, -0.05, (minZ + maxZ) / 2);
-  group.add(ground);
-
-  // Posiciones aleatorias pero reproducibles, fuera de la pista y no demasiado lejos de ella
   const rand = seededRandom(palette.seed);
-  const spots: { x: number; z: number; scale: number; spin: number; tree: boolean }[] = [];
+  const spots: ScenerySpot[] = [];
   const margin = 40;
   for (let tries = 0; tries < MAX_PROPS * 12 && spots.length < MAX_PROPS; tries++) {
     const x = minX - margin + rand() * (maxX - minX + margin * 2);
@@ -59,6 +67,21 @@ export function buildScenery(track: Track, palette: ScenePalette): Group {
       });
     }
   }
+  return { minX, maxX, minZ, maxZ, spots };
+}
+
+/** Suelo, árboles y rocas instanciados alrededor de la pista. */
+export function buildScenery(track: Track, palette: ScenePalette): Group {
+  const group = new Group();
+  const { minX, maxX, minZ, maxZ, spots } = sceneryLayout(track, palette);
+
+  const ground = new Mesh(
+    new PlaneGeometry(maxX - minX + 400, maxZ - minZ + 400),
+    flat(palette.ground),
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set((minX + maxX) / 2, -0.05, (minZ + maxZ) / 2);
+  group.add(ground);
 
   const trees = spots.filter((p) => p.tree);
   const rocks = spots.filter((p) => !p.tree);

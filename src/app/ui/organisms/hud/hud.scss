@@ -10,7 +10,7 @@
   pointer-events: none;
   color: #fff;
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
-  font-family: var(--rd-font-display);
+  font-family: var(--rd-font-hud-text);
 }
 
 .top {
@@ -49,6 +49,7 @@
 }
 
 .time {
+  font-family: var(--rd-font-hud-time);
   font-size: 40px;
   font-weight: 700;
   line-height: 1;

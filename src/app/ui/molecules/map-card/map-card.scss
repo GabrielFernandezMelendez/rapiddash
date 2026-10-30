@@ -71,6 +71,7 @@
 
 .name {
   font-family: var(--rd-font-display);
+  font-style: var(--rd-display-style);
   font-weight: 800;
   font-size: 26px;
   line-height: 1;
@@ -94,5 +95,39 @@
     color: var(--rd-chalk);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+}
+
+// Estéticas synthwave: cada mapa con su atardecer y muros de neón en la miniatura
+:host-context([data-aesthetic='retro']),
+:host-context([data-aesthetic='futurist']) {
+  .art {
+    background:
+      radial-gradient(circle at 50% 46%, var(--sun) 0 20%, transparent 21%),
+      linear-gradient(var(--sky) 0 46%, #140630 46% 100%);
+  }
+  .art::after {
+    background: linear-gradient(90deg, var(--wall) 0 6%, #1a0a33 6% 94%, var(--wall-2) 94%);
+  }
+  .theme-bay {
+    --sky: #6a1470;
+    --sun: #ffd319;
+    --wall: #2de2e6;
+    --wall-2: #ff2a6d;
+  }
+  .theme-canyon {
+    --sky: #a3245a;
+    --sun: #ffb347;
+    --wall: #ffd319;
+    --wall-2: #ff5a3c;
+  }
+  .theme-summit {
+    --sky: #3a2a9a;
+    --sun: #e9f7ff;
+    --wall: #2de2e6;
+    --wall-2: #7a5cff;
+  }
+  .card {
+    background: rgb(26 8 56 / 0.85);
   }
 }

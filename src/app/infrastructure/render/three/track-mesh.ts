@@ -1,4 +1,5 @@
 import {
+  AdditiveBlending,
   BoxGeometry,
   BufferGeometry,
   CanvasTexture,
@@ -63,22 +64,44 @@ class TrackBuffers {
   readonly wallColors: number[] = [];
   readonly lanes: number[] = [];
   readonly grid: number[] = [];
+  /** Halo de los muros de neón en el suelo (solo synthwave). */
+  readonly glow: number[] = [];
+  readonly glowColors: number[] = [];
 
   readonly roadA: Color;
   readonly roadB: Color;
   readonly wallA: Color;
   readonly wallB: Color;
+  readonly neonLeft: Color | null;
+  readonly neonRight: Color | null;
 
   constructor(palette: ScenePalette) {
     this.roadA = new Color(palette.road[0]);
     this.roadB = new Color(palette.road[1]);
     this.wallA = new Color(palette.wall[0]);
     this.wallB = new Color(palette.wall[1]);
+    this.neonLeft = palette.neon ? new Color(palette.neon.left) : null;
+    this.neonRight = palette.neon ? new Color(palette.neon.right) : null;
   }
 
-  wallSegment(a: Vec3, b: Vec3, stripe: boolean): void {
+  /** `side`: -1 muro izquierdo, 1 derecho, 0 muros de los cruces (alternan los dos neones). */
+  wallSegment(a: Vec3, b: Vec3, stripe: boolean, side: -1 | 0 | 1 = 0): void {
     pushQuad(this.wall, a, b, [a[0], WALL_HEIGHT, a[2]], [b[0], WALL_HEIGHT, b[2]]);
-    pushColor(this.wallColors, stripe ? this.wallA : this.wallB, 6);
+    if (this.neonLeft && this.neonRight) {
+      const left = side === 0 ? stripe : side < 0;
+      pushColor(this.wallColors, left ? this.neonLeft : this.neonRight, 6);
+    } else {
+      pushColor(this.wallColors, stripe ? this.wallA : this.wallB, 6);
+    }
+  }
+
+  /** Halo en el suelo por fuera del muro: de su color a transparente (mezcla aditiva). */
+  glowSegment(a: Vec3, b: Vec3, aOut: Vec3, bOut: Vec3, side: -1 | 1): void {
+    if (!this.neonLeft || !this.neonRight) return;
+    pushQuad(this.glow, a, b, aOut, bOut);
+    const c = side < 0 ? this.neonLeft : this.neonRight;
+    const black = new Color(0x000000);
+    for (const k of [c, c, black, c, black, black]) this.glowColors.push(k.r, k.g, k.b);
   }
 }
 
@@ -107,7 +130,16 @@ function addLeg(buf: TrackBuffers, leg: Leg): void {
     // Bandas alternas en el asfalto para notar la velocidad
     pushColor(buf.roadColors, Math.floor((i * SAMPLE_STEP) / 4) % 2 ? buf.roadB : buf.roadA, 6);
     const stripe = Math.floor((i * SAMPLE_STEP) / 2) % 2 === 0;
-    for (const side of [-1, 1]) buf.wallSegment(at(i, side * wi, 0), at(j, side * wj, 0), stripe);
+    for (const side of [-1, 1] as const) {
+      buf.wallSegment(at(i, side * wi, 0), at(j, side * wj, 0), stripe, side);
+      buf.glowSegment(
+        at(i, side * wi, 0.02),
+        at(j, side * wj, 0.02),
+        at(i, side * (wi + 1.6), 0.02),
+        at(j, side * (wj + 1.6), 0.02),
+        side,
+      );
+    }
     if (Math.floor((i * SAMPLE_STEP) / 1.5) % 2 === 0) {
       for (const lx of laneOffsets) {
         // La línea solo se pinta mientras el carril de fuera cabe entre ella y la pared
@@ -237,7 +269,10 @@ export function buildTrackMesh(track: Track, palette: ScenePalette): Group {
     ),
     new Mesh(
       geometry(buf.wall, buf.wallColors),
-      flat(0xffffff, { vertexColors: true, side: DoubleSide }),
+      // Los muros de neón no reciben luz: así brillan siempre con su color
+      palette.neon
+        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide })
+        : flat(0xffffff, { vertexColors: true, side: DoubleSide }),
     ),
     new Mesh(geometry(buf.lanes), new MeshBasicMaterial({ color: palette.lane, side: DoubleSide })),
     new Mesh(
@@ -250,6 +285,22 @@ export function buildTrackMesh(track: Track, palette: ScenePalette): Group {
       }),
     ),
   );
+
+  if (buf.glow.length) {
+    group.add(
+      new Mesh(
+        geometry(buf.glow, buf.glowColors),
+        new MeshBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.45,
+          blending: AdditiveBlending,
+          depthWrite: false,
+          side: DoubleSide,
+        }),
+      ),
+    );
+  }
 
   group.add(checkeredLine(track, 0, track.startDistance + 2));
   group.add(checkeredLine(track, track.legs.length - 1, track.finishDistance));
