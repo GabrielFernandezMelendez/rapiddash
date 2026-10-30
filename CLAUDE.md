@@ -56,7 +56,15 @@ Atomic design:
 ## Flujo de trabajo
 
 - `main` solo cambia mediante pull request.
-- Ramas: `feat/…`, `fix/…`, `refactor/…`, `chore/…`.
+- Ramas por área, de larga duración (se reutilizan; no se borran al mergear):
+  - `feat/pista`: trazado, anchos, cruces y mapas.
+  - `feat/conduccion`: controles, física del coche y choques.
+  - `feat/sonido`: música y efectos.
+  - `feat/interfaz`: pantallas, HUD, ajustes e i18n.
+  - `chore/infra`: CI, Firebase, dependencias y documentación del proceso.
+  Si un trabajo no encaja en ninguna, se acuerda un área nueva antes de crearla.
+- Antes de cada bloque de trabajo, poner la rama al día: `git checkout feat/pista && git pull origin main`.
+- Títulos de PR con el área delante: `Pista: embudos de 5 a 3 carriles`.
 - Commits convencionales en español: `feat(domain): giro de 90°`. Cada commit es un checkpoint.
 - PRs pequeñas, de un tema. Descripción: qué cambia, por qué y cómo probarlo.
 - Cambios visuales: primero mockup y aprobación, después PR con capturas.
