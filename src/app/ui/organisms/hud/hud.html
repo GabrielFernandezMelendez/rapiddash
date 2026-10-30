@@ -8,7 +8,11 @@
     <span class="row">
       <rd-stat [label]="'hud.best' | t" [value]="best()" />
       @if (ghost(); as g) {
-        <rd-stat [label]="'hud.ghost' | t" [value]="g.label" [tone]="g.tone" />
+        <rd-stat
+          [label]="rivalName() ? ('hud.vs' | t) + ' ' + rivalName() : ('hud.ghost' | t)"
+          [value]="g.label"
+          [tone]="g.tone"
+        />
       }
     </span>
   </div>

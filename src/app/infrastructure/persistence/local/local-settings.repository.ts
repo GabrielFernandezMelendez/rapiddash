@@ -1,10 +1,12 @@
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
 import { Aesthetic, isAesthetic } from '../../../core/domain/settings/aesthetic';
 import { isLanguage, Language } from '../../../core/domain/settings/language';
+import { RIVAL_CHOICES, RivalChoice } from '../../../core/domain/race/ranking';
 import { readJson, writeJson } from './safe-storage';
 
 const LANGUAGE_KEY = 'rapiddash.language';
 const AESTHETIC_KEY = 'rapiddash.aesthetic';
+const RIVALS_KEY = 'rapiddash.rivals';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -23,5 +25,14 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setAesthetic(aesthetic: Aesthetic): void {
     writeJson(AESTHETIC_KEY, aesthetic);
+  }
+
+  getRival(mapId: string): RivalChoice | null {
+    const value = readJson<Record<string, unknown>>(RIVALS_KEY)?.[mapId];
+    return RIVAL_CHOICES.includes(value as RivalChoice) ? (value as RivalChoice) : null;
+  }
+
+  setRival(mapId: string, choice: RivalChoice): void {
+    writeJson(RIVALS_KEY, { ...readJson<Record<string, unknown>>(RIVALS_KEY), [mapId]: choice });
   }
 }

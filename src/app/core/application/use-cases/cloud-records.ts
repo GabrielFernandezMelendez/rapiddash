@@ -34,6 +34,23 @@ export class CloudRecords {
     return 'uploaded';
   }
 
+  /** Tras cambiar apodo o país: mis récords en la nube muestran los nuevos. */
+  async updateIdentity(profile: Profile, mapIds: readonly string[]): Promise<number> {
+    let updated = 0;
+    for (const mapId of mapIds) {
+      try {
+        const mine = await this.cloud.mine(mapId, profile.uid);
+        if (mine && (mine.nickname !== profile.nickname || mine.country !== profile.country)) {
+          await this.cloud.updateIdentity(mapId, profile.uid, profile.nickname, profile.country);
+          updated++;
+        }
+      } catch {
+        // Se corregirá con el siguiente récord en ese mapa
+      }
+    }
+    return updated;
+  }
+
   /** Sube los récords locales que mejoran los de la nube. Un mapa que falla no para a los demás. */
   async syncLocalBests(profile: Profile, mapIds: readonly string[]): Promise<number> {
     let uploaded = 0;
