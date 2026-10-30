@@ -14,6 +14,7 @@ import {
 } from 'three';
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
+import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
@@ -53,9 +54,12 @@ export class ThreeRendererAdapter extends RendererPort {
   /** Lateral que sigue la cámara: va con algo de retraso para que el coche se vea moverse. */
   private cameraLateral = 0;
   private cameraLeg = -1;
+  /** Estética elegida en Ajustes (de momento solo hay escena clásica). */
+  private aesthetic: Aesthetic = 'classic';
 
-  attach(host: HTMLElement, track: Track, theme: MapTheme): void {
+  attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
     this.dispose();
+    this.aesthetic = aesthetic;
     this.host = host;
     this.track = track;
     const palette = PALETTES[theme];

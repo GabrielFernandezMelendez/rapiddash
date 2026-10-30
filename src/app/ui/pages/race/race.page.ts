@@ -20,6 +20,7 @@ import { RaceSession, RaceViewState } from '../../../core/application/use-cases/
 import { findMap } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { provideRaceAdapters } from '../../../infrastructure/di/race.providers';
+import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { Countdown } from '../../organisms/countdown/countdown';
 import { Hud } from '../../organisms/hud/hud';
@@ -56,6 +57,7 @@ export class RacePage {
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
+  private readonly aesthetic = inject(AestheticService);
   private readonly renderer = inject(RendererPort);
   private readonly controls = inject(InputPort);
   private readonly loop = inject(GameLoopPort);
@@ -95,7 +97,7 @@ export class RacePage {
       return;
     }
     const track = Track.fromSegments(map.segments);
-    this.renderer.attach(this.scene().nativeElement, track, map.theme);
+    this.renderer.attach(this.scene().nativeElement, track, map.theme, this.aesthetic.aesthetic());
     this.controls.attach(this.surface().nativeElement as HTMLElement);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,
