@@ -19,6 +19,7 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles (3 en los tramos estrechos), cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
 - Estéticas (Ajustes): clásico (por defecto), retro y futurista. Retro y futurista comparten el mundo synthwave en 3D (cielo violeta, sol a franjas, montañas en alambre, rejilla y muros de neón; una paleta por mapa) y solo cambia el vehículo: deportivo de los 80 o nave. Nunca cambian la física ni los mapas. Fuentes synthwave: portada Russo One + Mr Dafoe, menús Kanit, carrera Audiowide + Chakra Petch.
+- Cuentas (online): se entra con Google, con correo y contraseña (con verificación) o solo con apodo (invitado anónimo de Firebase). Perfil público = apodo único (3-16 letras o números) + país con bandera; sin nombre ni apellidos. A los invitados se les recuerda vincular la cuenta cada 5 días; vincular conserva el piloto.
 - Sonido: música en bucle durante la carrera; el motor suena solo al acelerar, por debajo de la música, con volumen y vueltas según la velocidad. Archivos en `public/audio/` (ver su README); sin ellos, silencio.
 
 ## Arquitectura hexagonal
@@ -27,10 +28,10 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 src/app/
   core/domain/          Reglas puras: pista, coche, carrera, fantasma. Sin Angular, sin Three, sin DOM.
   core/application/     Puertos (clases abstractas en ports/out) y casos de uso (RaceSession).
-  infrastructure/       Adaptadores: render/three, input (táctil + teclado), audio, clock, persistence.
+  infrastructure/       Adaptadores: render/three, input (táctil + teclado), audio, clock, persistence, firebase.
   infrastructure/di/    Único sitio donde se enlaza puerto → adaptador.
   ui/                   Angular con atomic design: atoms → molecules → organisms → templates → pages.
-  shared/               i18n, formateo.
+  shared/               i18n, formateo, estética y cuenta (servicios con signals sobre los casos de uso).
 ```
 
 Reglas de dependencia:
@@ -38,6 +39,7 @@ Reglas de dependencia:
 - `core/application` solo importa `core/domain`.
 - `infrastructure` implementa puertos; nunca la importan `core` ni los componentes de `ui` (salvo `infrastructure/di` desde las páginas o `app.config`).
 - Los puertos son clases abstractas: sirven de token de DI sin acoplar el núcleo a Angular.
+- Firebase solo vive en `infrastructure/firebase` y se carga de forma diferida (adaptadores Lazy*/Cached*): el arranque no lo descarga.
 - Three.js solo vive en `infrastructure/render/three` y se carga de forma diferida con la página de carrera (y con el fondo 3D del menú en las estéticas synthwave).
 - Estética: tokens CSS bajo `:root[data-aesthetic=…]` en `styles.scss` (los componentes solo usan tokens) y, en 3D, `render/three/synthwave/` frente a la escena clásica.
 
@@ -77,6 +79,7 @@ Atomic design:
 - Probar una PR en local: `gh pr checkout <n> && npm run start:movil`.
 - Despliegue: cada PR se publica en una URL de prueba (el bot de Firebase la comenta en la PR); cada merge en `main` publica en https://rapiddash-gabo.web.app.
 - Las PRs van siempre contra `main`, sin encadenarlas.
+- Reglas de Firestore en `firestore.rules`; no las despliega el CI: `npx -y firebase-tools@latest deploy --only firestore:rules --project rapiddash-gabo`.
 - Skills de Firebase en `.agents/skills/`: leer la que toque (hosting, firestore, auth, reglas) antes de trabajar con Firebase.
 
 ## Comandos
