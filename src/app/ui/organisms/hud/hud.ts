@@ -19,6 +19,8 @@ const KMH_FACTOR = 9;
 export class Hud {
   readonly state = input.required<RaceViewState>();
   readonly mapName = input('');
+  /** Apodo del rival de la nube; null si el fantasma es mi mejor vuelta. */
+  readonly rivalName = input<string | null>(null);
   readonly exit = output<void>();
 
   protected readonly time = computed(() => formatTime(this.state().time));
