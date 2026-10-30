@@ -16,15 +16,21 @@ import { RouterOutlet } from '@angular/router';
       place-items: center;
       height: 100dvh;
     }
+    /* En el móvil el juego ocupa toda la pantalla, también bajo la barra de estado y la del
+       navegador (viewport-fit=cover); los márgenes seguros los ponen las plantillas. */
     .frame {
-      position: relative;
-      width: min(100vw, calc(100dvh * 9 / 19));
-      height: 100dvh;
+      position: fixed;
+      inset: 0;
       overflow: hidden;
       background: var(--rd-asphalt);
+      /* Los textos que escalan con el ancho (logo) usan cqw: el ancho del juego, no de la ventana */
+      container-type: inline-size;
     }
     @media (min-width: 700px) {
+      /* En el PC, un móvil de 9:19 centrado */
       .frame {
+        position: relative;
+        inset: auto;
         height: min(100dvh, 900px);
         width: calc(min(100dvh, 900px) * 9 / 19);
         border-radius: 28px;

@@ -46,7 +46,8 @@ html,
 body {
   height: 100%;
   margin: 0;
-  background: #0d1014;
+  // Mismo color que el juego: si el navegador deja ver algo de la página, no hay bandas
+  background: var(--rd-asphalt);
   color: var(--rd-chalk);
   font-family: var(--rd-font-body);
   font-size: 15px;
