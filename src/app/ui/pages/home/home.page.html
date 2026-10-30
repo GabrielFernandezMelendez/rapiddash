@@ -43,7 +43,12 @@
     [aesthetic]="aesthetic.aesthetic()"
     (aestheticChange)="setAesthetic($event)"
     (closed)="settingsOpen.set(false)"
+    (tutorial)="openTutorial()"
   />
+}
+
+@if (tutorialOpen()) {
+  <rd-tutorial (closed)="closeTutorial()" />
 }
 
 @if (reminderOpen() && account.profile(); as profile) {
