@@ -44,12 +44,18 @@ export interface RaceViewState {
   readonly result: RaceResult | null;
 }
 
+/** Quien recibe cada récord nuevo para publicarlo (el ranking online). */
+export interface RecordSink {
+  publish(run: BestRun): void;
+}
+
 export interface RaceSessionPorts {
   readonly renderer: RendererPort;
   readonly input: InputPort;
   readonly loop: GameLoopPort;
   readonly bestRuns: BestRunRepository;
   readonly audio: AudioPort;
+  readonly records?: RecordSink;
 }
 
 /**
@@ -158,6 +164,7 @@ export class RaceSession {
       };
       this.best = run;
       await this.ports.bestRuns.save(run);
+      this.ports.records?.publish(run);
     }
   }
 
