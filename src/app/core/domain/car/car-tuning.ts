@@ -8,8 +8,17 @@ export const CAR_TUNING = {
   coastDrag: 3,
   /** Velocidad mínima mientras el coche está girado en un cruce: sin ella se quedaría bloqueado. */
   crawlSpeed: 4,
-  /** Cambio de carril (swipe fuera del cruce): velocidad lateral en m/s, un carril en ~0,2 s. */
-  laneChangeSpeed: 11,
+  /**
+   * Cambio de carril (swipe fuera del cruce): muelle con poco amortiguamiento, para que llegue
+   * rápido (~0,2 s), se pase un poco del carril y rebote hasta asentarse. Frecuencia en rad/s.
+   */
+  laneChangeFrequency: 13,
+  /** < 1 rebota; 0,5 se pasa del carril un ~16 % y se asienta en ~0,5 s. */
+  laneChangeDamping: 0.5,
+  /** Cerca del carril destino (m) ya se acepta otro swipe, aunque siga rebotando. */
+  laneChangeRetarget: 0.5,
+  /** Al golpear el muro en un cambio de carril, fracción de la velocidad lateral con la que rebota. */
+  bumpBounce: 0.45,
   /** Golpecito al cambiar de carril contra el muro: fracción de velocidad que conserva. */
   bumpKeep: 0.9,
   /** Choque frontal en un cruce: velocidad con la que pivota y sale hacia la nueva carretera. */

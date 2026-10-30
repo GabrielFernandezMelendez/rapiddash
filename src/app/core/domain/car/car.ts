@@ -45,6 +45,8 @@ export interface CarState {
   readonly yawTarget: number;
   /** Lateral al que va un cambio de carril en curso (null = sin cambio, manda el imán). */
   readonly laneTarget: number | null;
+  /** Velocidad lateral del cambio de carril (m/s): el muelle del cambio la necesita para rebotar. */
+  readonly lateralVelocity: number;
   readonly mode: CarMode;
   readonly recovery: Recovery | null;
   /** Segundos seguidos rozando el muro (0 = sin roce). */
@@ -63,6 +65,7 @@ export function createCar(track: Track): CarState {
     yaw: 0,
     yawTarget: 0,
     laneTarget: null,
+    lateralVelocity: 0,
     mode: 'driving',
     recovery: null,
     scrapeTime: 0,
@@ -96,10 +99,17 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg): CarState {
   if (inTurnZone && side === junction.direction) {
     return { ...car, yawTarget: side * QUARTER_TURN, laneTarget: null };
   }
-  // Un swipe = un carril: mientras dura un cambio de carril se ignoran los demás swipes
-  if (car.laneTarget !== null) return car;
+  // Un swipe = un carril: mientras dura un cambio de carril se ignoran los demás swipes (salvo
+  // en el rebote final, cuando el coche ya está prácticamente en su carril)
+  if (
+    car.laneTarget !== null &&
+    Math.abs(car.laneTarget - car.lateral) > CAR_TUNING.laneChangeRetarget
+  ) {
+    return car;
+  }
   const target = nearestLaneCenter(car.lateral) + side * LANE_WIDTH;
-  return { ...car, laneTarget: Math.abs(target) > WALL_LIMIT ? side * WALL_LIMIT : target };
+  // Hacia el muro: apunta más allá para que llegue con impulso y rebote
+  return { ...car, laneTarget: Math.abs(target) > WALL_LIMIT ? side * TRACK_HALF_WIDTH : target };
 }
 
 /** Lo que sobresale el morro del coche hacia delante según su giro. */
@@ -115,6 +125,7 @@ function exitJunction(car: CarState, lateral: number, f: number, d: 1 | -1, yaw:
     lateral: d * (TRACK_HALF_WIDTH - f),
     yaw: yaw - d * QUARTER_TURN,
     laneTarget: null,
+    lateralVelocity: 0,
   };
 }
 
@@ -129,6 +140,7 @@ function startExitRecovery(car: CarState, events: CarEvent[]) {
       mode: 'recovering' as const,
       speed: CAR_TUNING.frontRecoverySpeed,
       laneTarget: null,
+      lateralVelocity: 0,
       accelerating: false,
       recovery: { elapsed: 0, fromYaw: car.yaw },
     },
@@ -210,23 +222,35 @@ export function stepCar(
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
 
-  // Cambio de carril en curso: desplazamiento lateral rápido hasta el carril elegido
+  // Cambio de carril en curso: muelle hacia el carril elegido. Llega rápido, se pasa un poco y
+  // rebota hasta asentarse, como una pelota
   let laneTarget = car.laneTarget;
+  let lateralVelocity = car.lateralVelocity;
   if (laneTarget !== null && facingForward) {
-    lateral = approach(lateral, laneTarget, CAR_TUNING.laneChangeSpeed * dt);
-    if (lateral === laneTarget) {
-      if (Math.abs(laneTarget) >= WALL_LIMIT) {
-        // Golpecito contra el muro: pierde algo de velocidad y vuelve a su carril
-        events.push('bump');
-        speed *= CAR_TUNING.bumpKeep;
-        lateral = Math.sign(laneTarget) * (WALL_LIMIT - 0.001);
-        laneTarget = nearestLaneCenter(laneTarget);
-      } else {
-        laneTarget = null;
-      }
+    const w = CAR_TUNING.laneChangeFrequency;
+    const force =
+      w * w * (laneTarget - lateral) - 2 * CAR_TUNING.laneChangeDamping * w * lateralVelocity;
+    lateralVelocity += force * dt;
+    lateral += lateralVelocity * dt;
+
+    if (Math.abs(lateral) >= WALL_LIMIT) {
+      // Golpecito contra el muro: pierde algo de velocidad y rebota hacia su carril
+      const side = Math.sign(lateral);
+      events.push('bump');
+      speed *= CAR_TUNING.bumpKeep;
+      lateral = side * (WALL_LIMIT - 0.001);
+      lateralVelocity = -lateralVelocity * CAR_TUNING.bumpBounce;
+      laneTarget = nearestLaneCenter(lateral);
+    } else if (Math.abs(laneTarget - lateral) < 0.01 && Math.abs(lateralVelocity) < 0.05) {
+      // Asentado: a partir de aquí manda el imán de carril
+      lateral = laneTarget;
+      laneTarget = null;
+      lateralVelocity = 0;
     }
+  } else if (laneTarget === null) {
+    lateralVelocity = 0;
   }
-  const next: CarState = { ...car, yaw, speed, accelerating, laneTarget };
+  const next: CarState = { ...car, yaw, speed, accelerating, laneTarget, lateralVelocity };
 
   // ----- Dentro del cruce cuadrado -----
   if (junction && distance > leg.length) {

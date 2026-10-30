@@ -59,10 +59,29 @@ describe('Car', () => {
     it('un swipe cambia exactamente un carril en unos 0,2 s sin girar el coche', () => {
       const car = stepCar(cruising(), swipe('right'), longStraight, DT).car;
       expect(car.yawTarget).toBe(0);
-      const r = runUntil(car, longStraight, (c) => c.laneTarget === null);
-      expect(r.seconds).toBeLessThan(0.25);
-      expect(r.car.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
-      expect(r.car.yaw).toBe(0);
+      const target = laneCenter(MIDDLE + 1);
+      const reach = runUntil(car, longStraight, (c) => c.lateral >= target);
+      expect(reach.seconds).toBeLessThan(0.25);
+      const settled = runUntil(reach.car, longStraight, (c) => c.laneTarget === null);
+      expect(reach.seconds + settled.seconds).toBeLessThan(0.8);
+      expect(settled.car.lateral).toBeCloseTo(target);
+      expect(settled.car.yaw).toBe(0);
+    });
+
+    it('es elástico: se pasa un poco del carril y rebota hasta asentarse', () => {
+      let car = stepCar(cruising(), swipe('right'), longStraight, DT).car;
+      const target = laneCenter(MIDDLE + 1);
+      let max = car.lateral;
+      let backAfterMax = false;
+      for (let t = 0; t < 0.8; t += DT) {
+        car = stepCar(car, hold, longStraight, DT).car;
+        if (car.lateral > max) max = car.lateral;
+        else if (max > target && car.lateral < target) backAfterMax = true;
+      }
+      expect(max - target).toBeGreaterThan(0.1);
+      expect(max - target).toBeLessThan(0.5);
+      expect(backAfterMax).toBe(true);
+      expect(car.lateral).toBeCloseTo(target);
     });
 
     it('sigue acelerando mientras cambia de carril', () => {
@@ -72,18 +91,20 @@ describe('Car', () => {
       expect(car.speed).toBeGreaterThan(start.speed);
     });
 
+    /** Cambia un carril y espera a que se asiente. */
+    const changeLane = (car: CarState, side: Swipe) =>
+      runUntil(stepCar(car, swipe(side), longStraight, DT).car, longStraight, (c) => !c.laneTarget);
+
     it('un swipe = un carril: durante el cambio se ignoran los demás swipes', () => {
-      const car = run(
-        stepCar(cruising(), swipe('left', 'left'), longStraight, DT).car,
-        longStraight,
-        0.6,
-      );
-      expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE - 1));
+      const car = stepCar(cruising(), swipe('left', 'left'), longStraight, DT).car;
+      const r = runUntil(car, longStraight, (c) => c.laneTarget === null);
+      expect(r.car.lateral).toBeCloseTo(laneCenter(MIDDLE - 1));
     });
 
-    it('terminado el cambio, otro swipe cambia otro carril', () => {
-      let car = run(stepCar(cruising(), swipe('left'), longStraight, DT).car, longStraight, 0.3);
-      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
+    it('cerca del carril destino ya acepta otro swipe, aunque siga rebotando', () => {
+      let car = stepCar(cruising(), swipe('left'), longStraight, DT).car;
+      car = runUntil(car, longStraight, (c) => c.lateral <= laneCenter(MIDDLE - 1)).car;
+      car = changeLane(car, 'left').car;
       expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE - 2));
     });
 
@@ -93,18 +114,22 @@ describe('Car', () => {
       expect(car.laneTarget).toBeNull();
     });
 
-    it('contra el muro: golpecito, pierde algo de velocidad y se queda en su carril', () => {
-      let car = cruising();
-      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
-      car = run(stepCar(car, swipe('left'), longStraight, DT).car, longStraight, 0.3);
-      const before = car.speed;
+    it('contra el muro: golpecito, pierde algo de velocidad y rebota a su carril', () => {
+      let car = changeLane(changeLane(cruising(), 'left').car, 'left').car;
       car = stepCar(car, swipe('left'), longStraight, DT).car;
+      const events: CarEvent[] = [];
+      let drop = 0;
+      while (!events.includes('bump')) {
+        const r = stepCar(car, hold, longStraight, DT);
+        if (r.events.includes('bump')) drop = r.car.speed / car.speed;
+        events.push(...r.events);
+        car = r.car;
+      }
+      expect(drop).toBeCloseTo(CAR_TUNING.bumpKeep, 1);
+      expect(car.lateralVelocity).toBeGreaterThan(0); // rebota hacia dentro
       const r = runUntil(car, longStraight, (c) => c.laneTarget === null, hold, 1);
-      expect(r.events).toContain('bump');
-      expect(r.events).not.toContain('crash');
+      expect([...events, ...r.events]).not.toContain('crash');
       expect(r.car.mode).toBe('driving');
-      expect(r.car.speed).toBeLessThan(before);
-      expect(r.car.speed).toBeGreaterThan(before * 0.85);
       expect(r.car.lateral).toBeCloseTo(laneCenter(0));
     });
   });
