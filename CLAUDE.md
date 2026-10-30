@@ -55,6 +55,7 @@ Atomic design:
 - Comentarios en español durante el desarrollo; la traducción al inglés es un paso final.
 - Textos de la interfaz siempre por i18n: `public/i18n/es.json` y `en.json` con las mismas claves. Pipe `t`.
 - Toda lógica de juego nueva lleva test en `core/domain` (Vitest). `autopilot.spec.ts` demuestra que cada mapa se termina sin choques: si cambias física o mapas, debe seguir pasando.
+- Si cambias la física o el trazado de un mapa, sube `PHYSICS_VERSION` (`core/domain/race/physics-version.ts`): los récords de otra versión no se comparan y se reinician.
 
 ## Flujo de trabajo
 
@@ -65,6 +66,7 @@ Atomic design:
   - `feat/sonido`: música y efectos.
   - `feat/interfaz`: pantallas, HUD, ajustes e i18n.
   - `chore/infra`: CI, Firebase, dependencias y documentación del proceso.
+  - `feat/online`: cuentas, perfil, récords en la nube, fantasmas de otros, duelos y temporadas.
   Si un trabajo no encaja en ninguna, se acuerda un área nueva antes de crearla.
 - Antes de cada bloque de trabajo, poner la rama al día: `git checkout feat/pista && git pull origin main`.
 - Títulos de PR con el área delante: `Pista: embudos de 5 a 3 carriles`.

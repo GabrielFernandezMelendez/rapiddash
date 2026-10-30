@@ -1,4 +1,5 @@
 import { BestRun, GhostPlayback, GhostRecorder } from '../../domain/race/ghost';
+import { PHYSICS_VERSION } from '../../domain/race/physics-version';
 import {
   CountdownLight,
   createRace,
@@ -149,6 +150,7 @@ export class RaceSession {
           this.race.car,
         ),
         recordedAt: new Date().toISOString(),
+        physicsVersion: PHYSICS_VERSION,
       };
       this.best = run;
       await this.ports.bestRuns.save(run);
