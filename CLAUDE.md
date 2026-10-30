@@ -12,8 +12,10 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Sin acelerar el coche va pegado al suelo (el magnetismo se reduce y no vence al imán de carril); acelerando, en curvas cerradas salta de carril hacia el muro.
 - Choque lateral: el coche se queda parado; swipe al lado contrario del muro y luego adelante.
 - Choque frontal en un cruce: swipe a cualquier lado despega el coche; hacia la salida continúa la carrera.
+- Mapas en dos formatos a comparar: clásicos (cruces sueltos) y zigzag (series de 3 a 8 cruces seguidos con tramos cortos). Los giros alternan derecha/izquierda para que la pista avance en escalera y no se cruce.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
+- Sonido: música en bucle durante la carrera; el motor suena solo al acelerar, con volumen y vueltas según la velocidad. Archivos en `public/audio/` (ver su README); sin ellos, silencio.
 
 ## Arquitectura hexagonal
 
@@ -21,7 +23,7 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 src/app/
   core/domain/          Reglas puras: pista, coche, carrera, fantasma. Sin Angular, sin Three, sin DOM.
   core/application/     Puertos (clases abstractas en ports/out) y casos de uso (RaceSession).
-  infrastructure/       Adaptadores: render/three, input (táctil + teclado), clock, persistence.
+  infrastructure/       Adaptadores: render/three, input (táctil + teclado), audio, clock, persistence.
   infrastructure/di/    Único sitio donde se enlaza puerto → adaptador.
   ui/                   Angular con atomic design: atoms → molecules → organisms → templates → pages.
   shared/               i18n, formateo.

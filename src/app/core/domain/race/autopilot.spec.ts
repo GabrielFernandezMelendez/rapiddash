@@ -1,5 +1,5 @@
 import { CarState, DriveInput, Swipe } from '../car/car';
-import { RACE_MAPS } from '../track/race-map';
+import { ALL_MAPS } from '../track/race-map';
 import { Track } from '../track/track';
 import { createRace, RaceState, stepRace } from './race';
 
@@ -23,7 +23,7 @@ function autopilot(car: CarState, track: Track): DriveInput {
 }
 
 describe('Mapas jugables', () => {
-  for (const map of RACE_MAPS) {
+  for (const map of ALL_MAPS) {
     it(`${map.id}: se termina con el piloto automático y sin choques`, () => {
       const track = Track.fromSegments(map.segments);
       let race: RaceState = createRace(track);

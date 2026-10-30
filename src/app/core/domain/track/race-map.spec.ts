@@ -1,14 +1,36 @@
-import { RACE_MAPS } from './race-map';
+import { ALL_MAPS, ZIGZAG_MAPS } from './race-map';
 import { SAMPLE_STEP, TRACK_HALF_WIDTH } from './track-constants';
 import { Track } from './track';
 
-describe('RACE_MAPS', () => {
-  it('hay tres mapas con identificador único', () => {
-    expect(RACE_MAPS.length).toBe(3);
-    expect(new Set(RACE_MAPS.map((m) => m.id)).size).toBe(3);
+describe('ALL_MAPS', () => {
+  it('hay seis mapas (3 clásicos y 3 zigzag) con identificador único', () => {
+    expect(ALL_MAPS.length).toBe(6);
+    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(6);
   });
 
-  for (const map of RACE_MAPS) {
+  it('las series zigzag tienen entre 3 y 8 cruces seguidos', () => {
+    const longest = ZIGZAG_MAPS.map((m) => {
+      let run = 0;
+      let best = 0;
+      let prevWasCorner = false;
+      for (const seg of m.segments) {
+        if (seg.kind === 'corner') {
+          run = prevWasCorner ? run + 1 : 1;
+          best = Math.max(best, run);
+          prevWasCorner = true;
+        } else if (seg.kind === 'straight' && seg.length <= 16) {
+          // Un tramo corto entre cruces no rompe la serie
+        } else {
+          prevWasCorner = false;
+          run = 0;
+        }
+      }
+      return best;
+    });
+    expect(longest).toEqual([4, 5, 8]);
+  });
+
+  for (const map of ALL_MAPS) {
     it(`${map.id}: la pista no se cruza consigo misma`, () => {
       const track = Track.fromSegments(map.segments);
       // Puntos del eje de cada tramo con su progreso; los cruces se cubren con su centro
