@@ -16,13 +16,23 @@ import { RenderFrame, RendererPort } from '../../../core/application/ports/out/r
 import { CarPose } from '../../../core/domain/race/ghost';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
-import { buildCar, ExhaustFx, ScrapeFx } from './car-mesh';
+import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { buildScenery } from './scenery';
 import { PALETTES } from './themes';
 import { buildTrackMesh } from './track-mesh';
 
 // Cámara estilo Subway Surfers, algo alejada para leer la carretera con antelación
-const CAMERA = { fov: 74, back: 12.5, height: 9.2, lookAhead: 11, follow: 4.5 } as const;
+const CAMERA = {
+  fov: 74,
+  back: 12.5,
+  height: 9.2,
+  lookAhead: 11,
+  follow: 4.5,
+  /** Retraso lateral de la cámara en los cambios de carril (más alto = menos retraso). */
+  lateralFollow: 7,
+  /** En los cruces la cámara alcanza al coche enseguida para no dar un salto al salir. */
+  junctionFollow: 25,
+} as const;
 
 export class ThreeRendererAdapter extends RendererPort {
   private renderer: WebGLRenderer | null = null;
@@ -33,11 +43,16 @@ export class ThreeRendererAdapter extends RendererPort {
   private ghost = buildCar(true);
   private exhaust: ExhaustFx | null = null;
   private scrape: ScrapeFx | null = null;
+  private carBounce = new CarBounce();
+  private ghostBounce = new CarBounce();
   private lastDistance = 0;
   private resizeObserver: ResizeObserver | null = null;
   private host: HTMLElement | null = null;
   private cameraHeading: number | null = null;
   private shake = 0;
+  /** Lateral que sigue la cámara: va con algo de retraso para que el coche se vea moverse. */
+  private cameraLateral = 0;
+  private cameraLeg = -1;
 
   attach(host: HTMLElement, track: Track, theme: MapTheme): void {
     this.dispose();
@@ -63,6 +78,9 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette));
     this.car = buildCar();
     this.ghost = buildCar(true);
+    this.carBounce = new CarBounce();
+    this.ghostBounce = new CarBounce();
+    this.cameraLeg = -1;
     this.ghost.visible = false;
     this.scene.add(this.ghost, this.car);
     this.exhaust = new ExhaustFx(this.car, this.scene);
@@ -80,8 +98,12 @@ export class ThreeRendererAdapter extends RendererPort {
     if (!track || !renderer) return;
 
     this.place(this.car, frame.car);
+    this.carBounce.apply(this.car, dt, frame.car.leg, frame.car.lateral);
     this.ghost.visible = frame.ghost !== null;
-    if (frame.ghost) this.place(this.ghost, frame.ghost);
+    if (frame.ghost) {
+      this.place(this.ghost, frame.ghost);
+      this.ghostBounce.apply(this.ghost, dt, frame.ghost.leg, frame.ghost.lateral);
+    }
     this.exhaust?.update(dt, frame.car.accelerating);
     // Velocidad aproximada para la intensidad de las chispas
     const moved = dt > 0 ? Math.abs(frame.car.distance - this.lastDistance) / dt : 0;
@@ -91,7 +113,16 @@ export class ThreeRendererAdapter extends RendererPort {
     if (frame.car.scrapeSide !== 0) this.shake = Math.max(this.shake, 0.12);
 
     // La cámara sigue el rumbo del tramo (no el morro), suavizado: al salir de un cruce gira 90°
-    const p = track.worldAt(frame.car.leg, frame.car.distance, frame.car.lateral);
+    // La cámara sigue al coche de lado con algo de retraso (como Subway Surfers): en un cambio
+    // de carril el coche se desplaza en pantalla y la cámara lo alcanza después
+    if (frame.car.leg !== this.cameraLeg) {
+      this.cameraLeg = frame.car.leg;
+      this.cameraLateral = frame.car.lateral;
+    }
+    const inJunction = frame.car.distance > track.legs[frame.car.leg].length;
+    const lateralRate = inJunction ? CAMERA.junctionFollow : CAMERA.lateralFollow;
+    this.cameraLateral += (frame.car.lateral - this.cameraLateral) * Math.min(1, dt * lateralRate);
+    const p = track.worldAt(frame.car.leg, frame.car.distance, this.cameraLateral);
     const target = p.heading;
     this.cameraHeading ??= target;
     this.cameraHeading += (target - this.cameraHeading) * Math.min(1, dt * CAMERA.follow);
