@@ -6,7 +6,7 @@ export const SWIPE_THRESHOLD = 28;
 /**
  * Convierte el movimiento de un dedo en swipes.
  * Tras cada swipe el origen se mueve al punto actual, así un mismo gesto puede encadenar
- * "lado y adelante" sin levantar el dedo.
+ * varios cambios de carril sin levantar el dedo.
  */
 export class SwipeDetector {
   private originX = 0;
@@ -28,8 +28,8 @@ export class SwipeDetector {
     this.originX = x;
     this.originY = y;
     if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
-    // Deslizar hacia abajo no hace nada
-    return dy < 0 ? 'forward' : null;
+    // Deslizar en vertical no hace nada
+    return null;
   }
 
   up(): void {

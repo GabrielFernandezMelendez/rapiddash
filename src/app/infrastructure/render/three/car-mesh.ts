@@ -245,6 +245,11 @@ export class ScrapeFx {
     }
   }
 
+  /** Ráfaga de chispas de un golpe puntual. */
+  burst(side: 1 | -1, count: number): void {
+    for (let i = 0; i < count; i++) this.emit(side);
+  }
+
   private emit(side: 1 | -1): void {
     const spark = this.sparks[this.cursor];
     this.cursor = (this.cursor + 1) % this.sparks.length;

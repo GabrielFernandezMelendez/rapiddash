@@ -113,6 +113,11 @@ export class ThreeRendererAdapter extends RendererPort {
     this.shake = 0.5;
   }
 
+  bump(side: 1 | -1): void {
+    this.shake = Math.max(this.shake, 0.25);
+    this.scrape?.burst(side, 14);
+  }
+
   dispose(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
