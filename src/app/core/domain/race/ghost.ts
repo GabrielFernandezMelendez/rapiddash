@@ -18,6 +18,8 @@ export interface BestRun {
   readonly time: number;
   readonly frames: readonly GhostFrame[];
   readonly recordedAt: string;
+  /** Versión de la física con la que se hizo (ver physics-version.ts). */
+  readonly physicsVersion: number;
 }
 
 export const GHOST_SAMPLE_INTERVAL = 1 / 20;
