@@ -30,7 +30,15 @@ export class AestheticService {
   private apply(aesthetic: Aesthetic): void {
     this.aesthetic.set(aesthetic);
     document.documentElement.dataset['aesthetic'] = aesthetic;
+    this.syncThemeColor();
     if (isSynthwave(aesthetic)) this.loadSynthFonts();
+  }
+
+  /** Barra de estado y del navegador del mismo color que el fondo de la estética. */
+  private syncThemeColor(): void {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--rd-asphalt').trim();
+    if (meta && color) meta.content = color;
   }
 
   /** Las fuentes synthwave solo se descargan si se elige una de esas estéticas. */
