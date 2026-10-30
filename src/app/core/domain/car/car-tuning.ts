@@ -8,8 +8,21 @@ export const CAR_TUNING = {
   coastDrag: 3,
   /** Velocidad mínima mientras el coche está girado: sin ella se quedaría bloqueado. */
   crawlSpeed: 4,
-  /** Velocidad para salir del muro tras un choque. */
-  recoverySpeed: 5,
+  /** Choque lateral (coche girado contra el muro): fracción de velocidad que conserva. */
+  sideCrashKeep: 0.4,
+  /** Duración de la animación que endereza el coche tras un choque lateral (s). */
+  sideRecoveryTime: 0.7,
+  /** Choque frontal en un cruce: velocidad con la que pivota y sale hacia la nueva carretera. */
+  frontRecoverySpeed: 10,
+  /** Duración del giro automático hacia la salida tras un choque frontal (s). */
+  frontRecoveryTime: 0.6,
+  /** Por debajo de este ángulo (rad) el contacto con el muro es un roce, no un choque. */
+  scrapeMaxAngle: 0.6,
+  /** Rozamiento contra el muro (m/s²): empieza suave y crece mientras dura el roce. */
+  scrapeFrictionStart: 4,
+  scrapeFrictionMax: 14,
+  /** Segundos de roce hasta alcanzar el rozamiento máximo. */
+  scrapeRampTime: 1,
   /** Velocidad de giro del morro hacia el ángulo objetivo. */
   turnRate: 14,
   /**
