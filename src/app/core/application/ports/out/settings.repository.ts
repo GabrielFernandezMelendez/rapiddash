@@ -11,4 +11,7 @@ export abstract class SettingsRepository {
   /** Último rival elegido en cada mapa. */
   abstract getRival(mapId: string): RivalChoice | null;
   abstract setRival(mapId: string, choice: RivalChoice): void;
+  /** Ya vio el tutorial (o lo saltó). */
+  abstract getTutorialSeen(): boolean;
+  abstract setTutorialSeen(): void;
 }
