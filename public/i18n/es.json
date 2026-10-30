@@ -39,5 +39,9 @@
   "results.previous": "Anterior",
   "results.record": "¡Nuevo récord!",
   "results.retry": "Repetir",
-  "results.maps": "Mapas"
+  "results.maps": "Mapas",
+  "settings.aesthetic": "Estética",
+  "aesthetic.classic": "Clásico",
+  "aesthetic.retro": "Retro",
+  "aesthetic.futurist": "Futurista"
 }

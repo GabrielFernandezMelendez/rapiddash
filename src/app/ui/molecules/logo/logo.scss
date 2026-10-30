@@ -1,0 +1,173 @@
+:host {
+  display: block;
+}
+
+// ---------- Clásico ----------
+.classic {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  font-family: var(--rd-font-display);
+  font-weight: 800;
+  font-style: italic;
+  line-height: 0.82;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+}
+
+.classic .rapid {
+  font-size: 84px;
+  color: var(--rd-chalk);
+  letter-spacing: 0.01em;
+}
+
+.classic .dash {
+  position: relative;
+  font-size: 96px;
+  color: var(--rd-signal);
+  text-shadow: 0 6px 0 #6b4f0c;
+}
+
+// Estela de velocidad detrás de "Dash"
+.classic .dash::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 70px;
+  height: 10px;
+  margin-right: 10px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--rd-kerb));
+  border-radius: 5px;
+}
+
+// ---------- Synthwave ----------
+.synth {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  font-size: clamp(50px, 17vw, 76px);
+  line-height: 1;
+  user-select: none;
+}
+
+.synth .car {
+  position: relative;
+  z-index: 3;
+  width: 3.4em;
+  max-width: 82%;
+  margin-bottom: -0.32em;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgb(13 4 32 / 0.6));
+}
+
+.synth .rapid {
+  position: relative;
+  z-index: 2;
+  margin-right: 0.9em;
+  white-space: nowrap;
+  font-family: 'Russo One', system-ui, sans-serif;
+}
+
+// Cada letra rebota en ola: se aplasta, salta y vuelve
+.synth .l {
+  position: relative;
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: wave 1.8s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  animation-delay: calc(var(--i) * 0.09s);
+}
+
+// Cara de la letra con el degradado del sol
+.synth .f {
+  position: relative;
+  z-index: 1;
+  display: block;
+  background: linear-gradient(
+    #fff 0%,
+    #fff1b8 26%,
+    #ffd319 44%,
+    #ff901f 62%,
+    #ff2a6d 86%,
+    #c2186b 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+// Relieve: copia de la letra con sombras apiladas debajo
+.synth .l::before {
+  content: attr(data-ch);
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  color: #4a0f5c;
+  text-shadow:
+    0 1px 0 #4a0f5c,
+    0 2px 0 #430d55,
+    0 3px 0 #3c0b4d,
+    0 4px 0 #350a46,
+    0 5px 0 #2e083e,
+    0 6px 0 #270736,
+    0 7px 0 #20052e,
+    0 9px 14px rgb(255 42 109 / 0.55);
+}
+
+// «Dash» en firma de neón con borde oscuro para que se lea sobre el sol
+.synth .dash {
+  position: relative;
+  z-index: 4;
+  margin-top: -0.38em;
+  margin-left: 1.5em;
+  font-family: 'Mr Dafoe', cursive;
+  font-size: 1.32em;
+  color: #ff5ad9;
+  -webkit-text-stroke: 0.045em #2a0638;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0.04em 0 #2a0638,
+    0 0.07em 0 #1d0428,
+    0 0 0.12em rgb(255 79 216 / 0.9),
+    0 0 0.35em rgb(255 42 109 / 0.7);
+  transform: rotate(-8deg);
+  animation: bob 1.8s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  12% {
+    transform: translateY(0) scale(1.08, 0.86);
+  }
+  26% {
+    transform: translateY(-22%) scale(0.95, 1.07);
+  }
+  40% {
+    transform: translateY(0) scale(1.06, 0.9);
+  }
+  50% {
+    transform: translateY(-4%) scale(1, 1);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: rotate(-8deg) translateY(-0.08em);
+  }
+  50% {
+    transform: rotate(-8deg) translateY(0.1em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .synth .l,
+  .synth .dash {
+    animation: none;
+  }
+}

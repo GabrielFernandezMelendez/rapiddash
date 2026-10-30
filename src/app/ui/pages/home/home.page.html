@@ -1,4 +1,5 @@
 <rd-menu-layout>
+  <div menu-backdrop #backdrop class="backdrop" aria-hidden="true"></div>
   <div menu-header class="top">
     <button
       rdButton
@@ -20,10 +21,7 @@
   </div>
 
   <div class="hero">
-    <h1 class="logo">
-      <span class="rapid">Rapid</span>
-      <span class="dash">Dash</span>
-    </h1>
+    <rd-logo [aesthetic]="aesthetic.aesthetic()" />
     <p class="tagline">{{ 'app.tagline' | t }}</p>
   </div>
 
@@ -39,6 +37,8 @@
   <rd-settings-dialog
     [language]="i18n.language()"
     (languageChange)="setLanguage($event)"
+    [aesthetic]="aesthetic.aesthetic()"
+    (aestheticChange)="setAesthetic($event)"
     (closed)="settingsOpen.set(false)"
   />
 }
