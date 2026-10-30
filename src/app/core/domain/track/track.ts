@@ -1,4 +1,10 @@
-import { FINISH_RUNOFF, SAMPLE_STEP, START_DISTANCE, TRACK_HALF_WIDTH } from './track-constants';
+import {
+  FINISH_RUNOFF,
+  halfWidthFor,
+  SAMPLE_STEP,
+  START_DISTANCE,
+  TRACK_HALF_WIDTH,
+} from './track-constants';
 import { SegmentKind, TrackSegment, TurnDirection } from './track-segment';
 
 /**
@@ -11,16 +17,21 @@ export interface TrackSample {
   readonly z: number;
   readonly heading: number;
   readonly curvature: number;
-  readonly kind: Exclude<SegmentKind, 'corner'>;
+  /** Los embudos se muestrean como rectas. */
+  readonly kind: Exclude<SegmentKind, 'corner' | 'taper'>;
+  /** Distancia del eje a cada muro en este punto (5 carriles: 5,5 m; 3 carriles: 3,3 m). */
+  readonly halfWidth: number;
 }
 
 /**
  * Cruce cuadrado al final de un tramo (curva de 90°).
  * Se describe en las coordenadas del tramo de entrada: `distance > leg.length` es avance dentro
- * del cruce (0 … JUNCTION_SIZE) y el lado `direction` está abierto hacia el tramo siguiente.
+ * del cruce (0 … 2 × halfWidth) y el lado `direction` está abierto hacia el tramo siguiente.
  */
 export interface Junction {
   readonly direction: TurnDirection;
+  /** Mitad del lado del cruce: el ancho de la carretera al llegar a él. */
+  readonly halfWidth: number;
   /** Centro del borde de entrada del cruce. */
   readonly x: number;
   readonly z: number;
@@ -35,6 +46,16 @@ export interface Leg {
   /** Progreso acumulado de la pista al empezar el tramo. */
   readonly startProgress: number;
   readonly junction: Junction | null;
+  /** Embudos y ensanches del tramo, en distancia dentro del tramo. */
+  readonly tapers: readonly Taper[];
+}
+
+/** Cambio de ancho: de `fromHalfWidth` a `toHalfWidth` entre `start` y `end`. */
+export interface Taper {
+  readonly start: number;
+  readonly end: number;
+  readonly fromHalfWidth: number;
+  readonly toHalfWidth: number;
 }
 
 export interface TrackPoint {
@@ -71,28 +92,35 @@ export class Track {
     let x = 0;
     let z = 0;
     let heading = 0;
-    let samples: TrackSample[] = [{ x, z, heading, curvature: 0, kind: 'straight' }];
+    let halfWidth = TRACK_HALF_WIDTH;
+    let samples: TrackSample[] = [{ x, z, heading, curvature: 0, kind: 'straight', halfWidth }];
+    let tapers: Taper[] = [];
     let progress = 0;
 
     const closeLeg = (junction: Junction | null) => {
       const length = (samples.length - 1) * SAMPLE_STEP;
-      legs.push({ index: legs.length, samples, length, startProgress: progress, junction });
+      legs.push({ index: legs.length, samples, length, startProgress: progress, junction, tapers });
       progress += length;
     };
 
     for (const segment of segments) {
       if (segment.kind === 'corner') {
         const d = segment.direction;
-        closeLeg({ direction: d, x, z, heading });
+        const H = halfWidth;
+        closeLeg({ direction: d, halfWidth: H, x, z, heading });
         // El tramo siguiente empieza en el centro del lado abierto del cruce
-        x += Math.sin(heading) * TRACK_HALF_WIDTH + Math.cos(heading) * d * TRACK_HALF_WIDTH;
-        z += -Math.cos(heading) * TRACK_HALF_WIDTH + Math.sin(heading) * d * TRACK_HALF_WIDTH;
+        x += Math.sin(heading) * H + Math.cos(heading) * d * H;
+        z += -Math.cos(heading) * H + Math.sin(heading) * d * H;
         heading += (d * Math.PI) / 2;
-        samples = [{ x, z, heading, curvature: 0, kind: 'straight' }];
+        samples = [{ x, z, heading, curvature: 0, kind: 'straight', halfWidth }];
+        tapers = [];
         continue;
       }
+      const from = halfWidth;
+      const to = segment.kind === 'taper' ? halfWidthFor(segment.lanes) : halfWidth;
+      const legDistance = (samples.length - 1) * SAMPLE_STEP;
       const { length, angle } =
-        segment.kind === 'straight'
+        segment.kind !== 'arc'
           ? { length: segment.length, angle: 0 }
           : {
               length: segment.radius * Math.abs((segment.angleDeg * Math.PI) / 180),
@@ -100,13 +128,23 @@ export class Track {
             };
       const steps = Math.max(1, Math.round(length / SAMPLE_STEP));
       const curvature = angle / (steps * SAMPLE_STEP);
+      const kind = segment.kind === 'arc' ? 'arc' : 'straight';
       // Integración por punto medio: el rumbo se actualiza en dos mitades
       for (let i = 0; i < steps; i++) {
         heading += (curvature * SAMPLE_STEP) / 2;
         x += Math.sin(heading) * SAMPLE_STEP;
         z -= Math.cos(heading) * SAMPLE_STEP;
         heading += (curvature * SAMPLE_STEP) / 2;
-        samples.push({ x, z, heading, curvature, kind: segment.kind });
+        halfWidth = from + ((to - from) * (i + 1)) / steps;
+        samples.push({ x, z, heading, curvature, kind, halfWidth });
+      }
+      if (to !== from) {
+        tapers.push({
+          start: legDistance,
+          end: legDistance + steps * SAMPLE_STEP,
+          fromHalfWidth: from,
+          toHalfWidth: to,
+        });
       }
     }
     closeLeg(null);
@@ -146,6 +184,16 @@ export class Track {
       z: p.z + Math.sin(p.heading) * lateral,
       heading: p.heading,
     };
+  }
+
+  /** Distancia del eje a cada muro. Dentro del cruce, la mitad de su lado. */
+  halfWidthAt(leg: number, distance: number): number {
+    const l = this.legs[leg];
+    if (l.junction && distance > l.length) return l.junction.halfWidth;
+    const { i, t } = this.locate(l, distance);
+    const a = l.samples[i];
+    const b = l.samples[i + 1] ?? a;
+    return a.halfWidth + (b.halfWidth - a.halfWidth) * t;
   }
 
   sampleAt(leg: number, distance: number): TrackSample {

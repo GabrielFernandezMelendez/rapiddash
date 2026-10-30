@@ -20,7 +20,7 @@ export const CAR_TUNING = {
   /** Al golpear el muro en un cambio de carril, fracción de la velocidad lateral con la que rebota. */
   bumpBounce: 0.45,
   /** Golpecito al cambiar de carril contra el muro: fracción de velocidad que conserva. */
-  bumpKeep: 0.9,
+  bumpKeep: 0.8,
   /** Choque frontal en un cruce: velocidad con la que pivota y sale hacia la nueva carretera. */
   frontRecoverySpeed: 10,
   /** Duración del giro automático hacia la salida tras un choque frontal (s). */
@@ -28,6 +28,9 @@ export const CAR_TUNING = {
   /** Rozamiento contra el muro (m/s²): empieza suave y crece mientras dura el roce. */
   scrapeFrictionStart: 4,
   scrapeFrictionMax: 14,
+  /** Rozamiento en un tramo estrecho (embudo): la pared entra en ángulo y frena más. */
+  taperFrictionStart: 8,
+  taperFrictionMax: 20,
   /** Segundos de roce hasta alcanzar el rozamiento máximo. */
   scrapeRampTime: 1,
   /** Velocidad de giro del morro hacia el ángulo objetivo. */

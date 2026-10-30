@@ -1,4 +1,4 @@
-import { arc, right, straight } from '../track/track-segment';
+import { arc, narrow, right, straight } from '../track/track-segment';
 import { Track } from '../track/track';
 import { CarEvent, CarState, createCar, DriveInput, Swipe, stepCar } from './car';
 import { LANE_COUNT, laneCenter } from '../track/track-constants';
@@ -269,6 +269,105 @@ describe('Car', () => {
       const car = run({ ...createCar(tight), speed: 20 }, tight, 1.5);
       // Curva a la derecha: el exterior es la izquierda (lateral negativo)
       expect(car.lateral).toBeLessThan(-1);
+    });
+  });
+
+  describe('embudo de 5 a 3 carriles', () => {
+    const funnel = Track.fromSegments([straight(40), narrow(15), straight(80)]);
+    const NARROW_WALL = 3.3 - CAR_TUNING.carHalfWidth;
+    /** Llega al embudo a buena velocidad en el carril exterior derecho (que se cierra). */
+    const outerLane = (): CarState => ({
+      ...createCar(funnel),
+      distance: 20,
+      speed: 24,
+      lateral: 4.4,
+      lane: 4.4,
+    });
+
+    it('sin acelerar, el imán lo mete en el carril de al lado sin rozar', () => {
+      let car = outerLane();
+      let scraped = false;
+      while (car.distance < 70) {
+        car = stepCar(car, idle, funnel, DT).car;
+        if (car.scrapeSide !== 0) scraped = true;
+      }
+      expect(scraped).toBe(false);
+      expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
+    });
+
+    it('acelerando, la pared lo empuja y sigue rozando aunque el embudo termine', () => {
+      const r = runUntil(outerLane(), funnel, (c) => c.distance > 65);
+      expect(r.events).not.toContain('crash');
+      expect(r.car.scrapeSide).toBe(1);
+      expect(r.car.lateral).toBeCloseTo(NARROW_WALL);
+      expect(r.car.lane).toBeCloseTo(4.4);
+    });
+
+    it('el roce del embudo frena aunque se acelere, y más que en una curva', () => {
+      const touch = runUntil(outerLane(), funnel, (c) => c.scrapeSide !== 0).car;
+      const later = run(touch, funnel, 0.8);
+      expect(later.speed).toBeLessThan(touch.speed);
+      expect(CAR_TUNING.taperFrictionMax).toBeGreaterThan(CAR_TUNING.scrapeFrictionMax);
+    });
+
+    it('rozando, un swipe hacia dentro lo lleva al carril de al lado (uno solo)', () => {
+      const pinned = runUntil(outerLane(), funnel, (c) => c.distance > 60).car;
+      const r = runUntil(
+        stepCar(pinned, swipe('left'), funnel, DT).car,
+        funnel,
+        (c) => c.laneTarget === null,
+      );
+      expect(r.car.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
+      expect(run(r.car, funnel, 0.3).scrapeSide).toBe(0);
+    });
+
+    it('rozando, soltar el acelerador lo lleva al carril de al lado', () => {
+      const pinned = runUntil(outerLane(), funnel, (c) => c.distance > 60).car;
+      const released = run(pinned, funnel, 0.6, idle);
+      expect(released.scrapeSide).toBe(0);
+      expect(released.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
+    });
+
+    it('en el tramo de 3 carriles, un swipe hacia el muro es un golpecito', () => {
+      let car: CarState = {
+        ...createCar(funnel),
+        distance: 60,
+        speed: 20,
+        lateral: 2.2,
+        lane: 2.2,
+      };
+      car = stepCar(car, swipe('right'), funnel, DT).car;
+      const r = runUntil(car, funnel, (c) => c.laneTarget === null, hold, 1.5);
+      expect(r.events).toContain('bump');
+      expect(r.car.lateral).toBeCloseTo(2.2);
+    });
+  });
+
+  describe('cruce en un tramo de 3 carriles', () => {
+    const track = Track.fromSegments([
+      straight(30),
+      narrow(6),
+      straight(25),
+      right(),
+      straight(80),
+    ]);
+    const entry = track.legs[0].length;
+    const reach = (d: number) =>
+      runUntil({ ...createCar(track), distance: 20, speed: 20 }, track, (c) => c.distance > d).car;
+
+    it('deslizar al entrar sale por el carril interior del tramo estrecho', () => {
+      const car = run(stepCar(reach(entry + 0.3), swipe('right'), track, DT).car, track, 1.5);
+      expect(car.leg).toBe(1);
+      expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
+    });
+
+    it('sin swipe, el choque frontal sale solo en menos de un segundo', () => {
+      const crash = runUntil(reach(entry - 5), track, (c) => c.mode === 'recovering');
+      expect(crash.events).toContain('crash');
+      const out = runUntil(crash.car, track, (c) => c.mode === 'driving');
+      expect(out.seconds).toBeLessThan(1);
+      expect(out.car.leg).toBe(1);
+      expect(Math.abs(out.car.lateral)).toBeLessThanOrEqual(3.3 - CAR_TUNING.carHalfWidth + 1e-6);
     });
   });
 });
