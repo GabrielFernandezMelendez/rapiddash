@@ -1,4 +1,5 @@
 import { CarPose } from '../../../domain/race/ghost';
+import { Aesthetic } from '../../../domain/settings/aesthetic';
 import { MapTheme } from '../../../domain/track/race-map';
 import { Track } from '../../../domain/track/track';
 
@@ -19,7 +20,8 @@ export interface RenderFrame {
  * sin que el núcleo dependa del framework.
  */
 export abstract class RendererPort {
-  abstract attach(host: HTMLElement, track: Track, theme: MapTheme): void;
+  /** `theme` es el ambiente del mapa; `aesthetic`, la estética elegida en Ajustes. */
+  abstract attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void;
   abstract render(frame: RenderFrame, dt: number): void;
   /** Sacude la cámara (choques). */
   abstract impact(): void;
