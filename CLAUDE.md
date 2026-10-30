@@ -10,8 +10,11 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Curvas de 90° = cruces cuadrados (11 × 11 m). La pista son tramos (rectas y arcos) unidos por cruces. En el cruce, el swipe hacia la salida gira el coche y el momento decide el carril de salida: al entrar, carril interior; tarde, exterior; demasiado tarde, choque contra el muro frontal. Girar hacia la salida hasta 1,5 m antes del cruce cuenta como entrar; antes, muro lateral.
 - Imán de carril fuerte: con el morro recto el coche se centra en el carril más cercano (como en Race Time). Nunca se queda entre dos carriles.
 - Tramos curvos (arcos): el magnetismo empuja hacia el muro exterior; más curvatura, más desvío. Sin acelerar el coche va pegado al suelo (el magnetismo se reduce y no vence al imán de carril); acelerando, en curvas cerradas salta de carril hacia el muro.
-- Choque lateral: el coche se queda parado; swipe al lado contrario del muro y luego adelante.
-- Choque frontal en un cruce: swipe a cualquier lado despega el coche; hacia la salida continúa la carrera.
+- Juego continuo, sin pausas: ningún choque detiene el coche.
+- Roce (contacto casi paralelo con el muro, < ~35°): no es choque; el rozamiento frena cada vez más (con chispas). Se despega con un swipe hacia el centro o soltando el acelerador (el imán lo lleva al carril más cercano).
+- Choque lateral (coche girado contra el muro): conserva el 40 % de la velocidad y en 0,7 s se endereza solo en el carril pegado al muro.
+- Choque frontal (o contra el lado cerrado) en un cruce: en 0,6 s pivota solo hacia la salida a 10 m/s y sale por el carril exterior.
+- Durante esas animaciones se ignoran los swipes.
 - Mapas en dos formatos a comparar: clásicos (cruces sueltos) y zigzag (series de 3 a 8 cruces seguidos con tramos cortos). Los giros alternan derecha/izquierda para que la pista avance en escalera y no se cruce.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
