@@ -14,13 +14,23 @@ import {
 } from 'three';
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
-import { Aesthetic } from '../../../core/domain/settings/aesthetic';
+import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { buildScenery } from './scenery';
 import { PALETTES } from './themes';
+import { SYNTH_PALETTES } from './synthwave/synth-palettes';
+import { buildSynthScenery, skyTexture, SynthSky } from './synthwave/synth-world';
+import { buildRetroCar, buildShip } from './synthwave/vehicles';
 import { buildTrackMesh } from './track-mesh';
+
+/** Vehículo de cada estética (el fantasma usa la misma forma, translúcida). */
+const VEHICLES: Record<Aesthetic, (ghost: boolean) => Group> = {
+  classic: buildCar,
+  retro: buildRetroCar,
+  futurist: buildShip,
+};
 
 // Cámara estilo Subway Surfers, algo alejada para leer la carretera con antelación
 const CAMERA = {
@@ -54,15 +64,13 @@ export class ThreeRendererAdapter extends RendererPort {
   /** Lateral que sigue la cámara: va con algo de retraso para que el coche se vea moverse. */
   private cameraLateral = 0;
   private cameraLeg = -1;
-  /** Estética elegida en Ajustes (de momento solo hay escena clásica). */
-  private aesthetic: Aesthetic = 'classic';
+  /** Sol y montañas synthwave: siguen a la cámara (null en la estética clásica). */
+  private sky: SynthSky | null = null;
 
   attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
     this.dispose();
-    this.aesthetic = aesthetic;
     this.host = host;
     this.track = track;
-    const palette = PALETTES[theme];
 
     this.renderer = new WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -72,16 +80,11 @@ export class ThreeRendererAdapter extends RendererPort {
     host.appendChild(this.renderer.domElement);
 
     this.scene = new Scene();
-    this.scene.background = new Color(palette.sky);
-    this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
-    this.scene.add(new HemisphereLight(0xffffff, palette.ground, 0.65 * Math.PI));
-    const sun = new DirectionalLight(0xffffff, 0.75 * Math.PI);
-    sun.position.set(-30, 50, 20);
-    this.scene.add(sun);
-
-    this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette));
-    this.car = buildCar();
-    this.ghost = buildCar(true);
+    if (isSynthwave(aesthetic)) this.buildSynthwave(track, theme);
+    else this.buildClassic(track, theme);
+    const vehicle = VEHICLES[aesthetic];
+    this.car = vehicle(false);
+    this.ghost = vehicle(true);
     this.carBounce = new CarBounce();
     this.ghostBounce = new CarBounce();
     this.cameraLeg = -1;
@@ -94,6 +97,38 @@ export class ThreeRendererAdapter extends RendererPort {
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
+  }
+
+  /** Estética clásica: cielo claro, árboles y muros de franjas. */
+  private buildClassic(track: Track, theme: MapTheme): void {
+    const palette = PALETTES[theme];
+    this.sky = null;
+    this.scene.background = new Color(palette.sky);
+    this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
+    this.scene.add(new HemisphereLight(0xffffff, palette.ground, 0.65 * Math.PI));
+    const sun = new DirectionalLight(0xffffff, 0.75 * Math.PI);
+    sun.position.set(-30, 50, 20);
+    this.scene.add(sun);
+    this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette));
+  }
+
+  /** Estéticas retro y futurista: noche synthwave con sol a franjas, rejilla y neón. */
+  private buildSynthwave(track: Track, theme: MapTheme): void {
+    const palette = SYNTH_PALETTES[theme];
+    this.scene.background = skyTexture(palette);
+    this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
+    this.scene.add(new HemisphereLight(0xcfb8ff, 0x2a0a4f, 0.9 * Math.PI));
+    const key = new DirectionalLight(0xff8acb, 0.8 * Math.PI);
+    key.position.set(-4, 10, -12);
+    const rim = new DirectionalLight(0x2de2e6, 0.5 * Math.PI);
+    rim.position.set(6, 4, 10);
+    this.scene.add(key, rim);
+    this.sky = new SynthSky(palette);
+    this.scene.add(
+      this.sky.group,
+      buildSynthScenery(track, palette),
+      buildTrackMesh(track, palette),
+    );
   }
 
   render(frame: RenderFrame, dt: number): void {
@@ -140,6 +175,7 @@ export class ThreeRendererAdapter extends RendererPort {
       p.z - fz * CAMERA.back,
     );
     this.camera.lookAt(p.x + fx * CAMERA.lookAhead, 0.6, p.z + fz * CAMERA.lookAhead);
+    this.sky?.follow(this.camera.position.x, this.camera.position.z);
 
     renderer.render(this.scene, this.camera);
   }
