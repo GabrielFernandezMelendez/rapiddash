@@ -12,6 +12,8 @@ export interface RenderFrame {
     readonly scrapeSide: -1 | 0 | 1;
   };
   readonly ghost: CarPose | null;
+  /** Etiqueta sobre el fantasma de un rival (se desvanece al empezar); null sin rival. */
+  readonly ghostLabel: { readonly text: string; readonly opacity: number } | null;
 }
 
 /**

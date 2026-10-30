@@ -25,8 +25,19 @@ class FakeCloud extends CloudRecordRepository {
   async rankOf() {
     return 1;
   }
+  async above() {
+    return null;
+  }
+  async count() {
+    return this.records.size;
+  }
   async ghost() {
     return null;
+  }
+  async updateIdentity(mapId: string, uid: string, nickname: string, country: Profile['country']) {
+    const key = `${mapId}/${uid}`;
+    const current = this.records.get(key);
+    if (current) this.records.set(key, { ...current, nickname, country });
   }
 }
 
@@ -95,6 +106,16 @@ describe('CloudRecords', () => {
     cloud.offline = true;
     await expect(records.publish(run('bay', 42), profile)).rejects.toThrow();
     expect(save).toHaveBeenCalled();
+  });
+
+  it('al cambiar el apodo, actualiza mis récords subidos', async () => {
+    await records.publish(run('bay', 42), profile);
+    const renamed = { ...profile, nickname: 'Gabriel', country: 'MX' as const };
+    expect(await records.updateIdentity(renamed, ['bay', 'canyon'])).toBe(1);
+    expect(cloud.records.get('bay/u1')).toEqual(
+      expect.objectContaining({ nickname: 'Gabriel', country: 'MX', time: 42 }),
+    );
+    expect(await records.updateIdentity(renamed, ['bay'])).toBe(0);
   });
 
   it('al arrancar sube los récords locales que mejoran la nube', async () => {

@@ -1,4 +1,5 @@
-import { BestRun, GhostPlayback, GhostRecorder } from '../../domain/race/ghost';
+import { BestRun, GhostFrame, GhostPlayback, GhostRecorder } from '../../domain/race/ghost';
+import { ghostLabelOpacity } from '../../domain/race/ranking';
 import { PHYSICS_VERSION } from '../../domain/race/physics-version';
 import {
   CountdownLight,
@@ -49,6 +50,12 @@ export interface RecordSink {
   publish(run: BestRun): void;
 }
 
+/** Fantasma de otro piloto: su recorrido y la etiqueta que lleva encima («🇦🇷 Nico · #22»). */
+export interface RivalGhost {
+  readonly frames: readonly GhostFrame[];
+  readonly label: string;
+}
+
 export interface RaceSessionPorts {
   readonly renderer: RendererPort;
   readonly input: InputPort;
@@ -67,6 +74,8 @@ export class RaceSession {
   private recorder = new GhostRecorder();
   private ghost: GhostPlayback | null = null;
   private best: BestRun | null = null;
+  /** Rival elegido; sin él, el fantasma es mi mejor vuelta. */
+  private rival: RivalGhost | null = null;
   private result: RaceResult | null = null;
   private lastCrashAt = -Infinity;
   private listener: (state: RaceViewState) => void = () => {};
@@ -87,6 +96,11 @@ export class RaceSession {
     this.ports.loop.start((dt) => this.tick(dt));
   }
 
+  /** Rival de la próxima salida (start o restart); null = mi mejor vuelta. */
+  useRival(rival: RivalGhost | null): void {
+    this.rival = rival;
+  }
+
   restart(): void {
     this.reset();
     this.ports.audio.nextSong();
@@ -99,7 +113,8 @@ export class RaceSession {
   private reset(): void {
     this.race = createRace(this.track);
     this.recorder = new GhostRecorder();
-    this.ghost = this.best ? new GhostPlayback(this.best.frames) : null;
+    const frames = this.rival?.frames ?? this.best?.frames;
+    this.ghost = frames ? new GhostPlayback(frames) : null;
     this.result = null;
     this.lastCrashAt = -Infinity;
     this.ports.input.read(); // descarta swipes pendientes
@@ -133,6 +148,12 @@ export class RaceSession {
         },
         // En la cuenta atrás el fantasma espera en la salida
         ghost: this.ghost?.poseAt(race.phase === 'countdown' ? 0 : race.raceTime) ?? null,
+        ghostLabel: this.rival
+          ? {
+              text: this.rival.label,
+              opacity: ghostLabelOpacity(race.phase === 'countdown' ? 0 : race.raceTime),
+            }
+          : null,
       },
       dt,
     );
