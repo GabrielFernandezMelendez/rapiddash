@@ -60,6 +60,9 @@ Atomic design:
 - Cambios visuales: primero mockup y aprobación, después PR con capturas.
 - CI (GitHub Actions) compila y pasa los tests en cada PR.
 - Probar una PR en local: `gh pr checkout <n> && npm run start:movil`.
+- Despliegue: cada PR se publica en una URL de prueba (el bot de Firebase la comenta en la PR); cada merge en `main` publica en https://rapiddash-gabo.web.app.
+- Las PRs van siempre contra `main`, sin encadenarlas.
+- Skills de Firebase en `.agents/skills/`: leer la que toque (hosting, firestore, auth, reglas) antes de trabajar con Firebase.
 
 ## Comandos
 
