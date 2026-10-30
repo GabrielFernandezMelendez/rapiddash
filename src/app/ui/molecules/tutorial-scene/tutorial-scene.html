@@ -1,0 +1,54 @@
+<div class="stage">
+  @switch (step()) {
+    @case ('accelerate') {
+      <div class="road acc-road" style="left: 88px; right: 88px"></div>
+      <div class="ship" style="left: 148px; top: 110px"><i class="flame acc-flame"></i></div>
+      <div class="finger acc-finger" style="right: 18px; bottom: 18px"></div>
+      <div class="bar"><i class="acc-bar"></i></div>
+      <span class="tag acc-on">{{ 'tutorial.scene.pressed' | t }}</span>
+      <span class="tag acc-off">{{ 'tutorial.scene.released' | t }}</span>
+    }
+    @case ('lanes') {
+      <div class="road lanes5 ln-road" style="left: 48px; right: 48px"></div>
+      <div class="ship ln-ship" style="left: 148px; top: 96px"></div>
+      <div class="finger ln-finger" style="left: 141px; bottom: 16px"></div>
+    }
+    @case ('junctions') {
+      <div class="slab" style="left: 108px; width: 110px; top: 130px; bottom: 0"></div>
+      <div class="slab" style="left: 108px; width: 110px; top: 20px; height: 110px"></div>
+      <div class="slab" style="left: 218px; right: 0; top: 20px; height: 110px"></div>
+      <i class="wall v cyan" style="left: 104px; top: 20px; bottom: 0"></i>
+      <i class="wall v pink" style="left: 218px; top: 130px; bottom: 0"></i>
+      <i class="wall h cyan" style="left: 104px; right: 0; top: 16px"></i>
+      <i class="wall h pink" style="left: 218px; right: 0; top: 130px"></i>
+      <span class="chip ok" style="left: 230px; top: 108px">{{ 'tutorial.scene.early' | t }}</span>
+      <span class="chip warn" style="left: 230px; top: 26px">{{ 'tutorial.scene.late' | t }}</span>
+      <span class="chip bad" style="left: 110px; top: 0">{{ 'tutorial.scene.tooLate' | t }}</span>
+      <div class="ship small jn-ship"></div>
+      <span class="swipe jn-swipe">{{ 'tutorial.scene.swipe' | t }} →</span>
+    }
+    @case ('funnels') {
+      <div class="funnel-wall"></div>
+      <div class="funnel-road"></div>
+      <svg class="arrow" style="left: 71px" width="26" height="40" viewBox="0 0 26 40">
+        <path d="M6 36 V18 L20 6" /><path d="M12 5 H20 V13" />
+      </svg>
+      <svg class="arrow" style="left: 230px" width="26" height="40" viewBox="0 0 26 40">
+        <path d="M20 36 V18 L6 6" /><path d="M14 5 H6 V13" />
+      </svg>
+      <i class="chevron fn-blink" style="left: 64px; transform: rotate(-51deg)"></i>
+      <i class="chevron fn-blink" style="left: 228px; transform: rotate(51deg)"></i>
+      <span class="tag">{{ 'tutorial.scene.funnel' | t }}</span>
+      <div class="ship small fn-ship"></div>
+    }
+    @case ('rival') {
+      <div class="road lanes5 rv-road" style="left: 48px; right: 48px"></div>
+      <div class="rv-ghost-wrap">
+        <span class="label">🇦🇷 Nico · #22</span>
+        <div class="ship ghost"></div>
+      </div>
+      <div class="ship rv-ship" style="left: 148px; top: 150px"></div>
+      <span class="hud">vs Nico <span class="delta"><b class="behind">+0.31</b><b class="ahead">−0.21</b></span></span>
+    }
+  }
+</div>

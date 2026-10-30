@@ -13,6 +13,8 @@ import {
 import { Router } from '@angular/router';
 import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
+import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
+import { showTutorialBeforeRace } from '../../../core/domain/settings/tutorial';
 import { GameLoopPort } from '../../../core/application/ports/out/game-loop.port';
 import { InputPort } from '../../../core/application/ports/out/input.port';
 import { RendererPort } from '../../../core/application/ports/out/renderer.port';
@@ -28,13 +30,14 @@ import { RankingService } from '../../../shared/account/ranking.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { Countdown } from '../../organisms/countdown/countdown';
+import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { Hud } from '../../organisms/hud/hud';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -54,6 +57,9 @@ import { RaceLayout } from '../../templates/race-layout/race-layout';
         }
       }
     </rd-race-layout>
+    @if (tutorialOpen()) {
+      <rd-tutorial (closed)="tutorialDone()" />
+    }
   `,
   styles: `
     .scene {
@@ -99,6 +105,10 @@ export class RacePage {
       : this.i18n.t('results.passed').replace('{n}', String(gained));
   });
   private lastResult: unknown = null;
+  private readonly settings = inject(SettingsRepository);
+  /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
+  protected readonly tutorialOpen = signal(false);
+  private tutorialClosed: (() => void) | null = null;
 
   constructor() {
     // El lienzo necesita el DOM real: arrancamos tras el primer render
@@ -109,6 +119,12 @@ export class RacePage {
       this.renderer.dispose();
       this.audio.dispose();
     });
+  }
+
+  protected tutorialDone(): void {
+    this.settings.setTutorialSeen();
+    this.tutorialOpen.set(false);
+    this.tutorialClosed?.();
   }
 
   /** «Repetir»: si hay siguiente rival, la próxima carrera es contra él. */
@@ -146,6 +162,12 @@ export class RacePage {
       records: this.cloudRecords,
     }, aesthetic);
     if (pick?.ranked) await this.useRival(pick.ranked);
+    if (showTutorialBeforeRace(this.settings.getTutorialSeen())) {
+      await new Promise<void>((resolve) => {
+        this.tutorialClosed = resolve;
+        this.tutorialOpen.set(true);
+      });
+    }
     await this.session.start((s) => this.onState(s));
   }
 

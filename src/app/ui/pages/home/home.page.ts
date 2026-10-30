@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
+import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
 import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { Language } from '../../../core/domain/settings/language';
@@ -26,12 +27,13 @@ import { Logo } from '../../molecules/logo/logo';
 import { PilotChip } from '../../molecules/pilot-chip/pilot-chip';
 import { LinkReminder } from '../../organisms/link-reminder/link-reminder';
 import { SettingsDialog } from '../../organisms/settings-dialog/settings-dialog';
+import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
   selector: 'rd-home-page',
-  imports: [MenuLayout, Button, Logo, PilotChip, LinkReminder, SettingsDialog, TranslatePipe],
+  imports: [MenuLayout, Button, Logo, PilotChip, LinkReminder, SettingsDialog, Tutorial, TranslatePipe],
   providers: [provideMenuAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.page.html',
@@ -45,6 +47,8 @@ export class HomePage implements OnInit {
   protected readonly account = inject(AccountService);
   private readonly bestRuns = inject(BestRunRepository);
   protected readonly settingsOpen = signal(false);
+  protected readonly tutorialOpen = signal(false);
+  private readonly settings = inject(SettingsRepository);
   /** Aviso de vincular la cuenta (cada 5 días, solo invitados). */
   protected readonly reminderOpen = signal(false);
   protected readonly reminderRecords = signal('');
@@ -64,6 +68,16 @@ export class HomePage implements OnInit {
 
   ngOnInit(): void {
     if (this.account.needsLinkReminder()) void this.openReminder();
+  }
+
+  protected openTutorial(): void {
+    this.settingsOpen.set(false);
+    this.tutorialOpen.set(true);
+  }
+
+  protected closeTutorial(): void {
+    this.tutorialOpen.set(false);
+    this.settings.setTutorialSeen();
   }
 
   protected openProfile(): void {

@@ -7,6 +7,7 @@ import { readJson, writeJson } from './safe-storage';
 const LANGUAGE_KEY = 'rapiddash.language';
 const AESTHETIC_KEY = 'rapiddash.aesthetic';
 const RIVALS_KEY = 'rapiddash.rivals';
+const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -34,5 +35,13 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setRival(mapId: string, choice: RivalChoice): void {
     writeJson(RIVALS_KEY, { ...readJson<Record<string, unknown>>(RIVALS_KEY), [mapId]: choice });
+  }
+
+  getTutorialSeen(): boolean {
+    return readJson<boolean>(TUTORIAL_KEY) === true;
+  }
+
+  setTutorialSeen(): void {
+    writeJson(TUTORIAL_KEY, true);
   }
 }
