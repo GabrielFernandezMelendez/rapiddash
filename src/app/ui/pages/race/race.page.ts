@@ -20,6 +20,7 @@ import { RaceSession, RaceViewState } from '../../../core/application/use-cases/
 import { findMap } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { provideRaceAdapters } from '../../../infrastructure/di/race.providers';
+import { CloudRecordsService } from '../../../shared/account/cloud-records.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { Countdown } from '../../organisms/countdown/countdown';
@@ -63,6 +64,7 @@ export class RacePage {
   private readonly loop = inject(GameLoopPort);
   private readonly bestRuns = inject(BestRunRepository);
   private readonly audio = inject(AudioPort);
+  private readonly cloudRecords = inject(CloudRecordsService);
 
   private readonly scene = viewChild.required<ElementRef<HTMLElement>>('scene');
   private readonly surface = viewChild.required(RaceLayout, { read: ElementRef<HTMLElement> });
@@ -106,6 +108,7 @@ export class RacePage {
       loop: this.loop,
       bestRuns: this.bestRuns,
       audio: this.audio,
+      records: this.cloudRecords,
     }, aesthetic);
     await this.session.start((s) => this.state.set(s));
   }

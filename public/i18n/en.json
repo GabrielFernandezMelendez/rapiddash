@@ -113,5 +113,6 @@
   "auth.error.popup-blocked": "Your browser blocked the Google window. Try again.",
   "auth.error.too-many-requests": "Too many attempts. Wait a moment.",
   "auth.error.network": "No connection. Try again.",
-  "auth.error.unknown": "Something went wrong. Try again."
+  "auth.error.unknown": "Something went wrong. Try again.",
+  "auth.error.provider-disabled": "This sign-in option isn't available right now. Try another one."
 }

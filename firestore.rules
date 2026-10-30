@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Reglas de Firestore de RapidDash. Todo lo que no se permite aquí está prohibido.
-// Desplegar: npx -y firebase-tools@latest deploy --only firestore:rules --project rapiddash-gabo
+// Desplegar (reglas e índices): npx -y firebase-tools@latest deploy --only firestore --project rapiddash-gabo
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -26,6 +26,47 @@ service cloud.firestore {
           || request.resource.data.country.matches('^[A-Z]{2}$'))
         // El apodo tiene que estar reservado a su nombre al terminar la escritura
         && getAfter(nicknameDoc(request.resource.data.nicknameKey)).data.uid == uid;
+      allow delete: if false;
+    }
+
+    // Ranking: el récord de cada piloto en cada mapa. Solo se puede mejorar (o sustituir por uno
+    // de una física más nueva) y lleva el apodo y el país del perfil. Los límites de tiempo son
+    // los de core/domain/race/cloud-record.ts.
+    match /records/{mapId}/runs/{uid} {
+      function validRun() {
+        let run = request.resource.data;
+        let profile = get(/databases/$(database)/documents/users/$(uid)).data;
+        return signedIn()
+          && request.auth.uid == uid
+          && mapId.matches('^[A-Za-z0-9-]{1,40}$')
+          && run.keys().hasOnly(['nickname', 'country', 'time', 'physicsVersion', 'recordedAt'])
+          && run.time is number && run.time > 10 && run.time < 3600
+          && run.physicsVersion is int && run.physicsVersion >= 1
+          && run.recordedAt == request.time
+          && run.nickname == profile.nickname
+          && run.country == profile.country;
+      }
+
+      allow read: if signedIn();
+      allow create: if validRun();
+      allow update: if validRun()
+        && (request.resource.data.physicsVersion > resource.data.physicsVersion
+          || (request.resource.data.physicsVersion == resource.data.physicsVersion
+            && request.resource.data.time < resource.data.time));
+      allow delete: if false;
+    }
+
+    // Fantasma de cada récord (id: {mapa}__{uid}). Se escribe junto al récord y debe coincidir.
+    match /ghosts/{ghostId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['mapId', 'uid', 'time', 'physicsVersion', 'frames'])
+        && request.resource.data.uid == request.auth.uid
+        && ghostId == request.resource.data.mapId + '__' + request.auth.uid
+        && request.resource.data.frames is string
+        && request.resource.data.frames.size() < 500000
+        && getAfter(/databases/$(database)/documents/records/$(request.resource.data.mapId)/runs/$(request.auth.uid)).data.time
+          == request.resource.data.time;
       allow delete: if false;
     }
 

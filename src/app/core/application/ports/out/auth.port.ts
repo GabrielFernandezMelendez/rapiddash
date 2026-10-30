@@ -14,6 +14,7 @@ export type AuthErrorCode =
   | 'popup-closed'
   | 'popup-blocked'
   | 'too-many-requests'
+  | 'provider-disabled'
   | 'network'
   | 'unknown';
 

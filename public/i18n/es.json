@@ -113,5 +113,6 @@
   "auth.error.popup-blocked": "El navegador ha bloqueado la ventana de Google. Inténtalo otra vez.",
   "auth.error.too-many-requests": "Demasiados intentos. Espera un momento.",
   "auth.error.network": "Sin conexión. Inténtalo otra vez.",
-  "auth.error.unknown": "Algo ha fallado. Inténtalo otra vez."
+  "auth.error.unknown": "Algo ha fallado. Inténtalo otra vez.",
+  "auth.error.provider-disabled": "Este modo de entrada no está disponible ahora mismo. Prueba con otro."
 }
