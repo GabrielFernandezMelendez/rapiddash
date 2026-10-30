@@ -10,6 +10,7 @@ const idle: DriveInput = { throttle: false, swipes: [] };
 const swipe = (...swipes: Swipe[]): DriveInput => ({ throttle: true, swipes });
 const LANES = Array.from({ length: LANE_COUNT }, (_, i) => laneCenter(i));
 const inALane = (car: CarState) => LANES.some((c) => Math.abs(c - car.lateral) < 0.01);
+const MIDDLE = Math.floor(LANE_COUNT / 2);
 
 function run(car: CarState, track: Track, seconds: number, input: DriveInput = hold): CarState {
   let state = car;
@@ -52,61 +53,52 @@ describe('Car', () => {
     expect(coasting.speed).toBeGreaterThan(0);
   });
 
-  it('un swipe lateral en recta gira 90° y no acelera mientras está girado', () => {
-    const car = run(createCar(longStraight), longStraight, 1);
-    const turned = stepCar(car, swipe('right'), longStraight, DT).car;
-    expect(turned.yawTarget).toBeCloseTo(QUARTER_TURN);
-    const later = run(turned, longStraight, 0.1);
-    expect(later.accelerating).toBe(false);
-    expect(later.lateral).toBeGreaterThan(car.lateral);
-  });
+  describe('cambio de carril (swipe fuera del cruce)', () => {
+    const cruising = () => run(createCar(longStraight), longStraight, 1);
 
-  it('el swipe adelante endereza el coche', () => {
-    let car = run(createCar(longStraight), longStraight, 1);
-    car = stepCar(car, swipe('right'), longStraight, DT).car;
-    car = run(car, longStraight, 0.05);
-    car = stepCar(car, swipe('forward'), longStraight, DT).car;
-    car = run(car, longStraight, 0.3);
-    expect(car.yaw).toBe(0);
-    expect(car.mode).toBe('driving');
-  });
+    it('un swipe cambia exactamente un carril en unos 0,2 s sin girar el coche', () => {
+      const car = stepCar(cruising(), swipe('right'), longStraight, DT).car;
+      expect(car.yawTarget).toBe(0);
+      const r = runUntil(car, longStraight, (c) => c.laneTarget === null);
+      expect(r.seconds).toBeLessThan(0.25);
+      expect(r.car.lateral).toBeCloseTo(laneCenter(MIDDLE + 1));
+      expect(r.car.yaw).toBe(0);
+    });
 
-  describe('choque lateral (coche girado contra el muro)', () => {
-    function crashLeft() {
-      let car = run(createCar(longStraight), longStraight, 2);
+    it('sigue acelerando mientras cambia de carril', () => {
+      const start = cruising();
+      const car = run(stepCar(start, swipe('left'), longStraight, DT).car, longStraight, 0.1);
+      expect(car.accelerating).toBe(true);
+      expect(car.speed).toBeGreaterThan(start.speed);
+    });
+
+    it('dos swipes seguidos cambian dos carriles', () => {
+      const car = run(
+        stepCar(cruising(), swipe('left', 'left'), longStraight, DT).car,
+        longStraight,
+        0.6,
+      );
+      expect(car.lateral).toBeCloseTo(laneCenter(MIDDLE - 2));
+    });
+
+    it('al terminar, el imán lo mantiene centrado en el carril', () => {
+      const car = run(stepCar(cruising(), swipe('right'), longStraight, DT).car, longStraight, 1);
+      expect(inALane(car)).toBe(true);
+      expect(car.laneTarget).toBeNull();
+    });
+
+    it('contra el muro: golpecito, pierde algo de velocidad y se queda en su carril', () => {
+      let car = cruising();
+      car = run(stepCar(car, swipe('left', 'left'), longStraight, DT).car, longStraight, 0.6);
       const before = car.speed;
       car = stepCar(car, swipe('left'), longStraight, DT).car;
-      const r = runUntil(car, longStraight, (c) => c.mode === 'recovering');
-      return { ...r, before };
-    }
-
-    it('no se para: pierde velocidad y entra en recuperación automática', () => {
-      const { car, events, before } = crashLeft();
-      expect(events).toContain('crash');
-      expect(car.mode).toBe('recovering');
-      expect(car.speed).toBeGreaterThan(0);
-      expect(car.speed).toBeLessThan(before);
-    });
-
-    it('en menos de un segundo queda recto y en el carril pegado al muro', () => {
-      const { car } = crashLeft();
-      const r = runUntil(car, longStraight, (c) => c.mode === 'driving');
-      expect(r.seconds).toBeLessThan(1);
-      expect(r.events).toContain('recovered');
-      expect(r.car.yaw).toBe(0);
+      const r = runUntil(car, longStraight, (c) => c.laneTarget === null, hold, 1);
+      expect(r.events).toContain('bump');
+      expect(r.events).not.toContain('crash');
+      expect(r.car.mode).toBe('driving');
+      expect(r.car.speed).toBeLessThan(before);
+      expect(r.car.speed).toBeGreaterThan(before * 0.85);
       expect(r.car.lateral).toBeCloseTo(laneCenter(0));
-    });
-
-    it('ignora los swipes durante la recuperación', () => {
-      const { car } = crashLeft();
-      const after = stepCar(car, swipe('right'), longStraight, DT).car;
-      expect(after.mode).toBe('recovering');
-      expect(after.yawTarget).toBe(0);
-    });
-
-    it('sigue avanzando durante la animación', () => {
-      const { car } = crashLeft();
-      expect(run(car, longStraight, 0.4).distance).toBeGreaterThan(car.distance);
     });
   });
 
@@ -118,7 +110,7 @@ describe('Car', () => {
       return runUntil({ ...createCar(tight), speed: 24 }, tight, (c) => c.scrapeSide !== 0);
     }
 
-    it('un contacto casi paralelo no es un choque: roza y sigue', () => {
+    it('rozar no es un choque: frena y sigue', () => {
       const { car, events } = scrapeTrack();
       expect(events).not.toContain('crash');
       expect(car.scrapeSide).toBe(-1);
@@ -146,8 +138,8 @@ describe('Car', () => {
 
     it('un swipe hacia el centro también lo despega', () => {
       const { car } = scrapeTrack();
-      const turned = run(stepCar(car, swipe('right'), tight, DT).car, tight, 0.2);
-      expect(turned.scrapeSide).toBe(0);
+      const moved = run(stepCar(car, swipe('right'), tight, DT).car, tight, 0.15);
+      expect(moved.scrapeSide).toBe(0);
     });
   });
 
@@ -163,8 +155,9 @@ describe('Car', () => {
       return car;
     }
 
-    it('deslizar al entrar en el cruce sale por el carril interior', () => {
+    it('deslizar al entrar en el cruce gira 90° y sale por el carril interior', () => {
       let car = stepCar(driveTo(entry + 0.5), swipe('right'), track, DT).car;
+      expect(car.yawTarget).toBeCloseTo(QUARTER_TURN);
       car = run(car, track, 2);
       expect(car.leg).toBe(1);
       expect(car.mode).toBe('driving');
@@ -181,15 +174,28 @@ describe('Car', () => {
 
     it('girar hacia la salida justo antes del cruce cuenta como entrar', () => {
       let car = stepCar(driveTo(entry - 1), swipe('right'), track, DT).car;
+      expect(car.yawTarget).toBeCloseTo(QUARTER_TURN);
       car = run(car, track, 2);
       expect(car.leg).toBe(1);
       expect(car.mode).toBe('driving');
     });
 
-    it('girar demasiado pronto lleva contra el muro lateral', () => {
+    it('antes de esa zona, el swipe hacia la salida solo cambia de carril', () => {
       const car = stepCar(driveTo(entry - 10), swipe('right'), track, DT).car;
-      const r = runUntil(car, track, (c) => c.mode === 'recovering', hold, 2);
-      expect(r.events).toContain('crash');
+      expect(car.yawTarget).toBe(0);
+      expect(car.laneTarget).toBeCloseTo(laneCenter(MIDDLE + 1));
+    });
+
+    it('en el cruce, el swipe hacia el lado cerrado cambia de carril', () => {
+      const car = stepCar(driveTo(entry + 0.5), swipe('left'), track, DT).car;
+      expect(car.yawTarget).toBe(0);
+      expect(car.laneTarget).toBeCloseTo(laneCenter(MIDDLE - 1));
+    });
+
+    it('ya girado, los swipes se ignoran', () => {
+      const turned = stepCar(driveTo(entry + 0.5), swipe('right'), track, DT).car;
+      const after = stepCar(turned, swipe('left'), track, DT).car;
+      expect(after.yawTarget).toBeCloseTo(QUARTER_TURN);
     });
 
     it('sin swipe, choca de frente y en menos de un segundo sale sola por la carretera nueva', () => {
@@ -210,18 +216,6 @@ describe('Car', () => {
       const after = stepCar(crash.car, swipe('left'), track, DT).car;
       expect(after.mode).toBe('recovering');
       expect(after.yawTarget).toBeCloseTo(QUARTER_TURN);
-    });
-  });
-
-  describe('imán de carril', () => {
-    it('al enderezar, el coche se centra en el carril más cercano', () => {
-      let car = run(createCar(longStraight), longStraight, 1);
-      car = stepCar(car, swipe('right'), longStraight, DT).car;
-      car = run(car, longStraight, 0.12);
-      car = stepCar(car, swipe('forward'), longStraight, DT).car;
-      car = run(car, longStraight, 1.5);
-      expect(inALane(car)).toBe(true);
-      expect(Math.abs(car.lateral)).toBeGreaterThan(1);
     });
   });
 
