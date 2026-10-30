@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Reglas de Firestore de RapidDash. Todo lo que no se permite aquí está prohibido.
+// Desplegar: npx -y firebase-tools@latest deploy --only firestore:rules --project rapiddash-gabo
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function nicknameDoc(key) {
+      return /databases/$(database)/documents/nicknames/$(key);
+    }
+
+    // Perfil público del piloto: apodo, país y fechas. Cada uno solo escribe el suyo.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+          ['nickname', 'nicknameKey', 'country', 'createdAt', 'linkReminderAt'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 3
+        && request.resource.data.nickname.size() <= 16
+        && (request.resource.data.country == null
+          || request.resource.data.country.matches('^[A-Z]{2}$'))
+        // El apodo tiene que estar reservado a su nombre al terminar la escritura
+        && getAfter(nicknameDoc(request.resource.data.nicknameKey)).data.uid == uid;
+      allow delete: if false;
+    }
+
+    // Reserva de apodos únicos: el id es el apodo sin mayúsculas ni tildes.
+    match /nicknames/{key} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && key.size() >= 3
+        && key.size() <= 16;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+  }
+}
