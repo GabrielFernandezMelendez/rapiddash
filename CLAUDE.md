@@ -5,7 +5,7 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 ## Mecánicas (no cambiar sin acordarlo)
 
 - Mantener pulsado (o Espacio) acelera. No hay freno: al soltar se pierde velocidad poco a poco.
-- Solo se gira en los cruces. Fuera de ellos, un swipe lateral (o ← →) cambia un carril a ese lado, como en Subway Surfers (~0,2 s, sin dejar de acelerar). Varios swipes seguidos se acumulan.
+- Solo se gira en los cruces. Fuera de ellos, un swipe lateral (o ← →) cambia un carril a ese lado, como en Subway Surfers (~0,2 s, sin dejar de acelerar). Un swipe = un carril: un deslizamiento largo cuenta una vez y durante el cambio se ignoran otros swipes; para encadenar, parar el dedo un instante o levantarlo.
 - Swipe hacia el muro desde el carril pegado a él: golpecito (chispas, conserva el 90 % de la velocidad) y se queda en su carril. No es un choque.
 - Curvas de 90° = cruces cuadrados (11 × 11 m). La pista son tramos (rectas y arcos) unidos por cruces. En el cruce, el swipe hacia la salida gira el coche 90° (mientras está girado no acelera) y el momento decide el carril de salida: al entrar, carril interior; tarde, exterior; demasiado tarde, choque contra el muro frontal. Girar hacia la salida hasta 1,5 m antes del cruce cuenta como entrar; antes, es un cambio de carril. En el cruce, el swipe hacia el lado cerrado cambia de carril. Ya girado, se ignoran los swipes.
 - No hay swipe adelante: el coche sale del cruce ya recto.
@@ -17,7 +17,7 @@ Juego de carreras 3D low-poly para móvil en vertical. Angular 22 + Three.js. El
 - Mapas en dos formatos a comparar: clásicos (cruces sueltos) y zigzag (series de 3 a 8 cruces seguidos con tramos cortos). Los giros alternan derecha/izquierda para que la pista avance en escalera y no se cruce.
 - Sin ventana de tolerancia en el swipe adelante (posible mejora con el modo online).
 - 5 carriles, cámara tipo Subway Surfers algo alejada, brillo en el escape al acelerar.
-- Sonido: música en bucle durante la carrera; el motor suena solo al acelerar, con volumen y vueltas según la velocidad. Archivos en `public/audio/` (ver su README); sin ellos, silencio.
+- Sonido: música en bucle durante la carrera; el motor suena solo al acelerar, por debajo de la música, con volumen y vueltas según la velocidad. Archivos en `public/audio/` (ver su README); sin ellos, silencio.
 
 ## Arquitectura hexagonal
 
