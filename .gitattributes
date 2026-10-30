@@ -1,0 +1,5 @@
+# Saltos de línea LF en el repo para todos los sistemas (evita los avisos LF/CRLF en Windows)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
