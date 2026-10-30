@@ -1,10 +1,15 @@
 import { AudioFrame, AudioPort } from '../../core/application/ports/out/audio.port';
+import {
+  EngineSound,
+  engineFor,
+  musicFor,
+  MusicTrack,
+  pickTrack,
+} from '../../core/domain/audio/soundtrack';
+import { Aesthetic } from '../../core/domain/settings/aesthetic';
 
-/** Archivos en public/audio. Si faltan, el juego funciona en silencio. */
-export const AUDIO_FILES = {
-  music: 'audio/race-music.mp3',
-  engine: 'audio/engine.mp3',
-} as const;
+/** Carpeta de los sonidos (public/audio). Si falta un archivo, esa parte queda en silencio. */
+const AUDIO_DIR = 'audio/';
 
 const MUSIC_VOLUME = 0.45;
 /** Tras la meta la música baja para no tapar la pantalla de resultados. */
@@ -19,18 +24,31 @@ const ENGINE_FADE_OUT = 0.06;
  * a la velocidad actual, y al llegar al final repite el tramo de vueltas altas.
  */
 const ENGINE_REV_PORTION = 0.55;
+/** Motor en bucle (retro y nave): el tono sube con la velocidad entre estos dos valores. */
+const ENGINE_LOOP_RATE_MIN = 0.85;
+const ENGINE_LOOP_RATE_MAX = 1.3;
+/** Fundido entre canciones al repetir la carrera (s). */
+const SONG_FADE = 0.5;
+
+/** Última canción que sonó, también entre carreras: la siguiente nunca es la misma. */
+let lastTrack: MusicTrack | null = null;
 
 export class WebAudioAdapter extends AudioPort {
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
   private engineGain: GainNode | null = null;
   private engineBuffer: AudioBuffer | null = null;
+  private engineSound: EngineSound | null = null;
   /** Voz del motor en curso: cada acelerón crea una con su propio fundido. */
   private engine: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
-  private musicStarted = false;
+  private tracks: readonly MusicTrack[] = [];
+  /** Canción en curso, con su propio volumen para fundirla al cambiar. */
+  private song: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
+  /** Cada canción pedida tiene un número: si llega tarde una carga antigua, se descarta. */
+  private songRequest = 0;
   private disposed = false;
 
-  start(): void {
+  start(aesthetic: Aesthetic): void {
     const Ctor =
       globalThis.AudioContext ??
       (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -48,8 +66,20 @@ export class WebAudioAdapter extends AudioPort {
     window.addEventListener('keydown', this.unlock);
     void this.ctx.resume().catch(() => undefined);
 
-    void this.load(AUDIO_FILES.music).then((buffer) => buffer && this.playMusic(buffer));
-    void this.load(AUDIO_FILES.engine).then((buffer) => (this.engineBuffer = buffer));
+    this.tracks = musicFor(aesthetic);
+    this.engineSound = engineFor(aesthetic);
+    this.nextSong();
+    void this.load(this.engineSound.file).then((buffer) => (this.engineBuffer = buffer));
+  }
+
+  nextSong(): void {
+    const track = pickTrack(this.tracks, lastTrack);
+    if (!track || !this.ctx) return;
+    lastTrack = track;
+    const request = ++this.songRequest;
+    void this.load(track.file).then((buffer) => {
+      if (buffer && request === this.songRequest) this.playSong(track, buffer);
+    });
   }
 
   update(frame: AudioFrame): void {
@@ -68,6 +98,11 @@ export class WebAudioAdapter extends AudioPort {
     if (accelerating && !this.engine) this.startEngine(frame.speedRatio);
     if (!accelerating && this.engine) this.stopEngine();
     this.engine?.gain.gain.setTargetAtTime(0.35 + 0.65 * frame.speedRatio, now, ENGINE_FADE_IN);
+    if (this.engine && this.engineSound?.mode === 'loop') {
+      const rate =
+        ENGINE_LOOP_RATE_MIN + (ENGINE_LOOP_RATE_MAX - ENGINE_LOOP_RATE_MIN) * frame.speedRatio;
+      this.engine.source.playbackRate.setTargetAtTime(rate, now, 0.15);
+    }
   }
 
   dispose(): void {
@@ -83,9 +118,9 @@ export class WebAudioAdapter extends AudioPort {
     void this.ctx?.resume().catch(() => undefined);
   };
 
-  private async load(url: string): Promise<AudioBuffer | null> {
+  private async load(file: string): Promise<AudioBuffer | null> {
     try {
-      const res = await fetch(url);
+      const res = await fetch(AUDIO_DIR + file);
       if (!res.ok || !this.ctx) return null;
       const data = await res.arrayBuffer();
       if (this.disposed || !this.ctx) return null;
@@ -95,14 +130,35 @@ export class WebAudioAdapter extends AudioPort {
     }
   }
 
-  private playMusic(buffer: AudioBuffer): void {
-    if (!this.ctx || !this.musicGain || this.musicStarted) return;
-    const source = this.ctx.createBufferSource();
+  /** Empieza en `start` y repite desde `loopStart`; la anterior se funde. */
+  private playSong(track: MusicTrack, buffer: AudioBuffer): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.musicGain) return;
+    const now = ctx.currentTime;
+    this.fadeOutSong(now);
+    const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
-    source.connect(this.musicGain);
-    source.start();
-    this.musicStarted = true;
+    source.loopStart = Math.min(track.loopStart, buffer.duration);
+    source.loopEnd = Math.min(track.loopEnd ?? buffer.duration, buffer.duration);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(1, now + SONG_FADE);
+    source.connect(gain);
+    gain.connect(this.musicGain);
+    source.start(now, Math.min(track.start, buffer.duration));
+    this.song = { source, gain };
+  }
+
+  private fadeOutSong(now: number): void {
+    const old = this.song;
+    if (!old) return;
+    old.gain.gain.cancelScheduledValues(now);
+    old.gain.gain.setValueAtTime(old.gain.gain.value, now);
+    old.gain.gain.linearRampToValueAtTime(0, now + SONG_FADE);
+    old.source.stop(now + SONG_FADE + 0.05);
+    old.source.onended = () => old.gain.disconnect();
+    this.song = null;
   }
 
   private startEngine(speedRatio: number): void {
@@ -112,14 +168,21 @@ export class WebAudioAdapter extends AudioPort {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
-    source.loopStart = buffer.duration * ENGINE_REV_PORTION;
-    source.loopEnd = buffer.duration;
     const gain = ctx.createGain();
     gain.gain.value = 0;
     source.connect(gain);
     gain.connect(this.engineGain);
-    // Empieza en las vueltas que corresponden a la velocidad actual
-    source.start(0, Math.min(speedRatio, 0.98) * buffer.duration * ENGINE_REV_PORTION);
+    if (this.engineSound?.mode === 'loop') {
+      // Zumbido continuo desde el principio; el tono lo ajusta update() según la velocidad
+      source.playbackRate.value =
+        ENGINE_LOOP_RATE_MIN + (ENGINE_LOOP_RATE_MAX - ENGINE_LOOP_RATE_MIN) * speedRatio;
+      source.start();
+    } else {
+      source.loopStart = buffer.duration * ENGINE_REV_PORTION;
+      source.loopEnd = buffer.duration;
+      // Empieza en las vueltas que corresponden a la velocidad actual
+      source.start(0, Math.min(speedRatio, 0.98) * buffer.duration * ENGINE_REV_PORTION);
+    }
     this.engine = { source, gain };
   }
 

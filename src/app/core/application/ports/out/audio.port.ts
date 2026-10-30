@@ -1,4 +1,5 @@
 import { RacePhase } from '../../../domain/race/race';
+import { Aesthetic } from '../../../domain/settings/aesthetic';
 
 /** Lo que el sonido necesita saber en cada fotograma. */
 export interface AudioFrame {
@@ -10,8 +11,13 @@ export interface AudioFrame {
 
 /** Puerto de salida de sonido: música de carrera y motor. */
 export abstract class AudioPort {
-  /** Carga los sonidos y arranca la música. Nunca falla: sin audio, el juego sigue en silencio. */
-  abstract start(): void;
+  /**
+   * Carga los sonidos de la estética y arranca una canción al azar. Nunca falla: sin audio, el
+   * juego sigue en silencio.
+   */
+  abstract start(aesthetic: Aesthetic): void;
+  /** Carrera nueva («Repetir»): otra canción al azar. */
+  abstract nextSong(): void;
   abstract update(frame: AudioFrame): void;
   abstract dispose(): void;
 }
