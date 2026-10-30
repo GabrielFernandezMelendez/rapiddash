@@ -106,6 +106,7 @@ export class RaceSession {
       this.ports.renderer.impact();
       this.lastCrashAt = race.raceTime;
     }
+    if (events.includes('bump')) this.ports.renderer.bump(car.lateral > 0 ? 1 : -1);
     if (events.includes('finish')) void this.finish();
 
     this.ports.renderer.render(
