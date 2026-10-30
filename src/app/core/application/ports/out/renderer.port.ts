@@ -3,7 +3,13 @@ import { MapTheme } from '../../../domain/track/race-map';
 import { Track } from '../../../domain/track/track';
 
 export interface RenderFrame {
-  readonly car: CarPose & { readonly accelerating: boolean; readonly crashed: boolean };
+  readonly car: CarPose & {
+    readonly accelerating: boolean;
+    /** Animación automática tras un choque. */
+    readonly recovering: boolean;
+    /** Lado del muro que roza (chispas): 1 derecha, -1 izquierda, 0 ninguno. */
+    readonly scrapeSide: -1 | 0 | 1;
+  };
   readonly ghost: CarPose | null;
 }
 

@@ -17,6 +17,9 @@ import { GameLoopPort } from '../ports/out/game-loop.port';
 import { InputPort } from '../ports/out/input.port';
 import { RendererPort } from '../ports/out/renderer.port';
 
+/** Segundos que se muestra el aviso de choque. */
+const CRASH_FLASH_TIME = 0.7;
+
 export interface RaceResult {
   readonly time: number;
   readonly previousBest: number | null;
@@ -31,9 +34,8 @@ export interface RaceViewState {
   readonly time: number;
   readonly speed: number;
   readonly accelerating: boolean;
-  readonly crashed: boolean;
-  /** Choque contra el muro frontal de un cruce: se sale deslizando hacia la salida. */
-  readonly crashedFront: boolean;
+  /** Destello de "¡Choque!" durante un instante tras cada choque. */
+  readonly crashFlash: boolean;
   readonly bestTime: number | null;
   /** Segundos respecto al fantasma: negativo = vas por delante. */
   readonly ghostDelta: number | null;
@@ -58,6 +60,7 @@ export class RaceSession {
   private ghost: GhostPlayback | null = null;
   private best: BestRun | null = null;
   private result: RaceResult | null = null;
+  private lastCrashAt = -Infinity;
   private listener: (state: RaceViewState) => void = () => {};
 
   constructor(
@@ -87,6 +90,7 @@ export class RaceSession {
     this.recorder = new GhostRecorder();
     this.ghost = this.best ? new GhostPlayback(this.best.frames) : null;
     this.result = null;
+    this.lastCrashAt = -Infinity;
     this.ports.input.read(); // descarta swipes pendientes
   }
 
@@ -98,7 +102,10 @@ export class RaceSession {
     const progress = this.track.progress(car.leg, car.distance);
 
     if (race.phase === 'racing') this.recorder.record(race.raceTime, progress, car);
-    if (events.includes('crash')) this.ports.renderer.impact();
+    if (events.includes('crash')) {
+      this.ports.renderer.impact();
+      this.lastCrashAt = race.raceTime;
+    }
     if (events.includes('finish')) void this.finish();
 
     this.ports.renderer.render(
@@ -109,7 +116,8 @@ export class RaceSession {
           lateral: car.lateral,
           yaw: car.yaw,
           accelerating: car.accelerating,
-          crashed: car.mode === 'crashed',
+          recovering: car.mode === 'recovering',
+          scrapeSide: car.scrapeSide,
         },
         // En la cuenta atrás el fantasma espera en la salida
         ghost: this.ghost?.poseAt(race.phase === 'countdown' ? 0 : race.raceTime) ?? null,
@@ -162,8 +170,7 @@ export class RaceSession {
       time: race.raceTime,
       speed: race.car.speed,
       accelerating: race.car.accelerating,
-      crashed: race.car.mode === 'crashed',
-      crashedFront: race.car.mode === 'crashed' && race.car.wallSide === 0,
+      crashFlash: race.raceTime - this.lastCrashAt < CRASH_FLASH_TIME,
       bestTime: this.result?.previousBest ?? this.best?.time ?? null,
       ghostDelta,
       result: this.result,
