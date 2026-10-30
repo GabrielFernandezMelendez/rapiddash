@@ -97,7 +97,8 @@ export class RacePage {
       return;
     }
     const track = Track.fromSegments(map.segments);
-    this.renderer.attach(this.scene().nativeElement, track, map.theme, this.aesthetic.aesthetic());
+    const aesthetic = this.aesthetic.aesthetic();
+    this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
     this.controls.attach(this.surface().nativeElement as HTMLElement);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,
@@ -105,7 +106,7 @@ export class RacePage {
       loop: this.loop,
       bestRuns: this.bestRuns,
       audio: this.audio,
-    });
+    }, aesthetic);
     await this.session.start((s) => this.state.set(s));
   }
 }

@@ -10,6 +10,7 @@ import {
   stepRace,
 } from '../../domain/race/race';
 import { CAR_TUNING } from '../../domain/car/car-tuning';
+import { Aesthetic } from '../../domain/settings/aesthetic';
 import { RaceMap } from '../../domain/track/race-map';
 import { Track } from '../../domain/track/track';
 import { AudioPort } from '../ports/out/audio.port';
@@ -68,18 +69,21 @@ export class RaceSession {
     private readonly map: RaceMap,
     private readonly track: Track,
     private readonly ports: RaceSessionPorts,
+    /** Estética: elige la música y el motor (nunca cambia la física). */
+    private readonly aesthetic: Aesthetic = 'classic',
   ) {}
 
   async start(listener: (state: RaceViewState) => void): Promise<void> {
     this.listener = listener;
     this.best = await this.ports.bestRuns.get(this.map.id);
     this.reset();
-    this.ports.audio.start();
+    this.ports.audio.start(this.aesthetic);
     this.ports.loop.start((dt) => this.tick(dt));
   }
 
   restart(): void {
     this.reset();
+    this.ports.audio.nextSong();
   }
 
   stop(): void {
