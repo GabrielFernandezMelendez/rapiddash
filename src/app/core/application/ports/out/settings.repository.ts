@@ -1,5 +1,6 @@
 import { Aesthetic } from '../../../domain/settings/aesthetic';
 import { Language } from '../../../domain/settings/language';
+import { Volumes } from '../../../domain/settings/volume';
 import { RivalChoice } from '../../../domain/race/ranking';
 
 /** Preferencias del jugador que se recuerdan entre partidas. */
@@ -14,4 +15,6 @@ export abstract class SettingsRepository {
   /** Ya vio el tutorial (o lo saltó). */
   abstract getTutorialSeen(): boolean;
   abstract setTutorialSeen(): void;
+  abstract getVolumes(): Volumes;
+  abstract setVolumes(volumes: Volumes): void;
 }

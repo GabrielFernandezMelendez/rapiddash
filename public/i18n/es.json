@@ -166,5 +166,8 @@
   "tutorial.scene.funnel": "5 → 3 carriles",
   "settings.help": "Ayuda",
   "settings.tutorial": "Cómo se juega",
-  "settings.tutorialHint": "Acelerar, carriles, cruces, embudos y rival"
+  "settings.tutorialHint": "Acelerar, carriles, cruces, embudos y rival",
+  "settings.sound": "Sonido",
+  "settings.music": "Música",
+  "settings.effects": "Efectos (motor)"
 }

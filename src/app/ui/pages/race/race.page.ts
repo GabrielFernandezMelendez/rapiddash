@@ -152,6 +152,7 @@ export class RacePage {
     const aesthetic = this.aesthetic.aesthetic();
     this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
     this.controls.attach(this.surface().nativeElement as HTMLElement);
+    this.audio.setVolumes(this.settings.getVolumes());
     const pick = this.ranking.picked(map.id);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,

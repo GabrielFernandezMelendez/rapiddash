@@ -166,5 +166,8 @@
   "tutorial.scene.funnel": "5 → 3 lanes",
   "settings.help": "Help",
   "settings.tutorial": "How to play",
-  "settings.tutorialHint": "Throttle, lanes, junctions, funnels and rivals"
+  "settings.tutorialHint": "Throttle, lanes, junctions, funnels and rivals",
+  "settings.sound": "Sound",
+  "settings.music": "Music",
+  "settings.effects": "Effects (engine)"
 }

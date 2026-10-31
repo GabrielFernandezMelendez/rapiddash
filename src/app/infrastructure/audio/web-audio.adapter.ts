@@ -7,6 +7,7 @@ import {
   pickTrack,
 } from '../../core/domain/audio/soundtrack';
 import { Aesthetic } from '../../core/domain/settings/aesthetic';
+import { DEFAULT_VOLUMES, VolumeChannel, Volumes } from '../../core/domain/settings/volume';
 
 /** Carpeta de los sonidos (public/audio). Si falta un archivo, esa parte queda en silencio. */
 const AUDIO_DIR = 'audio/';
@@ -29,6 +30,8 @@ const ENGINE_LOOP_RATE_MIN = 0.85;
 const ENGINE_LOOP_RATE_MAX = 1.3;
 /** Fundido entre canciones al repetir la carrera (s). */
 const SONG_FADE = 0.5;
+/** Duración del ejemplo de Ajustes (s). */
+const PREVIEW_LENGTH = 1.6;
 
 /** Última canción que sonó, también entre carreras: la siguiente nunca es la misma. */
 let lastTrack: MusicTrack | null = null;
@@ -47,29 +50,53 @@ export class WebAudioAdapter extends AudioPort {
   /** Cada canción pedida tiene un número: si llega tarde una carga antigua, se descarta. */
   private songRequest = 0;
   private disposed = false;
+  /** Volumen elegido en Ajustes: multiplica el de la mezcla. */
+  private volumes: Volumes = DEFAULT_VOLUMES;
+  private previewVoice: AudioBufferSourceNode | null = null;
 
   start(aesthetic: Aesthetic): void {
-    const Ctor =
-      globalThis.AudioContext ??
-      (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return;
-    this.ctx = new Ctor();
-    this.musicGain = this.ctx.createGain();
-    this.musicGain.gain.value = MUSIC_VOLUME;
-    this.musicGain.connect(this.ctx.destination);
-    this.engineGain = this.ctx.createGain();
-    this.engineGain.gain.value = ENGINE_VOLUME;
-    this.engineGain.connect(this.ctx.destination);
-
-    // Los navegadores móviles solo dejan sonar el audio tras un gesto del jugador
-    window.addEventListener('pointerdown', this.unlock);
-    window.addEventListener('keydown', this.unlock);
-    void this.ctx.resume().catch(() => undefined);
-
+    if (!this.ensureContext()) return;
     this.tracks = musicFor(aesthetic);
     this.engineSound = engineFor(aesthetic);
     this.nextSong();
     void this.load(this.engineSound.file).then((buffer) => (this.engineBuffer = buffer));
+  }
+
+  setVolumes(volumes: Volumes): void {
+    this.volumes = volumes;
+    const now = this.ctx?.currentTime ?? 0;
+    this.musicGain?.gain.setTargetAtTime(MUSIC_VOLUME * volumes.music, now, 0.05);
+    this.engineGain?.gain.setTargetAtTime(ENGINE_VOLUME * volumes.effects, now, 0.05);
+  }
+
+  /** Un trozo de la primera canción de la estética o del motor, al volumen elegido. */
+  preview(channel: VolumeChannel, volumes: Volumes, aesthetic: Aesthetic): void {
+    if (!this.ensureContext()) return;
+    this.setVolumes(volumes);
+    void this.ctx!.resume().catch(() => undefined);
+    const music = channel === 'music';
+    const file = music ? musicFor(aesthetic)[0]?.file : engineFor(aesthetic).file;
+    const offset = music ? (musicFor(aesthetic)[0]?.start ?? 0) : 0;
+    if (!file) return;
+    void this.load(file).then((buffer) => {
+      const ctx = this.ctx;
+      const out = music ? this.musicGain : this.engineGain;
+      if (!buffer || !ctx || !out) return;
+      this.previewVoice?.stop();
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(1, now + 0.1);
+      gain.gain.setValueAtTime(1, now + PREVIEW_LENGTH - 0.3);
+      gain.gain.linearRampToValueAtTime(0, now + PREVIEW_LENGTH);
+      source.connect(gain);
+      gain.connect(out);
+      source.start(now, Math.min(offset, buffer.duration), PREVIEW_LENGTH);
+      source.onended = () => gain.disconnect();
+      this.previewVoice = source;
+    });
   }
 
   nextSong(): void {
@@ -88,7 +115,7 @@ export class WebAudioAdapter extends AudioPort {
     const now = ctx.currentTime;
 
     this.musicGain.gain.setTargetAtTime(
-      frame.phase === 'finished' ? MUSIC_FINISHED_VOLUME : MUSIC_VOLUME,
+      (frame.phase === 'finished' ? MUSIC_FINISHED_VOLUME : MUSIC_VOLUME) * this.volumes.music,
       now,
       0.4,
     );
@@ -112,6 +139,27 @@ export class WebAudioAdapter extends AudioPort {
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
     this.engine = null;
+  }
+
+  /** Crea el contexto de audio y la mezcla (música y motor) la primera vez. */
+  private ensureContext(): boolean {
+    if (this.ctx) return true;
+    const Ctor =
+      globalThis.AudioContext ??
+      (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor || this.disposed) return false;
+    this.ctx = new Ctor();
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = MUSIC_VOLUME * this.volumes.music;
+    this.musicGain.connect(this.ctx.destination);
+    this.engineGain = this.ctx.createGain();
+    this.engineGain.gain.value = ENGINE_VOLUME * this.volumes.effects;
+    this.engineGain.connect(this.ctx.destination);
+    // Los navegadores móviles solo dejan sonar el audio tras un gesto del jugador
+    window.addEventListener('pointerdown', this.unlock);
+    window.addEventListener('keydown', this.unlock);
+    void this.ctx.resume().catch(() => undefined);
+    return true;
   }
 
   private readonly unlock = () => {
