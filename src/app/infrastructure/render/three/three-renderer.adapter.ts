@@ -15,8 +15,10 @@ import {
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
 import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
+import { BillboardContent } from '../../../core/domain/track/billboards';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
+import { CLASSIC_BILLBOARD, LeaderBillboards, SYNTH_BILLBOARD } from './billboards';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { GhostLabel } from './ghost-label';
 import { buildScenery } from './scenery';
@@ -68,6 +70,7 @@ export class ThreeRendererAdapter extends RendererPort {
   private cameraLeg = -1;
   /** Sol y montañas synthwave: siguen a la cámara (null en la estética clásica). */
   private sky: SynthSky | null = null;
+  private billboards: LeaderBillboards | null = null;
 
   attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
     this.dispose();
@@ -84,6 +87,8 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scene = new Scene();
     if (isSynthwave(aesthetic)) this.buildSynthwave(track, theme);
     else this.buildClassic(track, theme);
+    this.billboards = new LeaderBillboards(track, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
+    this.scene.add(this.billboards.group);
     const vehicle = VEHICLES[aesthetic];
     this.car = vehicle(false);
     this.ghost = vehicle(true);
@@ -199,7 +204,12 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scrape?.burst(side, 14);
   }
 
+  setBillboards(content: BillboardContent | null): void {
+    this.billboards?.set(content);
+  }
+
   dispose(): void {
+    this.billboards = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.scene.traverse((obj) => {
