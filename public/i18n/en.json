@@ -287,5 +287,10 @@
   "results.bestLap": "best",
   "hint.title": "Change the style",
   "hint.text": "In Settings you can choose the game's look: classic, retro or futuristic.",
-  "hint.ok": "Got it"
+  "hint.ok": "Got it",
+  "confirm.cancel": "Cancel",
+  "tournament.removeTitle": "Delete the tournament?",
+  "tournament.removeText": "You're about to delete \"{name}\" for all its drivers, with its standings and photos. This can't be undone. Are you sure?",
+  "tournament.removeGo": "Delete",
+  "tournament.removeAria": "Delete the tournament {name}"
 }

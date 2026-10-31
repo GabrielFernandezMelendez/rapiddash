@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   DocumentData,
   getDoc,
@@ -81,6 +82,14 @@ export class FirestoreTournamentRepository extends TournamentRepository {
   async start(code: string, mapIds: readonly string[]): Promise<void> {
     const db = await firestore();
     await updateDoc(doc(db, 'tournaments', code), { startedAt: serverTimestamp(), mapIds: [...mapIds] });
+  }
+
+  /** Primero las fotos del cartel (para no dejar fotos de nadie sueltas) y luego el torneo. */
+  async remove(code: string): Promise<void> {
+    const db = await firestore();
+    const photos = await getDocs(collection(db, 'tournaments', code, 'photos'));
+    await Promise.all(photos.docs.map((d) => deleteDoc(d.ref)));
+    await deleteDoc(doc(db, 'tournaments', code));
   }
 }
 

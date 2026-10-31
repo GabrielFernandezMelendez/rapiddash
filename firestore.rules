@@ -80,6 +80,7 @@ service cloud.firestore {
 
     // Torneos (id = código): 3 días, hasta 20 pilotos. Unirse solo antes de empezar; empezar,
     // solo el creador, con al menos 2 pilotos, a la hora del servidor y con los 3 mapas.
+    // Eliminar: solo el creador (por ejemplo, si lo creó por error).
     match /tournaments/{code} {
       allow get: if signedIn();
       // «Mis torneos»: solo se pueden listar aquellos en los que estoy
@@ -115,7 +116,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['startedAt', 'mapIds'])
           && request.resource.data.startedAt == request.time
           && request.resource.data.mapIds.size() == 3));
-      allow delete: if false;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
 
       // Foto del cartel del líder (id = uid): solo la ven los miembros y cada uno sube o borra
       // la suya. JPEG en data URL de como mucho 140 000 caracteres (core/domain/tournament/leader-photo.ts).
@@ -133,7 +134,9 @@ service cloud.firestore {
           && request.resource.data.image.size() <= 140000
           && request.resource.data.image.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
           && request.resource.data.updatedAt == request.time;
-        allow delete: if signedIn() && request.auth.uid == uid;
+        // Cada uno la suya; el creador, todas, al eliminar el torneo
+        allow delete: if signedIn() && (request.auth.uid == uid
+          || get(/databases/$(database)/documents/tournaments/$(code)).data.ownerUid == request.auth.uid);
       }
     }
 

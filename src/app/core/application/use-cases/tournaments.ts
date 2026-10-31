@@ -72,6 +72,13 @@ export class Tournaments {
     return true;
   }
 
+  /** Eliminar un torneo (creado por error, por ejemplo): solo el creador. */
+  async remove(t: Tournament, uid: string): Promise<boolean> {
+    if (t.ownerUid !== uid) return false;
+    await this.repo.remove(t.code);
+    return true;
+  }
+
   /** Mis torneos: en curso primero, luego esperando y al final los terminados. */
   async mine(uid: string): Promise<Tournament[]> {
     const list = await this.repo.mine(uid);

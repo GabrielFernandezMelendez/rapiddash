@@ -287,5 +287,10 @@
   "results.bestLap": "mejor",
   "hint.title": "Cambia el estilo",
   "hint.text": "En Ajustes puedes elegir la estética del juego: clásico, retro o futurista.",
-  "hint.ok": "Entendido"
+  "hint.ok": "Entendido",
+  "confirm.cancel": "Cancelar",
+  "tournament.removeTitle": "¿Eliminar el torneo?",
+  "tournament.removeText": "Vas a eliminar «{name}» para todos sus pilotos, con su clasificación y sus fotos. No se puede deshacer. ¿Seguro?",
+  "tournament.removeGo": "Eliminar",
+  "tournament.removeAria": "Eliminar el torneo {name}"
 }

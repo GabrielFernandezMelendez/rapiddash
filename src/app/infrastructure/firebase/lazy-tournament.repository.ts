@@ -32,4 +32,7 @@ export class LazyTournamentRepository extends TournamentRepository {
   async start(code: string, mapIds: readonly string[]): Promise<void> {
     return (await this.load()).start(code, mapIds);
   }
+  async remove(code: string): Promise<void> {
+    return (await this.load()).remove(code);
+  }
 }
