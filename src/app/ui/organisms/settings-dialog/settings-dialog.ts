@@ -1,15 +1,17 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { Language } from '../../../core/domain/settings/language';
+import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { AestheticSwitch } from '../../molecules/aesthetic-switch/aesthetic-switch';
 import { LanguageSwitch } from '../../molecules/language-switch/language-switch';
 import { Modal } from '../../molecules/modal/modal';
+import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
 
 @Component({
   selector: 'rd-settings-dialog',
-  imports: [Modal, LanguageSwitch, AestheticSwitch, Button, TranslatePipe],
+  imports: [Modal, LanguageSwitch, AestheticSwitch, VolumeSlider, Button, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-modal [label]="'settings.title' | t" (dismiss)="closed.emit()">
@@ -17,6 +19,23 @@ import { Modal } from '../../molecules/modal/modal';
       <div class="field">
         <span class="label">{{ 'settings.aesthetic' | t }}</span>
         <rd-aesthetic-switch [value]="aesthetic()" (changed)="aestheticChange.emit($event)" />
+      </div>
+      <div class="field">
+        <span class="label">{{ 'settings.sound' | t }}</span>
+        <rd-volume-slider
+          inputId="vol-music"
+          [label]="'settings.music' | t"
+          [value]="volumes().music"
+          (changed)="setVolume('music', $event)"
+          (released)="preview.emit('music')"
+        />
+        <rd-volume-slider
+          inputId="vol-effects"
+          [label]="'settings.effects' | t"
+          [value]="volumes().effects"
+          (changed)="setVolume('effects', $event)"
+          (released)="preview.emit('effects')"
+        />
       </div>
       <div class="field">
         <span class="label">{{ 'settings.language' | t }}</span>
@@ -101,4 +120,12 @@ export class SettingsDialog {
   readonly aestheticChange = output<Aesthetic>();
   readonly closed = output<void>();
   readonly tutorial = output<void>();
+  readonly volumes = input.required<Volumes>();
+  readonly volumesChange = output<Volumes>();
+  /** Al soltar un slider: que suene un ejemplo de ese canal. */
+  readonly preview = output<VolumeChannel>();
+
+  protected setVolume(channel: VolumeChannel, value: number): void {
+    this.volumesChange.emit({ ...this.volumes(), [channel]: value });
+  }
 }

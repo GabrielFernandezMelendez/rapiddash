@@ -1,5 +1,6 @@
 import { RacePhase } from '../../../domain/race/race';
 import { Aesthetic } from '../../../domain/settings/aesthetic';
+import { VolumeChannel, Volumes } from '../../../domain/settings/volume';
 
 /** Lo que el sonido necesita saber en cada fotograma. */
 export interface AudioFrame {
@@ -18,6 +19,10 @@ export abstract class AudioPort {
   abstract start(aesthetic: Aesthetic): void;
   /** Carrera nueva («Repetir»): otra canción al azar. */
   abstract nextSong(): void;
+  /** Volumen de música y efectos elegido en Ajustes. */
+  abstract setVolumes(volumes: Volumes): void;
+  /** Ejemplo corto de un canal (al soltar el slider en Ajustes). */
+  abstract preview(channel: VolumeChannel, volumes: Volumes, aesthetic: Aesthetic): void;
   abstract update(frame: AudioFrame): void;
   abstract dispose(): void;
 }

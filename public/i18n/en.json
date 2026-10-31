@@ -182,5 +182,8 @@
   "more.in": "comes in",
   "more.ask": "Don't want to wait? Watch an ad and race now.",
   "more.watch": "Watch ad and race",
-  "more.wait": "I'll wait"
+  "more.wait": "I'll wait",
+  "settings.sound": "Sound",
+  "settings.music": "Music",
+  "settings.effects": "Effects (engine)"
 }

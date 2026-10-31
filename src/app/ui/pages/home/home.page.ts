@@ -12,9 +12,11 @@ import {
 import { Router } from '@angular/router';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
+import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
 import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { Language } from '../../../core/domain/settings/language';
+import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { DailyService, DailyStanding } from '../../../shared/account/daily.service';
 import { provideMenuAdapters } from '../../../infrastructure/di/menu.providers';
@@ -58,6 +60,8 @@ export class HomePage implements OnInit {
   protected readonly dailyLeft = signal('');
   protected readonly tutorialOpen = signal(false);
   private readonly settings = inject(SettingsRepository);
+  private readonly audio = inject(AudioPort);
+  protected readonly volumes = signal<Volumes>(this.settings.getVolumes());
   /** Aviso de vincular la cuenta (cada 5 días, solo invitados). */
   protected readonly reminderOpen = signal(false);
   protected readonly reminderRecords = signal('');
@@ -72,7 +76,10 @@ export class HomePage implements OnInit {
       const aesthetic = this.aesthetic.aesthetic();
       void this.backdrop.attach(this.backdropHost().nativeElement, aesthetic);
     });
-    inject(DestroyRef).onDestroy(() => this.backdrop.dispose());
+    inject(DestroyRef).onDestroy(() => {
+      this.backdrop.dispose();
+      this.audio.dispose();
+    });
   }
 
   ngOnInit(): void {
@@ -85,6 +92,16 @@ export class HomePage implements OnInit {
 
   protected openDaily(): void {
     void this.router.navigate(['/daily']);
+  }
+
+  protected setVolumes(volumes: Volumes): void {
+    this.volumes.set(volumes);
+    this.settings.setVolumes(volumes);
+    this.audio.setVolumes(volumes);
+  }
+
+  protected previewSound(channel: VolumeChannel): void {
+    this.audio.preview(channel, this.volumes(), this.aesthetic.aesthetic());
   }
 
   protected openTutorial(): void {

@@ -182,5 +182,8 @@
   "more.in": "llega en",
   "more.ask": "¿No quieres esperar? Mira un anuncio y corre ya.",
   "more.watch": "Ver anuncio y correr",
-  "more.wait": "Prefiero esperar"
+  "more.wait": "Prefiero esperar",
+  "settings.sound": "Sonido",
+  "settings.music": "Música",
+  "settings.effects": "Efectos (motor)"
 }

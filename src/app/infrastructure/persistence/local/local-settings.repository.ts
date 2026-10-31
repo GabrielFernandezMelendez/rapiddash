@@ -1,6 +1,7 @@
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
 import { Aesthetic, isAesthetic } from '../../../core/domain/settings/aesthetic';
 import { isLanguage, Language } from '../../../core/domain/settings/language';
+import { toVolumes, Volumes } from '../../../core/domain/settings/volume';
 import { RIVAL_CHOICES, RivalChoice } from '../../../core/domain/race/ranking';
 import { readJson, writeJson } from './safe-storage';
 
@@ -8,6 +9,7 @@ const LANGUAGE_KEY = 'rapiddash.language';
 const AESTHETIC_KEY = 'rapiddash.aesthetic';
 const RIVALS_KEY = 'rapiddash.rivals';
 const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
+const VOLUMES_KEY = 'rapiddash.volumes';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -43,5 +45,13 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setTutorialSeen(): void {
     writeJson(TUTORIAL_KEY, true);
+  }
+
+  getVolumes(): Volumes {
+    return toVolumes(readJson<unknown>(VOLUMES_KEY));
+  }
+
+  setVolumes(volumes: Volumes): void {
+    writeJson(VOLUMES_KEY, toVolumes(volumes));
   }
 }
