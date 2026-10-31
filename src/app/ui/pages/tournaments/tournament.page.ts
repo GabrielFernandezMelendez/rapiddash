@@ -17,7 +17,7 @@ import {
   TOURNAMENT_DAYS,
   TOURNAMENT_MAX_MEMBERS,
 } from '../../../core/domain/tournament/tournament';
-import { ALL_MAPS, CIRCUIT_MAPS, findMap } from '../../../core/domain/track/race-map';
+import { CIRCUIT_MAPS, findMap } from '../../../core/domain/track/race-map';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -334,9 +334,9 @@ export class TournamentPage implements OnInit {
     if (!t) return;
     this.busy.set(true);
     try {
+      // Los tres días de un torneo salen de los circuitos por vueltas
       await this.tournaments.start(
         t,
-        ALL_MAPS.map((m) => m.id),
         CIRCUIT_MAPS.map((m) => m.id),
       );
       await this.load();
