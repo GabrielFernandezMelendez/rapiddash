@@ -138,20 +138,13 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
   `,
   styleUrl: './tournaments.page.scss',
   styles: `
+    /* Botón de la cámara justo encima del de correr, a la izquierda */
     .race-row {
-      display: flex;
+      display: grid;
       gap: 10px;
-      align-items: stretch;
-    }
-    .race-row .go {
-      flex: 1;
-      min-width: 0;
-      width: auto;
-      white-space: nowrap;
-      font-size: 18px;
     }
     .camera {
-      flex: none;
+      justify-self: start;
       width: 56px;
       min-height: 56px;
       padding: 0;
