@@ -1,22 +1,28 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { EMPTY_RANKING, RankingView } from '../../../core/domain/race/ranking';
+import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
+import { defaultRival, EMPTY_RANKING, RankingView, RivalChoice, rivalOptions } from '../../../core/domain/race/ranking';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { AccountService } from '../../../shared/account/account.service';
 import { DailyService } from '../../../shared/account/daily.service';
+import { RankingService } from '../../../shared/account/ranking.service';
 import { formatTime } from '../../../shared/format-time';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { Trophy } from '../../atoms/trophy/trophy';
 import { Leaderboard } from '../../molecules/leaderboard/leaderboard';
+import { RivalPicker } from '../../molecules/rival-picker/rival-picker';
 import { formatClock, MoreAttempts } from '../../organisms/more-attempts/more-attempts';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 
-/** Mapa del día: el mapa de hoy, mi copa y mi puesto, el top 10 del día y correr. */
+/** Clave con la que se recuerda el rival del mapa del día (la misma todos los días). */
+const DAILY_RIVAL_KEY = 'daily';
+
+/** Mapa del día: el mapa de hoy, mi copa y mi puesto, el top 10 del día, contra quién corro y correr. */
 @Component({
   selector: 'rd-daily-page',
-  imports: [MenuLayout, Button, Trophy, Leaderboard, MoreAttempts, TranslatePipe],
+  imports: [MenuLayout, Button, Trophy, Leaderboard, RivalPicker, MoreAttempts, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -58,7 +64,17 @@ import { MenuLayout } from '../../templates/menu-layout/menu-layout';
         title="daily.top"
         [view]="view()"
         [myUid]="account.profile()?.uid ?? null"
+        [rivalUid]="rivalUid()"
         [loading]="loading()"
+      />
+
+      <rd-rival-picker
+        [options]="options()"
+        [selected]="choice()"
+        [myTime]="myTime()"
+        [myName]="account.profile()?.nickname ?? ''"
+        [myCountry]="account.profile()?.country ?? null"
+        (picked)="choice.set($event)"
       />
 
       <div menu-footer>
@@ -85,6 +101,8 @@ export class DailyPage implements OnInit {
   private readonly i18n = inject(I18nService);
   protected readonly account = inject(AccountService);
   protected readonly daily = inject(DailyService);
+  private readonly ranking = inject(RankingService);
+  private readonly bestRuns = inject(BestRunRepository);
 
   protected readonly today = this.daily.today(ALL_MAPS);
   protected readonly view = signal<RankingView>(EMPTY_RANKING);
@@ -92,6 +110,18 @@ export class DailyPage implements OnInit {
   protected readonly askMore = signal(false);
   protected readonly busy = signal(false);
   protected readonly standing = computed(() => this.daily.standing(this.view()));
+  /** Mi mejor tiempo de hoy en este dispositivo (fantasma «Tu mejor»). */
+  protected readonly myTime = signal<number | null>(null);
+  protected readonly choice = signal<RivalChoice | null>(null);
+  protected readonly options = computed(() =>
+    rivalOptions(this.view(), this.account.profile()?.uid ?? null, this.myTime() !== null),
+  );
+  /** El rival marcado en el top 10 (si es de la nube). */
+  protected readonly rivalUid = computed(() => {
+    const choice = this.choice();
+    if (choice === 'top' || choice === 'above') return this.options()[choice]?.record.uid ?? null;
+    return null;
+  });
   protected readonly countdown = signal('');
   protected readonly date = computed(() =>
     new Intl.DateTimeFormat(this.i18n.language(), {
@@ -111,8 +141,14 @@ export class DailyPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.view.set(await this.daily.load(this.today.boardId));
+    const [view, best] = await Promise.all([
+      this.daily.load(this.today.boardId),
+      this.bestRuns.get(this.today.boardId),
+    ]);
+    this.view.set(view);
+    this.myTime.set(best?.time ?? null);
     this.loading.set(false);
+    this.choice.set(defaultRival(this.options(), this.ranking.rememberedChoice(DAILY_RIVAL_KEY)));
   }
 
   protected time(seconds: number): string {
@@ -139,6 +175,13 @@ export class DailyPage implements OnInit {
   }
 
   private go(): void {
+    // El rival se elige del ranking de hoy y la elección se recuerda para los días siguientes
+    const choice = this.choice();
+    this.ranking.pick(
+      this.today.boardId,
+      choice ? { choice, ranked: choice === 'mine' ? null : this.options()[choice] } : null,
+      DAILY_RIVAL_KEY,
+    );
     void this.router.navigate(['/race', this.today.mapId], { queryParams: { daily: 1 } });
   }
 }
