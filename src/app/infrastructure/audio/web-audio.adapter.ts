@@ -33,6 +33,9 @@ const SONG_FADE = 0.5;
 /** Duración del ejemplo de Ajustes (s). */
 const PREVIEW_LENGTH = 1.6;
 
+/** Gestos que cuentan para desbloquear el audio (iOS solo acepta algunos). */
+const UNLOCK_EVENTS = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
+
 /** Última canción que sonó, también entre carreras: la siguiente nunca es la misma. */
 let lastTrack: MusicTrack | null = null;
 
@@ -53,9 +56,15 @@ export class WebAudioAdapter extends AudioPort {
   /** Volumen elegido en Ajustes: multiplica el de la mezcla. */
   private volumes: Volumes = DEFAULT_VOLUMES;
   private previewVoice: AudioBufferSourceNode | null = null;
+  /** Qué suena: la música del menú (y de qué estética) o una carrera. */
+  private mode: 'idle' | 'menu' | 'race' = 'idle';
+  private menuAesthetic: Aesthetic | null = null;
 
   start(aesthetic: Aesthetic): void {
     if (!this.ensureContext()) return;
+    this.mode = 'race';
+    this.menuAesthetic = null;
+    this.restoreMusicLevel();
     this.tracks = musicFor(aesthetic);
     this.engineSound = engineFor(aesthetic);
     this.nextSong();
@@ -99,6 +108,25 @@ export class WebAudioAdapter extends AudioPort {
     });
   }
 
+  playMenu(aesthetic: Aesthetic): void {
+    if (this.mode === 'race') return;
+    if (this.mode === 'menu' && this.menuAesthetic === aesthetic) return;
+    if (!this.ensureContext()) return;
+    this.mode = 'menu';
+    this.menuAesthetic = aesthetic;
+    this.restoreMusicLevel();
+    this.tracks = musicFor(aesthetic);
+    this.nextSong();
+  }
+
+  stopRace(): void {
+    if (this.mode !== 'race') return;
+    this.mode = 'idle';
+    this.stopEngine();
+    this.songRequest++;
+    if (this.ctx) this.fadeOutSong(this.ctx.currentTime);
+  }
+
   nextSong(): void {
     const track = pickTrack(this.tracks, lastTrack);
     if (!track || !this.ctx) return;
@@ -134,8 +162,7 @@ export class WebAudioAdapter extends AudioPort {
 
   dispose(): void {
     this.disposed = true;
-    window.removeEventListener('pointerdown', this.unlock);
-    window.removeEventListener('keydown', this.unlock);
+    for (const type of UNLOCK_EVENTS) window.removeEventListener(type, this.unlock);
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
     this.engine = null;
@@ -156,10 +183,19 @@ export class WebAudioAdapter extends AudioPort {
     this.engineGain.gain.value = ENGINE_VOLUME * this.volumes.effects;
     this.engineGain.connect(this.ctx.destination);
     // Los navegadores móviles solo dejan sonar el audio tras un gesto del jugador
-    window.addEventListener('pointerdown', this.unlock);
-    window.addEventListener('keydown', this.unlock);
+    for (const type of UNLOCK_EVENTS) window.addEventListener(type, this.unlock);
     void this.ctx.resume().catch(() => undefined);
     return true;
+  }
+
+  /** Tras la meta la música baja; al volver al menú o a otra carrera, vuelve a su nivel. */
+  private restoreMusicLevel(): void {
+    if (!this.ctx || !this.musicGain) return;
+    this.musicGain.gain.setTargetAtTime(
+      MUSIC_VOLUME * this.volumes.music,
+      this.ctx.currentTime,
+      0.2,
+    );
   }
 
   private readonly unlock = () => {

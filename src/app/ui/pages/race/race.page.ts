@@ -137,7 +137,7 @@ export class RacePage {
       this.session?.stop();
       this.controls.dispose();
       this.renderer.dispose();
-      this.audio.dispose();
+      this.audio.stopRace();
     });
   }
 
