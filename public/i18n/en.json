@@ -276,5 +276,13 @@
   "maps.glacierLoop": "Glacier Loop",
   "maps.neonSnake": "Neon Snake",
   "maps.canyonMaze": "Canyon Maze",
-  "maps.summitStairs": "Summit Stairs"
+  "maps.summitStairs": "Summit Stairs",
+  "hud.lap": "Lap",
+  "race.lap": "Lap",
+  "race.lastLap": "Final",
+  "race.lastLapSub": "lap",
+  "race.finish": "Finish!",
+  "race.lapShort": "L",
+  "results.laps": "Laps",
+  "results.bestLap": "best"
 }
