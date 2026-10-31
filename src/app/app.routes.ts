@@ -10,6 +10,9 @@ const hasPilot: CanMatchFn = () =>
 const welcomeAllowed: CanMatchFn = (_route, segments: UrlSegment[]) =>
   segments.length > 1 || !inject(AccountService).profile() ? true : inject(Router).createUrlTree(['/']);
 
+const joinTournament = () =>
+  import('./ui/pages/tournaments/join-tournament.page').then((m) => m.JoinTournamentPage);
+
 const welcome = () => import('./ui/pages/welcome/welcome.page').then((m) => m.WelcomePage);
 
 // Páginas con carga diferida: Three.js solo se descarga al entrar en una carrera
@@ -36,6 +39,25 @@ export const routes: Routes = [
     canMatch: [hasPilot],
     loadComponent: () => import('./ui/pages/daily/daily.page').then((m) => m.DailyPage),
   },
+  {
+    path: 'tournaments',
+    canMatch: [hasPilot],
+    loadComponent: () =>
+      import('./ui/pages/tournaments/tournaments.page').then((m) => m.TournamentsPage),
+  },
+  {
+    path: 'tournaments/join',
+    canMatch: [hasPilot],
+    loadComponent: joinTournament,
+  },
+  {
+    path: 'tournaments/:code',
+    canMatch: [hasPilot],
+    loadComponent: () =>
+      import('./ui/pages/tournaments/tournament.page').then((m) => m.TournamentPage),
+  },
+  // Enlace de invitación corto: /t/K7RQ2M
+  { path: 't/:code', canMatch: [hasPilot], loadComponent: joinTournament },
   {
     path: 'profile',
     canMatch: [hasPilot],
