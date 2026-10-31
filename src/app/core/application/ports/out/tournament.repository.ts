@@ -13,4 +13,6 @@ export abstract class TournamentRepository {
   abstract join(code: string, member: TournamentMember): Promise<JoinResult>;
   /** Solo el creador: cierra la entrada y fija los mapas; la hora la pone el servidor. */
   abstract start(code: string, mapIds: readonly string[]): Promise<void>;
+  /** Borra el torneo para todos (y las fotos de su cartel). Solo lo puede hacer el creador. */
+  abstract remove(code: string): Promise<void>;
 }

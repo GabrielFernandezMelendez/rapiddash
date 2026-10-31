@@ -39,6 +39,10 @@ export class TournamentService {
     return this.tournaments.start(t, this.uid() ?? '', mapIds, circuitIds);
   }
 
+  remove(t: Tournament): Promise<boolean> {
+    return this.tournaments.remove(t, this.uid() ?? '');
+  }
+
   mine(): Promise<Tournament[]> {
     const uid = this.uid();
     return uid ? this.tournaments.mine(uid) : Promise.resolve([]);

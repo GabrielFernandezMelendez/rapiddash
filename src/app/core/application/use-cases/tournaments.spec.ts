@@ -31,6 +31,9 @@ class MemoryTournaments extends TournamentRepository {
     const t = this.data.get(code)!;
     this.data.set(code, { ...t, startedAt: 0, mapIds });
   }
+  async remove(code: string) {
+    this.data.delete(code);
+  }
 }
 
 class Records extends CloudRecordRepository {
@@ -108,6 +111,16 @@ describe('Tournaments', () => {
     seq = 0;
     const b = await tournaments.create('B', profile('ana'));
     expect(a.code).not.toBe(b.code);
+  });
+
+  it('solo el creador elimina el torneo', async () => {
+    const t = await tournaments.create('Por error', profile('ana'));
+    await tournaments.join(t.code, profile('gabo'));
+    expect(await tournaments.remove(t, 'gabo')).toBe(false);
+    expect(await repo.get(t.code)).not.toBeNull();
+    expect(await tournaments.remove(t, 'ana')).toBe(true);
+    expect(await repo.get(t.code)).toBeNull();
+    expect(await tournaments.mine('gabo')).toEqual([]);
   });
 
   it('no se empieza solo', async () => {
