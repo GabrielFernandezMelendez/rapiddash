@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   ElementRef,
@@ -14,7 +15,7 @@ import { BestRunRepository } from '../../../core/application/ports/out/best-run.
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
 import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
-import { Aesthetic } from '../../../core/domain/settings/aesthetic';
+import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
 import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
@@ -36,12 +37,13 @@ import { formatClock } from '../../organisms/more-attempts/more-attempts';
 import { LinkReminder } from '../../organisms/link-reminder/link-reminder';
 import { SettingsDialog } from '../../organisms/settings-dialog/settings-dialog';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
+import { AestheticHint, HintAnchor } from '../../organisms/aesthetic-hint/aesthetic-hint';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
   selector: 'rd-home-page',
-  imports: [MenuLayout, Button, Logo, PilotChip, ModeButton, Trophy, LinkReminder, SettingsDialog, Tutorial, TranslatePipe],
+  imports: [MenuLayout, Button, Logo, PilotChip, ModeButton, Trophy, LinkReminder, SettingsDialog, Tutorial, AestheticHint, TranslatePipe],
   providers: [provideMenuAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.page.html',
@@ -52,6 +54,7 @@ export class HomePage implements OnInit {
   private readonly backdrop = inject(MenuBackdropPort);
   protected readonly i18n = inject(I18nService);
   protected readonly aesthetic = inject(AestheticService);
+  protected readonly synthwave = computed(() => isSynthwave(this.aesthetic.aesthetic()));
   protected readonly account = inject(AccountService);
   private readonly bestRuns = inject(BestRunRepository);
   protected readonly settingsOpen = signal(false);
@@ -61,6 +64,9 @@ export class HomePage implements OnInit {
   protected readonly dailyStanding = signal<DailyStanding | null>(null);
   protected readonly dailyLeft = signal('');
   protected readonly tutorialOpen = signal(false);
+  /** Aviso de la primera vez: «la estética se cambia en Ajustes» (posición del botón). */
+  protected readonly hint = signal<HintAnchor | null>(null);
+  private readonly settingsButton = viewChild.required('settingsButton', { read: ElementRef<HTMLElement> });
   private readonly tournaments = inject(TournamentService);
   /** Torneos míos en curso (insignia del botón). */
   protected readonly tournamentsRunning = signal(0);
@@ -86,6 +92,9 @@ export class HomePage implements OnInit {
 
   ngOnInit(): void {
     if (this.account.needsLinkReminder()) void this.openReminder();
+    // Si ya sale el aviso de vincular la cuenta, el de la estética espera a la próxima vez
+    // (se muestra en cuanto el botón de Ajustes está en pantalla: hace falta su posición)
+    else if (!this.settings.getAestheticHintSeen()) setTimeout(() => this.showHint());
     this.dailyLeft.set(hoursLeft(this.dailyToday.msLeft));
     void this.daily
       .load(this.dailyToday.boardId)
@@ -98,6 +107,22 @@ export class HomePage implements OnInit {
 
   protected openTournaments(): void {
     void this.router.navigate(['/tournaments']);
+  }
+
+  private showHint(): void {
+    const r = this.settingsButton().nativeElement.getBoundingClientRect();
+    this.hint.set({ bottom: r.bottom, centerFromRight: window.innerWidth - (r.left + r.width / 2) });
+  }
+
+  protected closeHint(): void {
+    this.hint.set(null);
+    this.settings.setAestheticHintSeen();
+  }
+
+  /** Tocar Ajustes también cierra el aviso (y abre los ajustes). */
+  protected openSettings(): void {
+    if (this.hint()) this.closeHint();
+    this.settingsOpen.set(true);
   }
 
   protected openDaily(): void {

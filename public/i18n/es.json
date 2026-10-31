@@ -284,5 +284,8 @@
   "race.finish": "¡Meta!",
   "race.lapShort": "V",
   "results.laps": "Vueltas",
-  "results.bestLap": "mejor"
+  "results.bestLap": "mejor",
+  "hint.title": "Cambia el estilo",
+  "hint.text": "En Ajustes puedes elegir la estética del juego: clásico, retro o futurista.",
+  "hint.ok": "Entendido"
 }
