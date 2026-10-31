@@ -166,5 +166,21 @@
   "tutorial.scene.funnel": "5 → 3 lanes",
   "settings.help": "Help",
   "settings.tutorial": "How to play",
-  "settings.tutorialHint": "Throttle, lanes, junctions, funnels and rivals"
+  "settings.tutorialHint": "Throttle, lanes, junctions, funnels and rivals",
+  "daily.title": "Daily map",
+  "daily.same": "same map for everyone",
+  "daily.newIn": "New map in",
+  "daily.changesIn": "changes in",
+  "daily.yourBest": "Your best today",
+  "daily.noTime": "You haven't raced today: no time yet",
+  "daily.noTimeShort": "No time",
+  "daily.loading": "Loading…",
+  "daily.top": "Today's top 10",
+  "daily.race": "Race",
+  "more.title": "Back on track!",
+  "more.next": "Your next round on",
+  "more.in": "comes in",
+  "more.ask": "Don't want to wait? Watch an ad and race now.",
+  "more.watch": "Watch ad and race",
+  "more.wait": "I'll wait"
 }
