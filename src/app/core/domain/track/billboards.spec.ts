@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_MAPS } from './race-map';
 import { left, right, straight } from './track-segment';
 import { Track } from './track';
-import { billboardLegs, MAX_BILLBOARDS, straightApproach } from './billboards';
+import { billboardLegs, MAX_BILLBOARDS, photoSpot, straightApproach } from './billboards';
 
 describe('carteles de líderes', () => {
   it('mide la recta que hay justo antes del cruce', () => {
@@ -31,5 +31,13 @@ describe('carteles de líderes', () => {
         expect(i).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('el cartel con foto va en la recta más larga, antes del cruce', () => {
+    const track = Track.fromSegments([straight(30), right(), straight(100), left(), straight(40)]);
+    const spot = photoSpot(track);
+    expect(spot.leg).toBe(1);
+    expect(spot.distance).toBeGreaterThan(30);
+    expect(spot.distance).toBeLessThan(track.legs[1].length);
   });
 });
