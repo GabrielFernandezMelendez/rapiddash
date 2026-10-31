@@ -232,5 +232,11 @@
   "tournament.error.not-found": "No hay ningún torneo con ese código.",
   "tournament.error.started": "Ese torneo ya ha empezado: no se puede entrar.",
   "tournament.error.full": "Ese torneo ya tiene 10 pilotos.",
-  "tournament.error.copy": "No se pudo copiar el enlace."
+  "tournament.error.copy": "No se pudo copiar el enlace.",
+  "billboard.leaderOf": "Líder · {name}",
+  "billboard.leaderWorld": "Líder mundial",
+  "billboard.leaderDaily": "Líder de hoy",
+  "billboard.second": "2.º",
+  "billboard.empty": "¿Serás el primero?",
+  "billboard.points": "{n} pts"
 }
