@@ -25,15 +25,16 @@ export function isDailyBoard(boardId: string): boolean {
   return boardId.startsWith('daily-');
 }
 
-/** Día desde el que los circuitos entran en la rotación (antes, el mapa de cada día no cambia). */
+/** Día desde el que el mapa del día sale solo de los circuitos (antes, el de cada día no cambia). */
 export const CIRCUITS_IN_DAILY_FROM = '2026-11-02';
 
-/** Mapas que rotan ese día: los circuitos se suman a partir de CIRCUITS_IN_DAILY_FROM. */
+/** Mapas que rotan ese día: los de ida hasta CIRCUITS_IN_DAILY_FROM y desde entonces solo los circuitos. */
 export function dailyPool<M extends { readonly id: string; readonly layout: string }>(
   key: string,
   maps: readonly M[],
 ): readonly M[] {
-  return key < CIRCUITS_IN_DAILY_FROM ? maps.filter((m) => m.layout !== 'laps') : maps;
+  const circuits = key >= CIRCUITS_IN_DAILY_FROM;
+  return maps.filter((m) => (m.layout === 'laps') === circuits);
 }
 
 /** Mapa que toca ese día: rota por orden, un mapa distinto cada día. */
