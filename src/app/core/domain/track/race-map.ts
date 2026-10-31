@@ -411,10 +411,12 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.portLoop',
     difficulty: 1,
     theme: 'bay',
-    // Rectángulo con dos curvas en S en las rectas largas
+    // Curvas en S en lugar de rectas, una curva de 90° en dos tramos y un embudo
     segments: [
-      straight(25), ...sCurve(25, 40), straight(20), right(), straight(35), right(),
-      straight(55), ...sCurve(25, 40), straight(10), right(), straight(35), right(), straight(20),
+      straight(26), ...sCurve(30, 45), straight(4), right(), straight(4), narrow(12), straight(4),
+      widen(12), straight(4), arc(45, 45), straight(4), arc(45, 45), straight(4), right(),
+      straight(4), left(), straight(4), ...sCurve(-25, 40), straight(4), right(), straight(52),
+      ...sCurve(20, 40), straight(4), right(), straight(20),
     ],
   },
   {
@@ -423,11 +425,13 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.canyonRing',
     difficulty: 2,
     theme: 'canyon',
-    // Curva amplia de 90°, un giro a la izquierda y un embudo a 3 carriles
+    // Gran curva en dos tramos (60° + 30°), dos embudos y escalones en las rectas
     segments: [
-      straight(20), ...sCurve(-20, 40), straight(51), right(), straight(30), arc(90, 28),
-      straight(20), right(), straight(25), left(), straight(15), narrow(10), straight(20),
-      widen(10), straight(10), right(), straight(11.5), right(), straight(20),
+      straight(9.5), ...sCurve(-30, 40), narrow(10), straight(18), widen(10), right(),
+      straight(18), right(), straight(8.5), left(), straight(7), straight(25), arc(60, 35),
+      straight(7), arc(30, 35), straight(42.5), right(), straight(10.5), narrow(8), straight(7),
+      left(), straight(7), right(), widen(8), straight(1), ...sCurve(30, 35), straight(7),
+      right(), straight(14),
     ],
   },
   {
@@ -436,12 +440,13 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.summitGp',
     difficulty: 3,
     theme: 'summit',
-    // Horquilla (dos derechas a 12 m) y greca estrecha en zigzag
+    // Horquilla, greca estrecha y curva en S dentro de un embudo
     segments: [
-      straight(15), ...sCurve(25, 35), straight(64), right(), straight(12), right(), straight(18),
-      left(), straight(12), narrow(6), straight(8), right(), straight(10), left(), straight(10),
-      right(), straight(8), widen(8), straight(15), ...sCurve(-30, 30), straight(20), right(),
-      straight(78), right(), straight(15),
+      straight(71.5), ...sCurve(35, 35), straight(4), right(), straight(4), right(), straight(4),
+      narrow(6), straight(4), left(), straight(4), right(), straight(4), left(), widen(8),
+      straight(4), arc(50, 35), straight(4), arc(40, 35), straight(4), right(), straight(4),
+      left(), straight(4), narrow(12), ...sCurve(-30, 30), straight(4), widen(12), right(),
+      straight(39), ...sCurve(25, 35), straight(4), right(), straight(20),
     ],
   },
   {
@@ -450,10 +455,12 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.lighthouseOval',
     difficulty: 1,
     theme: 'bay',
-    // Solo 2 cruces: el resto del giro son dos curvas amplias de 90°
+    // Curvas en S y dos curvas de 45° en vez de esquinas; dos embudos
     segments: [
-      straight(18.5), ...sCurve(20, 45), straight(30), right(), straight(40), arc(90, 30),
-      straight(50), arc(90, 30), straight(45), right(), straight(20),
+      straight(14), ...sCurve(20, 45), straight(4), narrow(20), straight(4), widen(15), right(),
+      straight(5), left(), straight(4), right(), straight(4), arc(45, 30), straight(4),
+      arc(45, 30), straight(4), ...sCurve(-30, 40), narrow(10), straight(4), widen(10),
+      arc(90, 30), straight(39), right(), straight(17.5),
     ],
   },
   {
@@ -462,10 +469,12 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.desertHorseshoe',
     difficulty: 1,
     theme: 'canyon',
-    // 3 cruces y una curva amplia de 90°
+    // Gran curva de 90° y curvas en S dentro de los embudos
     segments: [
-      straight(59.5), arc(90, 35), straight(45), right(), straight(30), ...sCurve(-25, 40),
-      straight(40), right(), straight(82), right(), straight(15),
+      straight(14), ...sCurve(-25, 40), arc(90, 35), straight(4), narrow(15), ...sCurve(30, 35),
+      widen(15), straight(4), right(), straight(4), right(), straight(4), left(), straight(4),
+      ...sCurve(-35, 40), straight(4), narrow(10), straight(4), widen(10), right(), straight(57),
+      ...sCurve(25, 40), straight(4), right(), straight(18),
     ],
   },
   {
@@ -474,11 +483,12 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.glacierLoop',
     difficulty: 2,
     theme: 'summit',
-    // 2 cruces, una diagonal con dos curvas de 45° y un embudo largo
+    // Diagonal con dos curvas de 45° y un embudo largo
     segments: [
-      straight(41), arc(45, 40), straight(35), arc(45, 40), straight(45), right(), straight(25),
-      narrow(12), straight(25), widen(12), straight(20), arc(90, 30), straight(30),
-      ...sCurve(-25, 35), straight(20), right(), straight(25),
+      straight(34.5), arc(45, 40), straight(5.5), narrow(20), straight(4.5), arc(45, 40),
+      widen(15), straight(4), right(), straight(4.5), left(), straight(4), right(), straight(4),
+      ...sCurve(30, 35), narrow(8), straight(4.5), widen(8), arc(90, 30), straight(12),
+      ...sCurve(-30, 40), straight(4), right(), straight(20),
     ],
   },
   {
@@ -487,10 +497,13 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.neonSnake',
     difficulty: 3,
     theme: 'bay',
-    // Greca en zigzag constante: 8 cruces seguidos cada 9 m
+    // Greca: 4 cruces con 9 m de carril entre medias y luego 6 seguidos, sin carril entre cruces
     segments: [
-      straight(100), right(), straight(30), right(), straight(15), ...zigzag(8, -1, 9),
-      straight(29), right(), straight(110), right(), straight(15),
+      straight(14), ...sCurve(25, 45), straight(18.5), narrow(15), straight(12.5), widen(15),
+      right(), straight(21), right(), straight(12.5), left(), straight(7.5), right(),
+      straight(7.5), left(), straight(7.5), right(), straight(7.5), left(), right(), left(),
+      right(), left(), right(), straight(37.5), right(), straight(44.5), ...sCurve(-25, 45),
+      straight(17), right(), straight(15.5),
     ],
   },
   {
@@ -499,11 +512,13 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.canyonMaze',
     difficulty: 2,
     theme: 'canyon',
-    // Escalones, una curva en S y dos rectas largas para recuperar
+    // Escalones con embudos abruptos entre curvas
     segments: [
-      straight(69.5), right(), straight(25), left(), straight(20), right(), straight(30), right(),
-      straight(15), arc(-45, 30), straight(10), arc(45, 30), straight(20), right(), straight(15),
-      left(), straight(15), right(), straight(64.5), right(), straight(10),
+      straight(32.5), ...sCurve(30, 40), right(), straight(9.5), narrow(8), straight(4.5), left(),
+      straight(7), right(), widen(8), straight(9.5), arc(45, 35), straight(4.5), arc(45, 35),
+      straight(7), right(), straight(5.5), left(), straight(4.5), ...sCurve(-30, 35), right(),
+      straight(7), left(), straight(4.5), narrow(10), right(), straight(4.5), widen(10),
+      straight(14), ...sCurve(25, 40), straight(4.5), right(), straight(20),
     ],
   },
   {
@@ -512,12 +527,13 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     nameKey: 'maps.summitStairs',
     difficulty: 3,
     theme: 'summit',
-    // Escaleras arriba y abajo con dos embudos abruptos a 3 carriles
+    // Escaleras arriba y abajo con cruces de 3 carriles
     segments: [
-      straight(16), right(), straight(15), left(), straight(15), right(), straight(15), left(),
-      narrow(8), straight(10), right(), straight(50), right(), straight(12), widen(8),
-      straight(12), right(), straight(20), left(), straight(40), right(), straight(66.5), right(),
-      straight(12),
+      straight(32.5), right(), straight(9.5), left(), straight(9.5), narrow(6), straight(6),
+      right(), straight(8), left(), straight(8), widen(6), right(), straight(11.5),
+      ...sCurve(30, 35), straight(8), arc(90, 35), right(), straight(8), left(), straight(8),
+      narrow(8), straight(6), right(), straight(8), left(), widen(8), straight(11.5), right(),
+      straight(52), ...sCurve(-25, 40), right(), straight(20),
     ],
   },
 ];
