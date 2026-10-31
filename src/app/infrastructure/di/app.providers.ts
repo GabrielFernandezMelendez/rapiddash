@@ -6,10 +6,12 @@ import { DailyAttemptsRepository } from '../../core/application/ports/out/daily-
 import { CloudRecordRepository } from '../../core/application/ports/out/cloud-record.repository';
 import { BestRunRepository } from '../../core/application/ports/out/best-run.repository';
 import { ProfileRepository } from '../../core/application/ports/out/profile.repository';
+import { TournamentRepository } from '../../core/application/ports/out/tournament.repository';
 import { SettingsRepository } from '../../core/application/ports/out/settings.repository';
 import { CachedProfileRepository } from '../firebase/cached-profile.repository';
 import { LazyCloudRecordRepository } from '../firebase/lazy-cloud-record.repository';
 import { LazyFirebaseAuth } from '../firebase/lazy-firebase-auth';
+import { LazyTournamentRepository } from '../firebase/lazy-tournament.repository';
 import { NoAdsAdapter } from '../ads/no-ads.adapter';
 import { LocalDailyAttemptsRepository } from '../persistence/local/local-daily-attempts.repository';
 import { WebAudioAdapter } from '../audio/web-audio.adapter';
@@ -32,5 +34,6 @@ export function provideAppAdapters(): Provider[] {
     { provide: CloudRecordRepository, useClass: LazyCloudRecordRepository },
     { provide: DailyAttemptsRepository, useClass: LocalDailyAttemptsRepository },
     { provide: AdsPort, useClass: NoAdsAdapter },
+    { provide: TournamentRepository, useClass: LazyTournamentRepository },
   ];
 }
