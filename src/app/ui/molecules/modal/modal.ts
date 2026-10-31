@@ -15,7 +15,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       <footer class="actions"><ng-content select="[modal-actions]" /></footer>
     </section>
   `,
-  host: { '(document:keydown.escape)': 'dismiss.emit()' },
+  host: { '(document:keydown.escape)': 'dismiss.emit()', '[class.centered]': 'centered()' },
   styles: `
     :host {
       position: absolute;
@@ -24,6 +24,13 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       display: grid;
       align-items: end;
       padding: 16px;
+    }
+    /* Ventana en medio de la pantalla (avisos que piden una decisión) */
+    :host(.centered) {
+      align-items: center;
+    }
+    :host(.centered) .panel {
+      padding-bottom: 18px;
     }
     .backdrop {
       position: absolute;
@@ -84,5 +91,6 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 })
 export class Modal {
   readonly label = input('');
+  readonly centered = input(false);
   readonly dismiss = output<void>();
 }

@@ -32,6 +32,11 @@ export const routes: Routes = [
     loadComponent: () => import('./ui/pages/race/race.page').then((m) => m.RacePage),
   },
   {
+    path: 'daily',
+    canMatch: [hasPilot],
+    loadComponent: () => import('./ui/pages/daily/daily.page').then((m) => m.DailyPage),
+  },
+  {
     path: 'profile',
     canMatch: [hasPilot],
     loadComponent: () => import('./ui/pages/profile/profile.page').then((m) => m.ProfilePage),

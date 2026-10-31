@@ -21,23 +21,27 @@ import { RendererPort } from '../../../core/application/ports/out/renderer.port'
 import { RaceSession, RaceViewState } from '../../../core/application/use-cases/race-session';
 import { Standing } from '../../../core/application/use-cases/ranking-board';
 import { RankedRecord } from '../../../core/domain/race/ranking';
+import { BestRun } from '../../../core/domain/race/ghost';
 import { findMap } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { provideRaceAdapters } from '../../../infrastructure/di/race.providers';
 import { AccountService } from '../../../shared/account/account.service';
 import { CloudRecordsService } from '../../../shared/account/cloud-records.service';
+import { DailyService } from '../../../shared/account/daily.service';
 import { RankingService } from '../../../shared/account/ranking.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { Countdown } from '../../organisms/countdown/countdown';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
+import { MoreAttempts } from '../../organisms/more-attempts/more-attempts';
+import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { Hud } from '../../organisms/hud/hud';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -60,6 +64,15 @@ import { RaceLayout } from '../../templates/race-layout/race-layout';
     @if (tutorialOpen()) {
       <rd-tutorial (closed)="tutorialDone()" />
     }
+    @if (askMore()) {
+      <rd-more-attempts
+        [mapName]="mapName()"
+        [waitMs]="dailyService.waitRemaining()"
+        [busy]="adBusy()"
+        (watch)="watchAd()"
+        (wait)="leaveDaily()"
+      />
+    }
   `,
   styles: `
     .scene {
@@ -71,6 +84,8 @@ import { RaceLayout } from '../../templates/race-layout/race-layout';
 export class RacePage {
   /** Parámetro de ruta /race/:mapId (withComponentInputBinding). */
   readonly mapId = input.required<string>();
+  /** ?daily=1: carrera del mapa del día (cuenta en su ranking y gasta intentos). */
+  readonly daily = input<string | undefined>();
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
@@ -105,6 +120,11 @@ export class RacePage {
       : this.i18n.t('results.passed').replace('{n}', String(gained));
   });
   private lastResult: unknown = null;
+  protected readonly dailyService = inject(DailyService);
+  protected readonly askMore = signal(false);
+  protected readonly adBusy = signal(false);
+  /** Ranking donde cuenta esta carrera: el del mapa o el del día. */
+  private boardId = '';
   private readonly settings = inject(SettingsRepository);
   /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
   protected readonly tutorialOpen = signal(false);
@@ -129,6 +149,16 @@ export class RacePage {
 
   /** «Repetir»: si hay siguiente rival, la próxima carrera es contra él. */
   protected async retry(): Promise<void> {
+    if (this.isDaily()) {
+      // En el mapa del día cada carrera gasta un intento
+      if (!this.dailyService.startAttempt()) {
+        this.askMore.set(true);
+        return;
+      }
+      this.standing.set(null);
+      this.session?.restart();
+      return;
+    }
     const next = this.standing()?.next;
     if (next) {
       this.ranking.pick(this.mapId(), { choice: 'above', ranked: next });
@@ -139,7 +169,25 @@ export class RacePage {
   }
 
   protected exit(): void {
-    void this.router.navigate(['/maps']);
+    void this.router.navigate([this.isDaily() ? '/daily' : '/maps']);
+  }
+
+  protected async watchAd(): Promise<void> {
+    this.adBusy.set(true);
+    const ok = await this.dailyService.watchAd();
+    this.adBusy.set(false);
+    if (!ok) return;
+    this.askMore.set(false);
+    void this.retry();
+  }
+
+  protected leaveDaily(): void {
+    this.askMore.set(false);
+    void this.router.navigate(['/daily']);
+  }
+
+  private isDaily(): boolean {
+    return this.boardId !== '' && this.boardId !== this.map()?.id;
   }
 
   private async boot(): Promise<void> {
@@ -148,20 +196,31 @@ export class RacePage {
       this.exit();
       return;
     }
+    this.boardId = map.id;
+    if (this.daily()) {
+      const today = this.dailyService.today(ALL_MAPS);
+      // Enlace viejo (otro día) o sin intentos: de vuelta a la pantalla del mapa del día
+      if (today.mapId !== map.id || !this.dailyService.startAttempt()) {
+        void this.router.navigate(['/daily']);
+        return;
+      }
+      this.boardId = today.boardId;
+    }
     const track = Track.fromSegments(map.segments);
     const aesthetic = this.aesthetic.aesthetic();
     this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
     this.controls.attach(this.surface().nativeElement as HTMLElement);
     this.audio.setVolumes(this.settings.getVolumes());
-    const pick = this.ranking.picked(map.id);
+    // En el mapa del día no hay rival: el fantasma es mi mejor vuelta de hoy
+    const pick = this.isDaily() ? null : this.ranking.picked(map.id);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,
       input: this.controls,
       loop: this.loop,
       bestRuns: this.bestRuns,
       audio: this.audio,
-      records: this.cloudRecords,
-    }, aesthetic);
+      records: this.isDaily() ? { publish: (run) => void this.publishDaily(run) } : this.cloudRecords,
+    }, aesthetic, this.boardId);
     if (pick?.ranked) await this.useRival(pick.ranked);
     if (showTutorialBeforeRace(this.settings.getTutorialSeen())) {
       await new Promise<void>((resolve) => {
@@ -170,6 +229,21 @@ export class RacePage {
       });
     }
     await this.session.start((s) => this.onState(s));
+  }
+
+  /**
+   * Récord del día: se sube al ranking del día y, si además mejora mi récord del mapa, también
+   * cuenta para el ranking normal.
+   */
+  private async publishDaily(run: BestRun): Promise<void> {
+    this.cloudRecords.publish(run);
+    const map = this.map();
+    if (!map) return;
+    const best = await this.bestRuns.get(map.id);
+    if (best && best.time <= run.time) return;
+    const mapRun: BestRun = { ...run, mapId: map.id };
+    await this.bestRuns.save(mapRun);
+    this.cloudRecords.publish(mapRun);
   }
 
   /** Descarga el fantasma del rival (máximo 2,5 s); si no llega, se corre contra mi mejor vuelta. */
@@ -188,6 +262,9 @@ export class RacePage {
     // Puesto mundial con mi mejor tiempo (el nuevo si es récord)
     if (!this.account.profile()) return;
     const best = result.previousBest === null ? result.time : Math.min(result.time, result.previousBest);
-    void this.ranking.standing(this.mapId(), best).then((s) => this.standing.set(s));
+    void this.ranking
+      .standing(this.boardId, best)
+      // En el mapa del día «Repetir» no cambia de rival
+      .then((s) => this.standing.set(s && this.isDaily() ? { ...s, next: null } : s));
   }
 }

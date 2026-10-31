@@ -86,11 +86,13 @@ export class RaceSession {
     private readonly ports: RaceSessionPorts,
     /** Estética: elige la música y el motor (nunca cambia la física). */
     private readonly aesthetic: Aesthetic = 'classic',
+    /** Ranking donde cuenta el tiempo: el del mapa o el del día («daily-…»). */
+    private readonly boardId: string = map.id,
   ) {}
 
   async start(listener: (state: RaceViewState) => void): Promise<void> {
     this.listener = listener;
-    this.best = await this.ports.bestRuns.get(this.map.id);
+    this.best = await this.ports.bestRuns.get(this.boardId);
     this.reset();
     this.ports.audio.start(this.aesthetic);
     this.ports.loop.start((dt) => this.tick(dt));
@@ -173,7 +175,7 @@ export class RaceSession {
     this.result = { time, previousBest, isRecord };
     if (isRecord) {
       const run: BestRun = {
-        mapId: this.map.id,
+        mapId: this.boardId,
         time,
         frames: this.recorder.finish(
           time,
