@@ -182,9 +182,6 @@ export class WebAudioAdapter extends AudioPort {
     this.engineGain = this.ctx.createGain();
     this.engineGain.gain.value = ENGINE_VOLUME * this.volumes.effects;
     this.engineGain.connect(this.ctx.destination);
-    // iOS: que suene aunque el móvil esté en silencio, como un juego (Safari 16.4+)
-    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
-    if (session) session.type = 'playback';
     // Los navegadores móviles solo dejan sonar el audio tras un gesto del jugador
     for (const type of UNLOCK_EVENTS) window.addEventListener(type, this.unlock);
     void this.ctx.resume().catch(() => undefined);
