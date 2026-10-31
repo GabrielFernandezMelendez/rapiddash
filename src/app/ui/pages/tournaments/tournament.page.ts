@@ -163,7 +163,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       position: absolute;
       inset: 0;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff3b8'/%3E%3Cstop offset='.86' stop-color='%23f3c13a'/%3E%3Cstop offset='1' stop-color='%23d39d1a'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M50.00 9.00Q51.54 1.02 59.75 0.96Q67.32 4.16 65.69 12.12Q70.16 5.34 77.78 8.43Q83.54 14.28 78.99 21.01Q85.72 16.46 91.57 22.22Q94.66 29.84 87.88 34.31Q95.84 32.68 99.04 40.25Q98.98 48.46 91.00 50.00Q98.98 51.54 99.04 59.75Q95.84 67.32 87.88 65.69Q94.66 70.16 91.57 77.78Q85.72 83.54 78.99 78.99Q83.54 85.72 77.78 91.57Q70.16 94.66 65.69 87.88Q67.32 95.84 59.75 99.04Q51.54 98.98 50.00 91.00Q48.46 98.98 40.25 99.04Q32.68 95.84 34.31 87.88Q29.84 94.66 22.22 91.57Q16.46 85.72 21.01 78.99Q14.28 83.54 8.43 77.78Q5.34 70.16 12.12 65.69Q4.16 67.32 0.96 59.75Q1.02 51.54 9.00 50.00Q1.02 48.46 0.96 40.25Q4.16 32.68 12.12 34.31Q5.34 29.84 8.43 22.22Q14.28 16.46 21.01 21.01Q16.46 14.28 22.22 8.43Q29.84 5.34 34.31 12.12Q32.68 4.16 40.25 0.96Q48.46 1.02 50.00 9.00Z' fill='url%28%23g%29'/%3E%3C/svg%3E") center / contain no-repeat;
-      animation: medal-spin 6s linear infinite;
+      animation: medal-spin 10s linear infinite;
     }
     .camera {
       position: relative;
