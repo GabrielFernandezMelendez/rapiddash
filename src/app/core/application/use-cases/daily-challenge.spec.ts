@@ -20,7 +20,7 @@ class FakeAds extends AdsPort {
   }
 }
 
-const MAPS = ['bay', 'canyon', 'summit'].map((id) => ({ id, layout: 'classic' }));
+const MAPS = ['port-loop', 'canyon-ring', 'summit-gp'].map((id) => ({ id, layout: 'laps' }));
 
 describe('DailyChallenge', () => {
   let now: Date;
