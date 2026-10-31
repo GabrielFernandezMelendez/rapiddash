@@ -258,8 +258,9 @@ export class RacePage {
     // Los carteles se rellenan cuando llegan los datos, sin hacer esperar a la carrera
     void this.loadBillboards();
     this.audio.setVolumes(this.settings.getVolumes());
-    // En el mapa del día no hay rival: el fantasma es mi mejor vuelta de hoy
-    const pick = this.isDaily() ? null : this.ranking.picked(map.id);
+    // En el torneo no hay rival (el fantasma es mi mejor vuelta del día); en el mapa del día, el
+    // elegido en su pantalla, del ranking de hoy
+    const pick = this.tournamentCode ? null : this.ranking.picked(this.boardId);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,
       input: this.controls,

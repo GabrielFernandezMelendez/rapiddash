@@ -45,9 +45,10 @@ export class RankingService {
     return this.settings.getRival(mapId);
   }
 
-  pick(mapId: string, pick: RivalPick | null): void {
+  /** Guarda el rival de la próxima carrera; `rememberAs` es la clave con la que se recuerda la elección. */
+  pick(mapId: string, pick: RivalPick | null, rememberAs = mapId): void {
     this.picks.set(mapId, pick);
-    if (pick) this.settings.setRival(mapId, pick.choice);
+    if (pick) this.settings.setRival(rememberAs, pick.choice);
   }
 
   picked(mapId: string): RivalPick | null {
