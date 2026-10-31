@@ -2,15 +2,15 @@ import { ChangeDetectionStrategy, Component, input, output, signal } from '@angu
 
 export type TournamentCardStatus = 'running' | 'waiting' | 'finished';
 
-/** Lo que hay que deslizar a la derecha para dejar ver la papelera (px). */
+/** Lo que hay que deslizar a la izquierda para dejar ver la papelera (px). */
 const REVEAL = 84;
 /** A partir de cuánto deslizamiento se queda abierta al soltar. */
 const OPEN_AT = REVEAL / 2;
 
 /**
  * Un torneo en «Mis torneos»: nombre, estado y una línea de detalle. Si se puede eliminar,
- * deslizando a la derecha aparece una papelera detrás (deslizar a la izquierda o tocar la
- * tarjeta la vuelve a tapar). La papelera es un botón normal: también se llega con el teclado.
+ * deslizando a la izquierda aparece una papelera detrás, a la derecha (deslizar a la derecha o
+ * tocar la tarjeta la vuelve a tapar). La papelera es un botón normal: también se llega con el teclado.
  */
 @Component({
   selector: 'rd-tournament-card',
@@ -66,7 +66,7 @@ const OPEN_AT = REVEAL / 2;
     }
     .trash {
       position: absolute;
-      inset: 0 auto 0 0;
+      inset: 0 0 0 auto;
       width: 84px;
       display: grid;
       place-items: center;
@@ -153,7 +153,7 @@ export class TournamentCard {
   readonly statusLabel = input.required<string>();
   readonly detail = input('');
   readonly extra = input('');
-  /** El creador puede eliminarlo: deslizar a la derecha deja ver la papelera. */
+  /** El creador puede eliminarlo: deslizar a la izquierda deja ver la papelera. */
   readonly removable = input(false);
   readonly removeLabel = input('');
   readonly open = output<void>();
@@ -185,14 +185,14 @@ export class TournamentCard {
     if (Math.abs(dx) < 8 && !this.moved) return;
     this.moved = true;
     this.dragging.set(true);
-    this.offset.set(Math.max(0, Math.min(REVEAL, s.base + dx)));
+    this.offset.set(Math.min(0, Math.max(-REVEAL, s.base + dx)));
   }
 
   protected up(): void {
     if (!this.start) return;
     this.start = null;
     this.dragging.set(false);
-    if (this.moved) this.setRevealed(this.offset() > OPEN_AT);
+    if (this.moved) this.setRevealed(this.offset() < -OPEN_AT);
   }
 
   protected tap(e: Event): void {
@@ -208,6 +208,6 @@ export class TournamentCard {
 
   private setRevealed(open: boolean): void {
     this.revealed.set(open);
-    this.offset.set(open ? REVEAL : 0);
+    this.offset.set(open ? -REVEAL : 0);
   }
 }
