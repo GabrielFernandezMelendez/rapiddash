@@ -100,7 +100,8 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         } @else if (status() === 'running') {
           <div class="race-row">
             @if (isLeader()) {
-              <!-- Solo el líder: cambiar (o quitar) su foto del cartel -->
+              <!-- Solo el líder: cambiar (o quitar) su foto del cartel. Parece una medalla. -->
+              <span class="medal">
               <button
                 rdButton
                 variant="secondary"
@@ -115,6 +116,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
                   <path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle>
                 </svg>
               </button>
+              </span>
             }
             <button rdButton type="button" [block]="true" class="go" (click)="race()">
               {{ 'tournament.raceToday' | t }}
@@ -143,14 +145,59 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       display: grid;
       gap: 10px;
     }
-    .camera {
+    /* Medalla: roseta dorada de puntas detrás del botón; late y rebota cada 2,3 s */
+    .medal {
+      position: relative;
       justify-self: start;
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      margin-left: -10px;
+      filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.45));
+      animation: medal 2.3s ease-in-out infinite;
+    }
+    .medal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      clip-path: polygon(50.0% 0.0%, 54.6% 9.3%, 61.1% 1.3%, 63.5% 11.3%, 71.7% 5.0%, 71.8% 15.3%, 81.2% 10.9%, 79.0% 21.0%, 89.1% 18.8%, 84.7% 28.2%, 95.0% 28.3%, 88.7% 36.5%, 98.7% 38.9%, 90.7% 45.4%, 100.0% 50.0%, 90.7% 54.6%, 98.7% 61.1%, 88.7% 63.5%, 95.0% 71.7%, 84.7% 71.8%, 89.1% 81.2%, 79.0% 79.0%, 81.2% 89.1%, 71.8% 84.7%, 71.7% 95.0%, 63.5% 88.7%, 61.1% 98.7%, 54.6% 90.7%, 50.0% 100.0%, 45.4% 90.7%, 38.9% 98.7%, 36.5% 88.7%, 28.3% 95.0%, 28.2% 84.7%, 18.8% 89.1%, 21.0% 79.0%, 10.9% 81.2%, 15.3% 71.8%, 5.0% 71.7%, 11.3% 63.5%, 1.3% 61.1%, 9.3% 54.6%, 0.0% 50.0%, 9.3% 45.4%, 1.3% 38.9%, 11.3% 36.5%, 5.0% 28.3%, 15.3% 28.2%, 10.9% 18.8%, 21.0% 21.0%, 18.8% 10.9%, 28.2% 15.3%, 28.3% 5.0%, 36.5% 11.3%, 38.9% 1.3%, 45.4% 9.3%);
+      background: radial-gradient(circle at 35% 30%, #fff3b8, var(--rd-signal) 45%, #b8860b);
+    }
+    .camera {
+      position: relative;
       width: 56px;
       min-height: 56px;
       padding: 0;
       border-radius: 50%;
       display: grid;
       place-items: center;
+      box-shadow: 0 0 0 3px var(--rd-signal);
+    }
+    @keyframes medal {
+      0%,
+      62%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+      72% {
+        transform: translateY(-7px) scale(1.14);
+      }
+      80% {
+        transform: translateY(0) scale(0.94);
+      }
+      87% {
+        transform: translateY(-2px) scale(1.05);
+      }
+      94% {
+        transform: translateY(0) scale(0.99);
+      }
+    }
+    /* Accesibilidad: quien pide menos movimiento ve la medalla quieta */
+    @media (prefers-reduced-motion: reduce) {
+      .medal {
+        animation: none;
+      }
     }
     .center {
       text-align: center;
