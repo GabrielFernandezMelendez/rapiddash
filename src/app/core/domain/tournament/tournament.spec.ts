@@ -65,7 +65,9 @@ describe('Torneos', () => {
   it('unirse: solo antes de empezar y hasta 10', () => {
     expect(joinProblem(base, 'lucia')).toBeNull();
     expect(joinProblem(base, 'gabo')).toBe('already');
-    expect(joinProblem({ ...base, startedAt: 1 }, 'lucia')).toBe('started');
+    // Ya empezado se puede entrar; terminado, no
+    expect(joinProblem({ ...base, startedAt: 1 }, 'lucia', 2)).toBeNull();
+    expect(joinProblem({ ...base, startedAt: 1 }, 'lucia', 1 + 3 * TOURNAMENT_DAY_MS)).toBe('finished');
     const full = { ...base, members: Array.from({ length: TOURNAMENT_MAX_MEMBERS }, (_, i) => member(`p${i}`)) };
     expect(joinProblem(full, 'lucia')).toBe('full');
   });

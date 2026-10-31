@@ -80,6 +80,19 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         <rd-standings-table [rows]="board()?.rows ?? []" [myUid]="myUid" [today]="today()" />
         @if (status() === 'running') {
           <p class="note">{{ 'tournament.provisional' | t }}</p>
+          <!-- Se puede seguir entrando con el enlace mientras dure el torneo -->
+          @if (t()!.members.length < maxMembers) {
+            <div class="code invite-more">
+              <span class="code-label">{{ 'tournament.inviteMore' | t }}</span>
+              <span class="code-value">{{ t()!.code }}</span>
+              <div class="share">
+                <button rdButton variant="secondary" type="button" (click)="copy()">
+                  {{ (copied() ? 'tournament.copied' : 'tournament.copy') | t }}
+                </button>
+                <button rdButton variant="secondary" type="button" (click)="share()">{{ 'tournament.share' | t }}</button>
+              </div>
+            </div>
+          }
         }
       }
       @if (error(); as error) {
@@ -209,6 +222,13 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       .medal::before {
         animation: none;
       }
+    }
+    .invite-more .code-value {
+      font-size: 30px;
+    }
+    .invite-more .code-label {
+      text-transform: none;
+      letter-spacing: 0;
     }
     .center {
       text-align: center;
