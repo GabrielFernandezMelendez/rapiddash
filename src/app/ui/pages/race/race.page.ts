@@ -35,7 +35,8 @@ import { Countdown } from '../../organisms/countdown/countdown';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { MoreAttempts } from '../../organisms/more-attempts/more-attempts';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
-import { dayBoardId, dayIndex, isMember, statusAt } from '../../../core/domain/tournament/tournament';
+import { dayBoardId, dayIndex, isMember, statusAt, Tournament } from '../../../core/domain/tournament/tournament';
+import { rankingBillboards, tournamentBillboards } from './billboard-content';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { Hud } from '../../organisms/hud/hud';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
@@ -131,6 +132,7 @@ export class RacePage {
   private boardId = '';
   /** Torneo en el que cuenta esta carrera (null fuera de torneo). */
   private tournamentCode: string | null = null;
+  private tournament: Tournament | null = null;
   private readonly tournaments = inject(TournamentService);
   private readonly settings = inject(SettingsRepository);
   /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
@@ -234,6 +236,8 @@ export class RacePage {
     const aesthetic = this.aesthetic.aesthetic();
     this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
     this.controls.attach(this.surface().nativeElement as HTMLElement);
+    // Los carteles se rellenan cuando llegan los datos, sin hacer esperar a la carrera
+    void this.loadBillboards();
     this.audio.setVolumes(this.settings.getVolumes());
     // En el mapa del día no hay rival: el fantasma es mi mejor vuelta de hoy
     const pick = this.isDaily() ? null : this.ranking.picked(map.id);
@@ -278,7 +282,25 @@ export class RacePage {
     const now = Date.now();
     const day = dayIndex(t, now);
     if (statusAt(t, now) !== 'running' || day === null || t.mapIds[day] !== mapId) return null;
+    this.tournament = t;
     return dayBoardId(t.code, day);
+  }
+
+  /** Líder y segundo del torneo o del ranking de esta carrera; sin red, sin carteles. */
+  private async loadBillboards(): Promise<void> {
+    try {
+      if (this.tournament) {
+        const board = await this.tournaments.board(this.tournament);
+        this.renderer.setBillboards(tournamentBillboards(this.tournament, board.rows, this.i18n));
+      } else {
+        const view = await this.ranking.load(this.boardId);
+        // Sin red no se sabe quién va primero: mejor no poner carteles que decir algo falso
+        if (view.total === null && !view.top.length) return;
+        this.renderer.setBillboards(rankingBillboards(view, this.isDaily(), this.i18n));
+      }
+    } catch {
+      // Los carteles son decoración: si falla la red, la carrera sigue igual
+    }
   }
 
   /** Descarga el fantasma del rival (máximo 2,5 s); si no llega, se corre contra mi mejor vuelta. */

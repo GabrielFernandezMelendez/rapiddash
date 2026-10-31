@@ -1,5 +1,6 @@
 import { CarPose } from '../../../domain/race/ghost';
 import { Aesthetic } from '../../../domain/settings/aesthetic';
+import { BillboardContent } from '../../../domain/track/billboards';
 import { MapTheme } from '../../../domain/track/race-map';
 import { Track } from '../../../domain/track/track';
 
@@ -29,5 +30,7 @@ export abstract class RendererPort {
   abstract impact(): void;
   /** Golpecito al cambiar de carril contra el muro: chispas en ese lado y vibración leve. */
   abstract bump(side: 1 | -1): void;
+  /** Carteles de líderes (1.º y 2.º); null los oculta. Puede llegar con la carrera ya empezada. */
+  abstract setBillboards(content: BillboardContent | null): void;
   abstract dispose(): void;
 }

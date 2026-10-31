@@ -232,5 +232,11 @@
   "tournament.error.not-found": "There's no tournament with that code.",
   "tournament.error.started": "That tournament has already started: you can't join.",
   "tournament.error.full": "That tournament already has 10 drivers.",
-  "tournament.error.copy": "Couldn't copy the link."
+  "tournament.error.copy": "Couldn't copy the link.",
+  "billboard.leaderOf": "Leader · {name}",
+  "billboard.leaderWorld": "World leader",
+  "billboard.leaderDaily": "Today's leader",
+  "billboard.second": "2nd",
+  "billboard.empty": "Will you be first?",
+  "billboard.points": "{n} pts"
 }
