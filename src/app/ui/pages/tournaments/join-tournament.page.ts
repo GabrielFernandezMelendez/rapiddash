@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { normalizeCode, Tournament } from '../../../core/domain/tournament/tournament';
+import { normalizeCode, Tournament, TOURNAMENT_MAX_MEMBERS } from '../../../core/domain/tournament/tournament';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
@@ -106,7 +106,7 @@ export class JoinTournamentPage implements OnInit {
 
   protected inviteDetail(t: Tournament): string {
     const owner = t.members.find((m) => m.uid === t.ownerUid)?.nickname ?? '';
-    return `${owner} · ${t.members.length}/10`;
+    return `${owner} · ${t.members.length}/${TOURNAMENT_MAX_MEMBERS}`;
   }
 
   protected async join(): Promise<void> {

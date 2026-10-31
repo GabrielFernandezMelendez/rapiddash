@@ -1,7 +1,7 @@
 import { CountryCode } from '../profile/country';
 
-/** Torneos: ligas de 3 días entre amigos, hasta 10 pilotos, un mapa al azar cada día. */
-export const TOURNAMENT_MAX_MEMBERS = 10;
+/** Torneos: ligas de 3 días entre amigos, hasta 20 pilotos, un mapa al azar cada día. */
+export const TOURNAMENT_MAX_MEMBERS = 20;
 export const TOURNAMENT_DAYS = 3;
 export const TOURNAMENT_DAY_MS = 24 * 60 * 60 * 1000;
 /** Puntos por puesto cada día (como en Mario Kart); del 11.º en adelante, 0. */

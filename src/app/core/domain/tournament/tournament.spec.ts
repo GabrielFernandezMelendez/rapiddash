@@ -12,6 +12,7 @@ import {
   statusAt,
   Tournament,
   TOURNAMENT_DAY_MS,
+  TOURNAMENT_MAX_MEMBERS,
 } from './tournament';
 
 const member = (uid: string) => ({ uid, nickname: uid, country: 'ES' as const });
@@ -65,7 +66,7 @@ describe('Torneos', () => {
     expect(joinProblem(base, 'lucia')).toBeNull();
     expect(joinProblem(base, 'gabo')).toBe('already');
     expect(joinProblem({ ...base, startedAt: 1 }, 'lucia')).toBe('started');
-    const full = { ...base, members: Array.from({ length: 10 }, (_, i) => member(`p${i}`)) };
+    const full = { ...base, members: Array.from({ length: TOURNAMENT_MAX_MEMBERS }, (_, i) => member(`p${i}`)) };
     expect(joinProblem(full, 'lucia')).toBe('full');
   });
 

@@ -15,6 +15,7 @@ import {
   statusAt,
   Tournament,
   TOURNAMENT_DAYS,
+  TOURNAMENT_MAX_MEMBERS,
 } from '../../../core/domain/tournament/tournament';
 import { ALL_MAPS, CIRCUIT_MAPS, findMap } from '../../../core/domain/track/race-map';
 import { TournamentService } from '../../../shared/account/tournament.service';
@@ -59,7 +60,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         </div>
         <div class="row-head">
           <h2>{{ 'tournament.drivers' | t }}</h2>
-          <span class="sub">{{ t()!.members.length }} / 10</span>
+          <span class="sub">{{ t()!.members.length }} / {{ maxMembers }}</span>
         </div>
         <ul class="members">
           @for (m of t()!.members; track m.uid) {
@@ -224,6 +225,7 @@ export class TournamentPage implements OnInit {
   private readonly tournaments = inject(TournamentService);
 
   protected readonly myUid = this.tournaments.uid();
+  protected readonly maxMembers = TOURNAMENT_MAX_MEMBERS;
   protected readonly t = signal<Tournament | null>(null);
   protected readonly board = signal<TournamentBoard | null>(null);
   protected readonly missing = signal(false);
