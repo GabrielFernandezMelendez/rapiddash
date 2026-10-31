@@ -185,5 +185,8 @@
   "more.wait": "I'll wait",
   "settings.sound": "Sound",
   "settings.music": "Music",
-  "settings.effects": "Effects (engine)"
+  "settings.effects": "Effects (engine)",
+  "daily.yourPosition": "Your rank today",
+  "daily.available": "Available",
+  "daily.untilNew": "until the new map"
 }
