@@ -1,12 +1,25 @@
-import { ALL_MAPS, ZIGZAG_MAPS } from './race-map';
+import { ALL_MAPS, CIRCUIT_MAPS, trackOf, ZIGZAG_MAPS } from './race-map';
 import { SAMPLE_STEP, TRACK_HALF_WIDTH } from './track-constants';
 import { Track } from './track';
 
 describe('ALL_MAPS', () => {
-  it('hay seis mapas (3 clásicos y 3 zigzag) con identificador único', () => {
-    expect(ALL_MAPS.length).toBe(6);
-    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(6);
+  it('hay 15 mapas (3 clásicos, 3 zigzag y 9 circuitos) con identificador único', () => {
+    expect(ALL_MAPS.length).toBe(15);
+    expect(CIRCUIT_MAPS.length).toBe(9);
+    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(15);
   });
+
+  for (const map of CIRCUIT_MAPS) {
+    it(`${map.id}: el circuito cierra (vuelve a la salida con el mismo rumbo)`, () => {
+      const legs = Track.fromSegments(map.segments).legs;
+      const last = legs[legs.length - 1];
+      const end = last.samples[last.samples.length - 1];
+      // Solo el redondeo de las muestras (se corrige al unir la última recta con la primera)
+      expect(Math.hypot(end.x, end.z)).toBeLessThan(0.5);
+      expect(end.heading).toBeCloseTo(2 * Math.PI, 6);
+      expect(last.junction).toBeNull();
+    });
+  }
 
   it('las series zigzag tienen entre 3 y 8 cruces seguidos', () => {
     const longest = ZIGZAG_MAPS.map((m) => {
@@ -32,7 +45,9 @@ describe('ALL_MAPS', () => {
 
   for (const map of ALL_MAPS) {
     it(`${map.id}: la pista no se cruza consigo misma`, () => {
-      const track = Track.fromSegments(map.segments);
+      const raceTrack = trackOf(map);
+      const track = raceTrack.circuit?.lapTrack ?? raceTrack;
+      const lap = raceTrack.circuit?.lapLength ?? Infinity;
       // Puntos del eje de cada tramo con su progreso; los cruces se cubren con su centro
       const pts = track.legs.flatMap((leg) =>
         leg.samples
@@ -44,7 +59,9 @@ describe('ALL_MAPS', () => {
       const neighbourWindow = 60;
       for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
-          if (pts[j].progress - pts[i].progress < neighbourWindow) continue;
+          // En un circuito el final de la vuelta es vecino de la salida
+          const apart = pts[j].progress - pts[i].progress;
+          if (Math.min(apart, lap - apart) < neighbourWindow) continue;
           const d = Math.hypot(pts[i].x - pts[j].x, pts[i].z - pts[j].z);
           expect(
             d,

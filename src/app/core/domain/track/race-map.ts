@@ -9,15 +9,33 @@ import {
   TurnDirection,
   widen,
 } from './track-segment';
+import { CIRCUIT_LAPS } from './track-constants';
+import { Track } from './track';
 
-export type MapId = 'bay' | 'canyon' | 'summit' | 'bay-zigzag' | 'canyon-zigzag' | 'summit-zigzag';
+export type MapId =
+  | 'bay'
+  | 'canyon'
+  | 'summit'
+  | 'bay-zigzag'
+  | 'canyon-zigzag'
+  | 'summit-zigzag'
+  | 'port-loop'
+  | 'canyon-ring'
+  | 'summit-gp'
+  | 'lighthouse-oval'
+  | 'desert-horseshoe'
+  | 'glacier-loop'
+  | 'neon-snake'
+  | 'canyon-maze'
+  | 'summit-stairs';
 export type MapTheme = 'bay' | 'canyon' | 'summit';
 
 /**
  * - classic: cruces sueltos separados por tramos largos.
  * - zigzag: además, series de cruces seguidos (reto de destreza).
+ * - laps: circuito cerrado de 3 vueltas (salida y meta en la misma línea).
  */
-export type MapLayout = 'classic' | 'zigzag';
+export type MapLayout = 'classic' | 'zigzag' | 'laps';
 
 export interface RaceMap {
   readonly id: MapId;
@@ -382,7 +400,136 @@ export const ZIGZAG_MAPS: readonly RaceMap[] = [
   },
 ];
 
-export const ALL_MAPS: readonly RaceMap[] = [...RACE_MAPS, ...ZIGZAG_MAPS];
+// Circuitos por vueltas: cada lista es UNA vuelta, en sentido horario (los giros suman 360°), y
+// acaba en una recta que vuelve a la salida. Se dan CIRCUIT_LAPS vueltas. Las longitudes salen de
+// cerrar cada trazado con el código real (race-map.spec.ts comprueba que cierran y no se pisan).
+// Son experimentos para los testers: se ajustarán con lo que digan.
+export const CIRCUIT_MAPS: readonly RaceMap[] = [
+  {
+    id: 'port-loop',
+    layout: 'laps',
+    nameKey: 'maps.portLoop',
+    difficulty: 1,
+    theme: 'bay',
+    // Rectángulo con dos curvas en S en las rectas largas
+    segments: [
+      straight(25), ...sCurve(25, 40), straight(20), right(), straight(35), right(),
+      straight(55), ...sCurve(25, 40), straight(10), right(), straight(35), right(), straight(20),
+    ],
+  },
+  {
+    id: 'canyon-ring',
+    layout: 'laps',
+    nameKey: 'maps.canyonRing',
+    difficulty: 2,
+    theme: 'canyon',
+    // Curva amplia de 90°, un giro a la izquierda y un embudo a 3 carriles
+    segments: [
+      straight(20), ...sCurve(-20, 40), straight(51), right(), straight(30), arc(90, 28),
+      straight(20), right(), straight(25), left(), straight(15), narrow(10), straight(20),
+      widen(10), straight(10), right(), straight(11.5), right(), straight(20),
+    ],
+  },
+  {
+    id: 'summit-gp',
+    layout: 'laps',
+    nameKey: 'maps.summitGp',
+    difficulty: 3,
+    theme: 'summit',
+    // Horquilla (dos derechas a 12 m) y greca estrecha en zigzag
+    segments: [
+      straight(15), ...sCurve(25, 35), straight(64), right(), straight(12), right(), straight(18),
+      left(), straight(12), narrow(6), straight(8), right(), straight(10), left(), straight(10),
+      right(), straight(8), widen(8), straight(15), ...sCurve(-30, 30), straight(20), right(),
+      straight(78), right(), straight(15),
+    ],
+  },
+  {
+    id: 'lighthouse-oval',
+    layout: 'laps',
+    nameKey: 'maps.lighthouseOval',
+    difficulty: 1,
+    theme: 'bay',
+    // Solo 2 cruces: el resto del giro son dos curvas amplias de 90°
+    segments: [
+      straight(18.5), ...sCurve(20, 45), straight(30), right(), straight(40), arc(90, 30),
+      straight(50), arc(90, 30), straight(45), right(), straight(20),
+    ],
+  },
+  {
+    id: 'desert-horseshoe',
+    layout: 'laps',
+    nameKey: 'maps.desertHorseshoe',
+    difficulty: 1,
+    theme: 'canyon',
+    // 3 cruces y una curva amplia de 90°
+    segments: [
+      straight(59.5), arc(90, 35), straight(45), right(), straight(30), ...sCurve(-25, 40),
+      straight(40), right(), straight(82), right(), straight(15),
+    ],
+  },
+  {
+    id: 'glacier-loop',
+    layout: 'laps',
+    nameKey: 'maps.glacierLoop',
+    difficulty: 2,
+    theme: 'summit',
+    // 2 cruces, una diagonal con dos curvas de 45° y un embudo largo
+    segments: [
+      straight(41), arc(45, 40), straight(35), arc(45, 40), straight(45), right(), straight(25),
+      narrow(12), straight(25), widen(12), straight(20), arc(90, 30), straight(30),
+      ...sCurve(-25, 35), straight(20), right(), straight(25),
+    ],
+  },
+  {
+    id: 'neon-snake',
+    layout: 'laps',
+    nameKey: 'maps.neonSnake',
+    difficulty: 3,
+    theme: 'bay',
+    // Greca en zigzag constante: 8 cruces seguidos cada 9 m
+    segments: [
+      straight(100), right(), straight(30), right(), straight(15), ...zigzag(8, -1, 9),
+      straight(29), right(), straight(110), right(), straight(15),
+    ],
+  },
+  {
+    id: 'canyon-maze',
+    layout: 'laps',
+    nameKey: 'maps.canyonMaze',
+    difficulty: 2,
+    theme: 'canyon',
+    // Escalones, una curva en S y dos rectas largas para recuperar
+    segments: [
+      straight(69.5), right(), straight(25), left(), straight(20), right(), straight(30), right(),
+      straight(15), arc(-45, 30), straight(10), arc(45, 30), straight(20), right(), straight(15),
+      left(), straight(15), right(), straight(64.5), right(), straight(10),
+    ],
+  },
+  {
+    id: 'summit-stairs',
+    layout: 'laps',
+    nameKey: 'maps.summitStairs',
+    difficulty: 3,
+    theme: 'summit',
+    // Escaleras arriba y abajo con dos embudos abruptos a 3 carriles
+    segments: [
+      straight(16), right(), straight(15), left(), straight(15), right(), straight(15), left(),
+      narrow(8), straight(10), right(), straight(50), right(), straight(12), widen(8),
+      straight(12), right(), straight(20), left(), straight(40), right(), straight(66.5), right(),
+      straight(12),
+    ],
+  },
+];
+
+export const ALL_MAPS: readonly RaceMap[] = [...RACE_MAPS, ...ZIGZAG_MAPS, ...CIRCUIT_MAPS];
+
+export const isCircuit = (map: RaceMap): boolean => map.layout === 'laps';
+
+/** Pista de la carrera: de ida, o el circuito con sus vueltas. */
+export function trackOf(map: RaceMap): Track {
+  return isCircuit(map) ? Track.circuit(map.segments, CIRCUIT_LAPS) : Track.fromSegments(map.segments);
+}
 
 export function findMap(id: string): RaceMap | undefined {
   return ALL_MAPS.find((m) => m.id === id);
