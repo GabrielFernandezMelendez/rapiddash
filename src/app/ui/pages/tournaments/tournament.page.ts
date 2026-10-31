@@ -145,7 +145,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       display: grid;
       gap: 10px;
     }
-    /* Medalla: roseta dorada y botón de oro; late y rebota cada 2,3 s */
+    /* Medalla: roseta dorada y botón de oro; late suavemente cada 5,5 s */
     .medal {
       position: relative;
       justify-self: start;
@@ -156,7 +156,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       margin-left: -16px;
       margin-block: -6px;
       filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.45));
-      animation: medal 2.3s ease-in-out infinite;
+      animation: medal 5.5s ease-in-out infinite;
     }
     /* Roseta de cinta plisada (22 pliegues con luz y sombra) que gira despacio en el sentido de las agujas del reloj */
     .medal::before {
@@ -183,23 +183,18 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         inset 0 0 0 2px rgb(255 255 255 / 0.4),
         0 0 0 2px #a87908;
     }
+    /* Un latido suave cada 5,5 s: crece un poco, baja y se asienta (sin cansar la vista) */
     @keyframes medal {
       0%,
-      62%,
+      76%,
       100% {
         transform: translateY(0) scale(1);
       }
-      72% {
-        transform: translateY(-7px) scale(1.14);
+      85% {
+        transform: translateY(-4px) scale(1.08);
       }
-      80% {
-        transform: translateY(0) scale(0.94);
-      }
-      87% {
-        transform: translateY(-2px) scale(1.05);
-      }
-      94% {
-        transform: translateY(0) scale(0.99);
+      93% {
+        transform: translateY(0) scale(0.98);
       }
     }
     @keyframes medal-spin {
