@@ -145,7 +145,7 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       display: grid;
       gap: 10px;
     }
-    /* Medalla: roseta dorada de puntas detrás del botón; late y rebota cada 2,3 s */
+    /* Medalla: roseta dorada de 16 puntas y botón de oro; late y rebota cada 2,3 s */
     .medal {
       position: relative;
       justify-self: start;
@@ -161,8 +161,8 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       content: '';
       position: absolute;
       inset: 0;
-      clip-path: polygon(50.0% 0.0%, 54.6% 9.3%, 61.1% 1.3%, 63.5% 11.3%, 71.7% 5.0%, 71.8% 15.3%, 81.2% 10.9%, 79.0% 21.0%, 89.1% 18.8%, 84.7% 28.2%, 95.0% 28.3%, 88.7% 36.5%, 98.7% 38.9%, 90.7% 45.4%, 100.0% 50.0%, 90.7% 54.6%, 98.7% 61.1%, 88.7% 63.5%, 95.0% 71.7%, 84.7% 71.8%, 89.1% 81.2%, 79.0% 79.0%, 81.2% 89.1%, 71.8% 84.7%, 71.7% 95.0%, 63.5% 88.7%, 61.1% 98.7%, 54.6% 90.7%, 50.0% 100.0%, 45.4% 90.7%, 38.9% 98.7%, 36.5% 88.7%, 28.3% 95.0%, 28.2% 84.7%, 18.8% 89.1%, 21.0% 79.0%, 10.9% 81.2%, 15.3% 71.8%, 5.0% 71.7%, 11.3% 63.5%, 1.3% 61.1%, 9.3% 54.6%, 0.0% 50.0%, 9.3% 45.4%, 1.3% 38.9%, 11.3% 36.5%, 5.0% 28.3%, 15.3% 28.2%, 10.9% 18.8%, 21.0% 21.0%, 18.8% 10.9%, 28.2% 15.3%, 28.3% 5.0%, 36.5% 11.3%, 38.9% 1.3%, 45.4% 9.3%);
-      background: radial-gradient(circle at 35% 30%, #fff3b8, var(--rd-signal) 45%, #b8860b);
+      clip-path: polygon(50.0% 0.0%, 57.8% 10.8%, 69.1% 3.8%, 72.2% 16.7%, 85.4% 14.6%, 83.3% 27.8%, 96.2% 30.9%, 89.2% 42.2%, 100.0% 50.0%, 89.2% 57.8%, 96.2% 69.1%, 83.3% 72.2%, 85.4% 85.4%, 72.2% 83.3%, 69.1% 96.2%, 57.8% 89.2%, 50.0% 100.0%, 42.2% 89.2%, 30.9% 96.2%, 27.8% 83.3%, 14.6% 85.4%, 16.7% 72.2%, 3.8% 69.1%, 10.8% 57.8%, 0.0% 50.0%, 10.8% 42.2%, 3.8% 30.9%, 16.7% 27.8%, 14.6% 14.6%, 27.8% 16.7%, 30.9% 3.8%, 42.2% 10.8%);
+      background: radial-gradient(circle at 35% 30%, #fff3b8, #f3c13a 45%, #a87908);
     }
     .camera {
       position: relative;
@@ -172,7 +172,14 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       border-radius: 50%;
       display: grid;
       place-items: center;
-      box-shadow: 0 0 0 3px var(--rd-signal);
+    }
+    /* Todo el botón de oro, igual en todas las estéticas */
+    .medal > .camera.camera {
+      background: radial-gradient(circle at 35% 30%, #fff6c4, #f3c13a 48%, #c99412);
+      color: #3a2900;
+      box-shadow:
+        inset 0 0 0 2px rgb(255 255 255 / 0.4),
+        0 0 0 2px #a87908;
     }
     @keyframes medal {
       0%,
