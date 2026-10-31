@@ -18,6 +18,7 @@ import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
+import { DailyService, DailyStanding } from '../../../shared/account/daily.service';
 import { provideMenuAdapters } from '../../../infrastructure/di/menu.providers';
 import { AccountService } from '../../../shared/account/account.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
@@ -27,6 +28,9 @@ import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { Logo } from '../../molecules/logo/logo';
 import { PilotChip } from '../../molecules/pilot-chip/pilot-chip';
+import { ModeButton } from '../../molecules/mode-button/mode-button';
+import { Trophy } from '../../atoms/trophy/trophy';
+import { formatClock } from '../../organisms/more-attempts/more-attempts';
 import { LinkReminder } from '../../organisms/link-reminder/link-reminder';
 import { SettingsDialog } from '../../organisms/settings-dialog/settings-dialog';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
@@ -35,7 +39,7 @@ import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
   selector: 'rd-home-page',
-  imports: [MenuLayout, Button, Logo, PilotChip, LinkReminder, SettingsDialog, Tutorial, TranslatePipe],
+  imports: [MenuLayout, Button, Logo, PilotChip, ModeButton, Trophy, LinkReminder, SettingsDialog, Tutorial, TranslatePipe],
   providers: [provideMenuAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.page.html',
@@ -49,6 +53,11 @@ export class HomePage implements OnInit {
   protected readonly account = inject(AccountService);
   private readonly bestRuns = inject(BestRunRepository);
   protected readonly settingsOpen = signal(false);
+  private readonly daily = inject(DailyService);
+  private readonly dailyToday = this.daily.today(ALL_MAPS);
+  protected readonly dailyMap = this.dailyToday.map;
+  protected readonly dailyStanding = signal<DailyStanding | null>(null);
+  protected readonly dailyLeft = signal('');
   protected readonly tutorialOpen = signal(false);
   private readonly settings = inject(SettingsRepository);
   private readonly audio = inject(AudioPort);
@@ -75,6 +84,14 @@ export class HomePage implements OnInit {
 
   ngOnInit(): void {
     if (this.account.needsLinkReminder()) void this.openReminder();
+    this.dailyLeft.set(hoursLeft(this.dailyToday.msLeft));
+    void this.daily
+      .load(this.dailyToday.boardId)
+      .then((view) => this.dailyStanding.set(this.daily.standing(view)));
+  }
+
+  protected openDaily(): void {
+    void this.router.navigate(['/daily']);
   }
 
   protected setVolumes(volumes: Volumes): void {
@@ -176,4 +193,11 @@ export class HomePage implements OnInit {
   protected setAesthetic(aesthetic: Aesthetic): void {
     this.aesthetic.set(aesthetic);
   }
+}
+
+/** «10 h 24 min» (o «24 min» en la última hora). */
+function hoursLeft(ms: number): string {
+  const clock = formatClock(ms).split(':');
+  const h = Number(clock[0]);
+  return h > 0 ? `${h} h ${Number(clock[1])} min` : `${Number(clock[1])} min`;
 }

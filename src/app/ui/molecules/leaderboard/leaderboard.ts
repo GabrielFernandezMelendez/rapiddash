@@ -31,7 +31,7 @@ interface Row {
   imports: [Flag, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h3>{{ 'leaderboard.title' | t }}</h3>
+    <h3>{{ title() | t }}</h3>
     <ol [class.loading]="loading()">
       @for (row of rows(); track row.key) {
         <li [class.empty]="row.empty" [class.me]="row.me" [class.rival]="row.rival">
@@ -71,6 +71,8 @@ interface Row {
 })
 export class Leaderboard {
   readonly view = input.required<RankingView>();
+  /** Clave i18n del título («Top 10 · Mundial», «Top 10 de hoy»). */
+  readonly title = input('leaderboard.title');
   readonly myUid = input<string | null>(null);
   readonly rivalUid = input<string | null>(null);
   readonly loading = input(false);
