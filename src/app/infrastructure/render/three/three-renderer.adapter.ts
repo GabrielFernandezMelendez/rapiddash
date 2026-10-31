@@ -15,9 +15,10 @@ import {
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
 import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
-import { BillboardContent } from '../../../core/domain/track/billboards';
+import { BillboardContent, LeaderPhotoContent } from '../../../core/domain/track/billboards';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
+import { PhotoGantry } from './photo-gantry';
 import { CLASSIC_BILLBOARD, LeaderBillboards, SYNTH_BILLBOARD } from './billboards';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { GhostLabel } from './ghost-label';
@@ -71,6 +72,7 @@ export class ThreeRendererAdapter extends RendererPort {
   /** Sol y montañas synthwave: siguen a la cámara (null en la estética clásica). */
   private sky: SynthSky | null = null;
   private billboards: LeaderBillboards | null = null;
+  private photoGantry: PhotoGantry | null = null;
 
   attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
     this.dispose();
@@ -89,6 +91,13 @@ export class ThreeRendererAdapter extends RendererPort {
     else this.buildClassic(track, theme);
     this.billboards = new LeaderBillboards(track, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
     this.scene.add(this.billboards.group);
+    // Cartel con la foto del líder del torneo (borde LED solo en la estética futurista)
+    this.photoGantry = new PhotoGantry(
+      track,
+      isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
+      aesthetic === 'futurist',
+    );
+    this.scene.add(this.photoGantry.group);
     const vehicle = VEHICLES[aesthetic];
     this.car = vehicle(false);
     this.ghost = vehicle(true);
@@ -147,6 +156,7 @@ export class ThreeRendererAdapter extends RendererPort {
     if (!track || !renderer) return;
 
     this.place(this.car, frame.car);
+    this.photoGantry?.update(dt);
     this.carBounce.apply(this.car, dt, frame.car.leg, frame.car.lateral);
     this.ghost.visible = frame.ghost !== null;
     if (frame.ghost) {
@@ -208,8 +218,13 @@ export class ThreeRendererAdapter extends RendererPort {
     this.billboards?.set(content);
   }
 
+  setLeaderPhoto(content: LeaderPhotoContent | null): void {
+    this.photoGantry?.set(content);
+  }
+
   dispose(): void {
     this.billboards = null;
+    this.photoGantry = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.scene.traverse((obj) => {

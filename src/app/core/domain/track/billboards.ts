@@ -52,3 +52,22 @@ export function billboardLegs(track: Track, max: number = MAX_BILLBOARDS): numbe
     .map((l) => l.index)
     .slice(0, max);
 }
+
+/** Sitio del cartel con la foto del líder: en la recta más larga, de frente al llegar. */
+export interface PhotoSpot {
+  readonly leg: number;
+  readonly distance: number;
+}
+
+/** Recta más larga del mapa; el cartel va en su primer tercio largo para verlo bien de lejos. */
+export function photoSpot(track: Track): PhotoSpot {
+  const leg = track.legs.reduce((a, l) => (straightApproach(l) > straightApproach(a) ? l : a));
+  return { leg: leg.index, distance: leg.length - straightApproach(leg) * 0.35 };
+}
+
+/** Cartel con la foto del líder del torneo (sin foto: su bandera en grande). */
+export interface LeaderPhotoContent {
+  readonly leader: BillboardEntry;
+  /** JPEG en data URL; null si no ha puesto foto. */
+  readonly photo: string | null;
+}

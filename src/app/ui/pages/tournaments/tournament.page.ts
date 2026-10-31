@@ -26,11 +26,13 @@ import { DayCard, DayCards } from '../../molecules/day-cards/day-cards';
 import { StandingsTable } from '../../molecules/standings-table/standings-table';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { describeTournament } from './tournament-view';
+import { leaderOf, shouldOfferPhoto } from '../../../core/domain/tournament/leader-photo';
+import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
 
 /** Un torneo: sala de espera antes de empezar; días y clasificación después. */
 @Component({
   selector: 'rd-tournament-page',
-  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, TranslatePipe],
+  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, LeaderPhoto, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -96,15 +98,121 @@ import { describeTournament } from './tournament-view';
             <p class="note center">{{ waitingFor() }}</p>
           }
         } @else if (status() === 'running') {
-          <button rdButton type="button" [block]="true" class="go" (click)="race()">
-            {{ 'tournament.raceToday' | t }}
-          </button>
+          <div class="race-row">
+            @if (isLeader()) {
+              <!-- Solo el líder: cambiar (o quitar) su foto del cartel. Parece una medalla. -->
+              <span class="medal">
+              <button
+                rdButton
+                variant="secondary"
+                type="button"
+                class="camera"
+                [attr.aria-label]="'photo.button' | t"
+                [title]="'photo.button' | t"
+                (click)="photoOpen.set(true)"
+              >
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle>
+                </svg>
+              </button>
+              </span>
+            }
+            <button rdButton type="button" [block]="true" class="go" (click)="race()">
+              {{ 'tournament.raceToday' | t }}
+            </button>
+          </div>
         }
       </div>
     </rd-menu-layout>
+
+    @if (photoOpen()) {
+      <rd-leader-photo
+        [current]="myPhoto()"
+        [busy]="photoBusy()"
+        [error]="photoError()"
+        (save)="savePhoto($event)"
+        (remove)="removePhoto()"
+        (declined)="declinePhoto()"
+        (closed)="closePhoto()"
+      />
+    }
   `,
   styleUrl: './tournaments.page.scss',
   styles: `
+    /* Botón de la cámara justo encima del de correr, a la izquierda */
+    .race-row {
+      display: grid;
+      gap: 10px;
+    }
+    /* Medalla: roseta dorada y botón de oro; late y rebota cada 2,3 s */
+    .medal {
+      position: relative;
+      justify-self: start;
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      margin-left: -10px;
+      filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.45));
+      animation: medal 2.3s ease-in-out infinite;
+    }
+    /* Roseta de 16 puntas redondeadas que gira despacio en el sentido de las agujas del reloj */
+    .medal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff3b8'/%3E%3Cstop offset='.86' stop-color='%23f3c13a'/%3E%3Cstop offset='1' stop-color='%23d39d1a'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M50.00 9.00Q51.54 1.02 59.75 0.96Q67.32 4.16 65.69 12.12Q70.16 5.34 77.78 8.43Q83.54 14.28 78.99 21.01Q85.72 16.46 91.57 22.22Q94.66 29.84 87.88 34.31Q95.84 32.68 99.04 40.25Q98.98 48.46 91.00 50.00Q98.98 51.54 99.04 59.75Q95.84 67.32 87.88 65.69Q94.66 70.16 91.57 77.78Q85.72 83.54 78.99 78.99Q83.54 85.72 77.78 91.57Q70.16 94.66 65.69 87.88Q67.32 95.84 59.75 99.04Q51.54 98.98 50.00 91.00Q48.46 98.98 40.25 99.04Q32.68 95.84 34.31 87.88Q29.84 94.66 22.22 91.57Q16.46 85.72 21.01 78.99Q14.28 83.54 8.43 77.78Q5.34 70.16 12.12 65.69Q4.16 67.32 0.96 59.75Q1.02 51.54 9.00 50.00Q1.02 48.46 0.96 40.25Q4.16 32.68 12.12 34.31Q5.34 29.84 8.43 22.22Q14.28 16.46 21.01 21.01Q16.46 14.28 22.22 8.43Q29.84 5.34 34.31 12.12Q32.68 4.16 40.25 0.96Q48.46 1.02 50.00 9.00Z' fill='url%28%23g%29'/%3E%3C/svg%3E") center / contain no-repeat;
+      animation: medal-spin 10s linear infinite;
+    }
+    .camera {
+      position: relative;
+      width: 56px;
+      min-height: 56px;
+      padding: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+    }
+    /* Todo el botón de oro, igual en todas las estéticas */
+    .medal > .camera.camera {
+      background: radial-gradient(circle at 35% 30%, #fff6c4, #f3c13a 48%, #c99412);
+      color: #3a2900;
+      box-shadow:
+        inset 0 0 0 2px rgb(255 255 255 / 0.4),
+        0 0 0 2px #a87908;
+    }
+    @keyframes medal {
+      0%,
+      62%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+      72% {
+        transform: translateY(-7px) scale(1.14);
+      }
+      80% {
+        transform: translateY(0) scale(0.94);
+      }
+      87% {
+        transform: translateY(-2px) scale(1.05);
+      }
+      94% {
+        transform: translateY(0) scale(0.99);
+      }
+    }
+    @keyframes medal-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    /* Accesibilidad: quien pide menos movimiento ve la medalla quieta */
+    @media (prefers-reduced-motion: reduce) {
+      .medal,
+      .medal::before {
+        animation: none;
+      }
+    }
     .center {
       text-align: center;
       margin-top: 8px;
@@ -127,6 +235,12 @@ export class TournamentPage implements OnInit {
   protected readonly copied = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly now = signal(Date.now());
+  /** Foto del cartel del líder. */
+  protected readonly myPhoto = signal<string | null>(null);
+  protected readonly photoOpen = signal(false);
+  protected readonly photoBusy = signal(false);
+  protected readonly photoError = signal<string | null>(null);
+  private photoChecked = false;
 
   protected readonly status = computed(() => {
     const t = this.t();
@@ -137,6 +251,10 @@ export class TournamentPage implements OnInit {
     const day = t ? dayIndex(t, this.now()) : null;
     return day !== null && day < TOURNAMENT_DAYS ? day : null;
   });
+  /** Voy 1.º en un torneo en curso. */
+  protected readonly isLeader = computed(
+    () => this.status() === 'running' && leaderOf(this.board()?.rows ?? [])?.member.uid === this.myUid,
+  );
   protected readonly isOwner = computed(() => this.t()?.ownerUid === this.myUid);
   protected readonly subtitle = computed(() => {
     const t = this.t();
@@ -235,6 +353,61 @@ export class TournamentPage implements OnInit {
     void this.router.navigate(['/race', t.mapIds[day]], { queryParams: { t: t.code } });
   }
 
+  /** Al ir 1.º sin foto se ofrece una vez por torneo (y siempre desde el botón de la cámara). */
+  private async offerPhoto(): Promise<void> {
+    const t = this.t();
+    if (!t || !this.myUid || !this.isLeader() || this.photoChecked) return;
+    this.photoChecked = true;
+    this.myPhoto.set(await this.tournaments.photoOf(t.code, this.myUid));
+    if (shouldOfferPhoto(true, !!this.myPhoto(), this.tournaments.photoDeclined(t.code))) {
+      this.photoOpen.set(true);
+    }
+  }
+
+  protected async savePhoto(dataUrl: string): Promise<void> {
+    const t = this.t();
+    if (!t) return;
+    this.photoBusy.set(true);
+    this.photoError.set(null);
+    try {
+      await this.tournaments.savePhoto(t.code, dataUrl);
+      this.myPhoto.set(dataUrl);
+      this.photoOpen.set(false);
+    } catch (e) {
+      console.error('[foto]', e);
+      this.photoError.set('photo.error.save');
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected async removePhoto(): Promise<void> {
+    const t = this.t();
+    if (!t) return;
+    this.photoBusy.set(true);
+    this.photoError.set(null);
+    try {
+      await this.tournaments.removePhoto(t.code);
+      this.myPhoto.set(null);
+      this.photoOpen.set(false);
+    } catch (e) {
+      console.error('[foto]', e);
+      this.photoError.set('photo.error.save');
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected declinePhoto(): void {
+    const t = this.t();
+    if (t) this.tournaments.declinePhoto(t.code);
+  }
+
+  protected closePhoto(): void {
+    this.photoOpen.set(false);
+    this.photoError.set(null);
+  }
+
   private async load(): Promise<void> {
     try {
       const t = await this.tournaments.find(this.code());
@@ -242,6 +415,7 @@ export class TournamentPage implements OnInit {
       this.t.set(t);
       this.now.set(Date.now());
       if (t && statusAt(t, Date.now()) !== 'waiting') this.board.set(await this.tournaments.board(t));
+      await this.offerPhoto();
     } catch {
       this.error.set('auth.error.network');
     }
