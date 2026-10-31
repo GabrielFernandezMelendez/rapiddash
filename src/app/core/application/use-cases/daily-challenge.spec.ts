@@ -20,7 +20,7 @@ class FakeAds extends AdsPort {
   }
 }
 
-const MAPS = ['bay', 'canyon', 'summit'];
+const MAPS = ['bay', 'canyon', 'summit'].map((id) => ({ id, layout: 'classic' }));
 
 describe('DailyChallenge', () => {
   let now: Date;
@@ -38,7 +38,7 @@ describe('DailyChallenge', () => {
   it('mapa y ranking de hoy', () => {
     const today = daily.today(MAPS);
     expect(today.boardId).toBe('daily-2026-10-31');
-    expect(MAPS).toContain(today.mapId);
+    expect(MAPS.map((m) => m.id)).toContain(today.mapId);
     expect(today.msLeft).toBe(13 * 60 * 60 * 1000);
   });
 

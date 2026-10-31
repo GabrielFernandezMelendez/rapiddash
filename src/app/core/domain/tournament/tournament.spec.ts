@@ -41,6 +41,15 @@ describe('Torneos', () => {
     expect(new Set(pickMaps(['a', 'b', 'c', 'd'], Math.random)).size).toBe(3);
   });
 
+  it('con circuitos, uno de los tres mapas es siempre un circuito', () => {
+    for (let i = 0; i < 50; i++) {
+      const maps = pickMaps(['a', 'b', 'c', 'd', 'l1', 'l2'], Math.random, ['l1', 'l2']);
+      expect(maps.length).toBe(3);
+      expect(new Set(maps).size).toBe(3);
+      expect(maps.filter((m) => m.startsWith('l')).length).toBe(1);
+    }
+  });
+
   it('esperando, en curso por días y terminado', () => {
     expect(statusAt(base, 0)).toBe('waiting');
     const t = { ...base, startedAt: 1000 };

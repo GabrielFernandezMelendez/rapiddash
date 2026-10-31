@@ -27,6 +27,8 @@ export interface RaceResult {
   readonly time: number;
   readonly previousBest: number | null;
   readonly isRecord: boolean;
+  /** Tiempo de cada vuelta (solo en los circuitos). */
+  readonly lapTimes: readonly number[];
 }
 
 /** Lo que la UI necesita para pintar HUD, semáforo y resultados. */
@@ -43,6 +45,10 @@ export interface RaceViewState {
   /** Segundos respecto al fantasma: negativo = vas por delante. */
   readonly ghostDelta: number | null;
   readonly result: RaceResult | null;
+  /** Vuelta en curso y total de vueltas (null en los mapas de ida). */
+  readonly lap: { readonly current: number; readonly total: number } | null;
+  /** Tiempos de las vueltas ya terminadas. */
+  readonly lapTimes: readonly number[];
 }
 
 /** Quien recibe cada récord nuevo para publicarlo (el ranking online). */
@@ -172,7 +178,7 @@ export class RaceSession {
     const time = this.race.raceTime;
     const previousBest = this.best?.time ?? null;
     const isRecord = previousBest === null || time < previousBest;
-    this.result = { time, previousBest, isRecord };
+    this.result = { time, previousBest, isRecord, lapTimes: this.race.lapTimes };
     if (isRecord) {
       const run: BestRun = {
         mapId: this.boardId,
@@ -211,6 +217,8 @@ export class RaceSession {
       bestTime: this.result?.previousBest ?? this.best?.time ?? null,
       ghostDelta,
       result: this.result,
+      lap: this.track.circuit ? { current: race.lap, total: this.track.circuit.laps } : null,
+      lapTimes: race.lapTimes,
     };
   }
 }

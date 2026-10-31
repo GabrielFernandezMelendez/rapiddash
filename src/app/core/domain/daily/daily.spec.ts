@@ -7,7 +7,7 @@ import {
   waitRemaining,
   WAIT_MS,
 } from './daily-attempts';
-import { dailyBoardId, dailyKey, dailyMapId, msUntilNextDay, trophyFor } from './daily-map';
+import { dailyBoardId, dailyKey, dailyMapId, dailyPool, msUntilNextDay, trophyFor } from './daily-map';
 
 const MAPS = ['bay', 'canyon', 'summit', 'bay-zigzag', 'canyon-zigzag', 'summit-zigzag'];
 
@@ -73,5 +73,17 @@ describe('Intentos del mapa del día', () => {
   it('un día nuevo empieza de cero', () => {
     const s = useAttempt(useAttempt(freshAttempts(day), 0), 0);
     expect(currentAttempts(s, '2026-11-01', 0)).toEqual(freshAttempts('2026-11-01'));
+  });
+});
+
+describe('circuitos en el mapa del día', () => {
+  const maps = [
+    { id: 'bay', layout: 'classic' },
+    { id: 'port-loop', layout: 'laps' },
+  ];
+
+  it('entran en la rotación a partir de su día (antes, el mapa de cada día no cambia)', () => {
+    expect(dailyPool('2026-11-01', maps).map((m) => m.id)).toEqual(['bay']);
+    expect(dailyPool('2026-11-02', maps).map((m) => m.id)).toEqual(['bay', 'port-loop']);
   });
 });

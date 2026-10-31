@@ -35,8 +35,8 @@ export class TournamentService {
     return this.tournaments.join(code, this.requireProfile());
   }
 
-  start(t: Tournament, mapIds: readonly string[]): Promise<boolean> {
-    return this.tournaments.start(t, this.uid() ?? '', mapIds);
+  start(t: Tournament, mapIds: readonly string[], circuitIds: readonly string[] = []): Promise<boolean> {
+    return this.tournaments.start(t, this.uid() ?? '', mapIds, circuitIds);
   }
 
   mine(): Promise<Tournament[]> {
