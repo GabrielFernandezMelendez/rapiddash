@@ -3,6 +3,7 @@ import {
   halfWidthFor,
   SAMPLE_STEP,
   START_DISTANCE,
+  START_LINE,
   TRACK_HALF_WIDTH,
 } from './track-constants';
 import { SegmentKind, TrackSegment, TurnDirection } from './track-segment';
@@ -64,8 +65,21 @@ export interface TrackPoint {
   readonly heading: number;
 }
 
+/** Datos de un circuito cerrado (mapas por vueltas). */
+export interface CircuitInfo {
+  readonly laps: number;
+  /** Metros de una vuelta. */
+  readonly lapLength: number;
+  /** Una sola vuelta, para dibujarla (la pista de la carrera repite sus tramos en cada vuelta). */
+  readonly lapTrack: Track;
+}
+
 export class Track {
-  private constructor(readonly legs: readonly Leg[]) {}
+  private constructor(
+    readonly legs: readonly Leg[],
+    /** null en los mapas de ida (de la salida a la meta). */
+    readonly circuit: CircuitInfo | null = null,
+  ) {}
 
   readonly startDistance = START_DISTANCE;
 
@@ -78,9 +92,89 @@ export class Track {
     return this.lastLeg.length - FINISH_RUNOFF;
   }
 
-  /** Progreso total de la meta (para el fantasma y los tiempos). */
+  /** Progreso total de la meta (para el fantasma y los tiempos). En un circuito, la línea de salida tras la última vuelta. */
   get finishProgress(): number {
+    if (this.circuit) return START_LINE + this.circuit.laps * this.circuit.lapLength;
     return this.lastLeg.startProgress + this.finishDistance;
+  }
+
+  /** Vuelta en curso (de 1 a laps) con ese progreso; siempre 1 fuera de los circuitos. */
+  lapAt(progress: number): number {
+    const c = this.circuit;
+    if (!c) return 1;
+    return Math.min(c.laps, Math.max(1, Math.floor((progress - START_LINE) / c.lapLength) + 1));
+  }
+
+  /** Progreso en el que empieza la vuelta `lap` (la línea de salida tras lap - 1 vueltas). */
+  lapStartProgress(lap: number): number {
+    return START_LINE + (lap - 1) * (this.circuit?.lapLength ?? 0);
+  }
+
+  /**
+   * Circuito cerrado de `laps` vueltas. Las piezas son una vuelta y deben acabar en una recta que
+   * vuelva a la salida con el mismo rumbo (giros que suman 360°). Ese último tramo se une al primero
+   * (sin cruce entre medias) y se endereza lo poco que haga falta (medio metro como mucho, por el
+   * redondeo de las muestras) para que cierre exacto. Cada vuelta repite los mismos tramos, con el
+   * rumbo sumando una vuelta entera: así la geometría no se desvía de una vuelta a otra.
+   */
+  static circuit(segments: readonly TrackSegment[], laps: number): Track {
+    const lap = Track.fromSegments(segments).legs;
+    const n = lap.length;
+    const first = lap[0];
+    const last = lap[n - 1];
+    if (n < 2 || last.junction || last.samples.length < 2) {
+      throw new Error('Un circuito debe tener cruces o curvas y acabar en una recta');
+    }
+    const end = last.samples[last.samples.length - 1];
+    const start = first.samples[0];
+    const m = last.samples.length - 1;
+    const dx = start.x - end.x;
+    const dz = start.z - end.z;
+    const closedLast: Leg = {
+      ...last,
+      samples: last.samples.map((p, i) => ({ ...p, x: p.x + (dx * i) / m, z: p.z + (dz * i) / m })),
+    };
+    const lapLength = lap.reduce((sum, l) => sum + l.length, 0);
+    const turned = (leg: Leg, k: number): Leg => {
+      const extra = k * 2 * Math.PI;
+      return k === 0
+        ? leg
+        : {
+            ...leg,
+            samples: leg.samples.map((p) => ({ ...p, heading: p.heading + extra })),
+            junction: leg.junction && { ...leg.junction, heading: leg.junction.heading + extra },
+          };
+    };
+    const joined = (k: number): Omit<Leg, 'index' | 'startProgress'> => {
+      const a = turned(closedLast, k);
+      const b = turned(first, k + 1);
+      return {
+        samples: [...a.samples, ...b.samples.slice(1)],
+        length: a.length + b.length,
+        junction: b.junction,
+        tapers: [
+          ...a.tapers,
+          ...b.tapers.map((t) => ({ ...t, start: t.start + a.length, end: t.end + a.length })),
+        ],
+      };
+    };
+    const parts: Omit<Leg, 'index' | 'startProgress'>[] = [first];
+    for (let k = 0; k < laps; k++) {
+      for (let i = 1; i < n - 1; i++) parts.push(turned(lap[i], k));
+      parts.push(joined(k));
+    }
+    const lapTrack = new Track(Track.numbered([...lap.slice(0, n - 1), closedLast]));
+    return new Track(Track.numbered(parts), { laps, lapLength, lapTrack });
+  }
+
+  /** Índices y progreso acumulado de una lista de tramos. */
+  private static numbered(parts: readonly Omit<Leg, 'index' | 'startProgress'>[]): Leg[] {
+    let progress = 0;
+    return parts.map((p, index) => {
+      const leg = { ...p, index, startProgress: progress };
+      progress += p.length;
+      return leg;
+    });
   }
 
   get junctions(): Junction[] {

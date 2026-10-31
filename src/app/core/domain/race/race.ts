@@ -9,7 +9,7 @@ export const LIGHT_DURATION = 1;
 /** Segundos que se muestra el "GO" tras la luz verde. */
 export const GO_DURATION = 0.9;
 
-export type RaceEvent = CarEvent | 'light' | 'go' | 'finish';
+export type RaceEvent = CarEvent | 'light' | 'go' | 'lap' | 'finish';
 
 export interface RaceState {
   readonly phase: RacePhase;
@@ -18,10 +18,14 @@ export interface RaceState {
   /** Tiempo de carrera (empieza en la luz verde). */
   readonly raceTime: number;
   readonly car: CarState;
+  /** Vuelta en curso (1 en los mapas de ida). */
+  readonly lap: number;
+  /** Tiempo de cada vuelta ya terminada (s); vacío en los mapas de ida. */
+  readonly lapTimes: readonly number[];
 }
 
 export function createRace(track: Track): RaceState {
-  return { phase: 'countdown', countdownTime: 0, raceTime: 0, car: createCar(track) };
+  return { phase: 'countdown', countdownTime: 0, raceTime: 0, car: createCar(track), lap: 1, lapTimes: [] };
 }
 
 export function lightOf(race: RaceState): CountdownLight {
@@ -60,13 +64,27 @@ export function stepRace(
   const raceTime = race.raceTime + dt;
   const before = track.progress(race.car.leg, race.car.distance);
   const after = track.progress(car.leg, car.distance);
-  if (after >= track.finishProgress) {
-    // Interpolamos el instante exacto de cruce para que el tiempo no dependa de los fps
+  // Instante exacto en el que se cruza una línea, para que el tiempo no dependa de los fps
+  const crossedAt = (line: number) => {
     const covered = after - before;
-    const fraction = covered > 0 ? (track.finishProgress - before) / covered : 1;
+    return race.raceTime + dt * (covered > 0 ? (line - before) / covered : 1);
+  };
+  const lapTimeAt = (time: number) => time - race.lapTimes.reduce((sum, t) => sum + t, 0);
+  if (after >= track.finishProgress) {
+    const time = crossedAt(track.finishProgress);
+    const lapTimes = track.circuit ? [...race.lapTimes, lapTimeAt(time)] : race.lapTimes;
     return {
-      race: { ...race, phase: 'finished', car, raceTime: race.raceTime + dt * fraction },
+      race: { ...race, phase: 'finished', car, raceTime: time, lapTimes },
       events: [...events, 'finish'],
+    };
+  }
+  const lap = track.lapAt(after);
+  if (lap > race.lap) {
+    // Nueva vuelta: se guarda el tiempo de la que acaba
+    const time = crossedAt(track.lapStartProgress(lap));
+    return {
+      race: { ...race, car, raceTime, lap, lapTimes: [...race.lapTimes, lapTimeAt(time)] },
+      events: [...events, 'lap'],
     };
   }
   return { race: { ...race, car, raceTime }, events };

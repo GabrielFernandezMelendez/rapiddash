@@ -1,5 +1,5 @@
 import { CarState, DriveInput, Swipe } from '../car/car';
-import { ALL_MAPS } from '../track/race-map';
+import { ALL_MAPS, trackOf } from '../track/race-map';
 import { Track } from '../track/track';
 import { createRace, RaceState, stepRace } from './race';
 
@@ -29,7 +29,7 @@ function autopilot(car: CarState, track: Track): DriveInput {
 describe('Mapas jugables', () => {
   for (const map of ALL_MAPS) {
     it(`${map.id}: se termina con el piloto automático y sin choques`, () => {
-      const track = Track.fromSegments(map.segments);
+      const track = trackOf(map);
       let race: RaceState = createRace(track);
       let crashes = 0;
       const dt = 1 / 60;
@@ -43,6 +43,12 @@ describe('Mapas jugables', () => {
       // Duración razonable para una carrera de móvil
       expect(race.raceTime).toBeGreaterThan(18);
       expect(race.raceTime).toBeLessThan(90);
+      // Circuitos: 3 vueltas en 30-60 s
+      if (track.circuit) {
+        expect(race.lapTimes.length).toBe(3);
+        expect(race.raceTime).toBeGreaterThan(30);
+        expect(race.raceTime).toBeLessThan(60);
+      }
     });
   }
 });
