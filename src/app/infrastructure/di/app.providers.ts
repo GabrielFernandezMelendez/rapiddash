@@ -1,4 +1,5 @@
 import { Provider } from '@angular/core';
+import { AudioPort } from '../../core/application/ports/out/audio.port';
 import { AuthPort } from '../../core/application/ports/out/auth.port';
 import { CloudRecordRepository } from '../../core/application/ports/out/cloud-record.repository';
 import { BestRunRepository } from '../../core/application/ports/out/best-run.repository';
@@ -7,6 +8,7 @@ import { SettingsRepository } from '../../core/application/ports/out/settings.re
 import { CachedProfileRepository } from '../firebase/cached-profile.repository';
 import { LazyCloudRecordRepository } from '../firebase/lazy-cloud-record.repository';
 import { LazyFirebaseAuth } from '../firebase/lazy-firebase-auth';
+import { WebAudioAdapter } from '../audio/web-audio.adapter';
 import { LocalBestRunRepository } from '../persistence/local/local-best-run.repository';
 import { LocalSettingsRepository } from '../persistence/local/local-settings.repository';
 
@@ -18,6 +20,8 @@ export function provideAppAdapters(): Provider[] {
   return [
     { provide: BestRunRepository, useClass: LocalBestRunRepository },
     { provide: SettingsRepository, useClass: LocalSettingsRepository },
+    // Un solo audio para toda la app: música del menú, de la carrera y motor
+    { provide: AudioPort, useClass: WebAudioAdapter },
     // Firebase se descarga de forma diferida dentro de estos adaptadores
     { provide: AuthPort, useClass: LazyFirebaseAuth },
     { provide: ProfileRepository, useClass: CachedProfileRepository },

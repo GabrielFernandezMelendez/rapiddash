@@ -10,7 +10,10 @@ export interface AudioFrame {
   readonly speedRatio: number;
 }
 
-/** Puerto de salida de sonido: música de carrera y motor. */
+/**
+ * Puerto de salida de sonido: música del menú y de la carrera, y motor. Es único para toda la
+ * app: el audio que el jugador desbloquea con su primer toque sirve también en la carrera.
+ */
 export abstract class AudioPort {
   /**
    * Carga los sonidos de la estética y arranca una canción al azar. Nunca falla: sin audio, el
@@ -24,5 +27,9 @@ export abstract class AudioPort {
   /** Ejemplo corto de un canal (al soltar el slider en Ajustes). */
   abstract preview(channel: VolumeChannel, volumes: Volumes, aesthetic: Aesthetic): void;
   abstract update(frame: AudioFrame): void;
+  /** Fin de la carrera (al salir de ella): calla el motor y la canción de carrera. */
+  abstract stopRace(): void;
+  /** Música de los menús (si ya suena para esa estética, no hace nada). */
+  abstract playMenu(aesthetic: Aesthetic): void;
   abstract dispose(): void;
 }
