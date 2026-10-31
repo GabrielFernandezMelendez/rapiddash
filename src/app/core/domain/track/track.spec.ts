@@ -1,4 +1,4 @@
-import { JUNCTION_SIZE, TRACK_HALF_WIDTH } from './track-constants';
+import { JUNCTION_SIZE, START_DISTANCE, START_LINE, TRACK_HALF_WIDTH } from './track-constants';
 import { left, narrow, right, straight, widen } from './track-segment';
 import { Track } from './track';
 
@@ -81,5 +81,52 @@ describe('Track', () => {
       expect(track.halfWidthAt(1, 13)).toBeCloseTo(4.4);
       expect(track.halfWidthAt(1, 20)).toBeCloseTo(5.5);
     });
+  });
+});
+
+describe('Track.circuit', () => {
+  // Rectángulo de 4 derechas que acaba en la recta de salida
+  const lap = [straight(30), right(), straight(40), right(), straight(50), right(), straight(40), right(), straight(20)];
+  const circuit = Track.circuit(lap, 3);
+  const single = circuit.circuit!.lapTrack;
+
+  it('mide la vuelta y pone la meta en la línea de salida tras 3 vueltas', () => {
+    const lapLength = single.legs.reduce((sum, l) => sum + l.length, 0);
+    expect(circuit.circuit!.lapLength).toBeCloseTo(lapLength);
+    expect(circuit.finishProgress).toBeCloseTo(START_LINE + 3 * lapLength);
+  });
+
+  it('cada vuelta pasa exactamente por los mismos sitios', () => {
+    const n = single.legs.length;
+    // El tramo 1 de cada vuelta (tras el primer cruce) está en el mismo sitio
+    const a = circuit.pointAt(1, 10);
+    const b = circuit.pointAt(1 + (n - 1), 10);
+    const c = circuit.pointAt(1 + 2 * (n - 1), 10);
+    expect(b.x).toBeCloseTo(a.x, 6);
+    expect(c.z).toBeCloseTo(a.z, 6);
+    // Con el rumbo sumando una vuelta entera, para que la cámara no gire de golpe
+    expect(b.heading - a.heading).toBeCloseTo(2 * Math.PI, 6);
+  });
+
+  it('une la última recta con la primera sin saltos', () => {
+    const joined = circuit.legs[single.legs.length - 1];
+    for (let i = 1; i < joined.samples.length; i++) {
+      const p = joined.samples[i - 1];
+      const q = joined.samples[i];
+      expect(Math.hypot(q.x - p.x, q.z - p.z)).toBeLessThan(0.6);
+    }
+  });
+
+  it('cuenta las vueltas por el progreso', () => {
+    const L = circuit.circuit!.lapLength;
+    expect(circuit.lapAt(START_DISTANCE)).toBe(1);
+    expect(circuit.lapAt(START_LINE + L - 1)).toBe(1);
+    expect(circuit.lapAt(START_LINE + L + 1)).toBe(2);
+    expect(circuit.lapAt(START_LINE + 2 * L + 1)).toBe(3);
+    expect(circuit.lapAt(START_LINE + 5 * L)).toBe(3);
+  });
+
+  it('una pista de ida siempre va por la vuelta 1', () => {
+    expect(Track.fromSegments([straight(100)]).lapAt(80)).toBe(1);
   });
 });

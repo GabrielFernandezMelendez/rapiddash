@@ -6,7 +6,7 @@ import {
   useAttempt,
   waitRemaining,
 } from '../../domain/daily/daily-attempts';
-import { dailyBoardId, dailyKey, dailyMapId, msUntilNextDay } from '../../domain/daily/daily-map';
+import { dailyBoardId, dailyKey, dailyMapId, dailyPool, msUntilNextDay } from '../../domain/daily/daily-map';
 import { AdsPort } from '../ports/out/ads.port';
 import { DailyAttemptsRepository } from '../ports/out/daily-attempts.repository';
 
@@ -27,9 +27,10 @@ export class DailyChallenge {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  today(mapIds: readonly string[]): DailyToday {
+  today(maps: readonly { readonly id: string; readonly layout: string }[]): DailyToday {
     const now = this.now();
     const key = dailyKey(now);
+    const mapIds = dailyPool(key, maps).map((m) => m.id);
     return { key, boardId: dailyBoardId(key), mapId: dailyMapId(key, mapIds), msLeft: msUntilNextDay(now) };
   }
 

@@ -17,6 +17,7 @@ import {
   LANE_WIDTH,
   SAMPLE_STEP,
   TRACK_HALF_WIDTH,
+  START_LINE,
 } from '../../../core/domain/track/track-constants';
 import { Junction, Leg, Taper, Track } from '../../../core/domain/track/track';
 import { ScenePalette } from './themes';
@@ -253,8 +254,11 @@ function taperWarnings(
   return g;
 }
 
-/** Pista completa: tramos, cruces, embudos, salida, meta y carteles. */
-export function buildTrackMesh(track: Track, palette: ScenePalette): Group {
+/**
+ * Pista completa: tramos, cruces, embudos, salida, meta y carteles. En un circuito (`circuit`) la
+ * salida y la meta son la misma línea, con la pancarta encima.
+ */
+export function buildTrackMesh(track: Track, palette: ScenePalette, circuit = false): Group {
   const group = new Group();
   const buf = new TrackBuffers(palette);
   for (const leg of track.legs) {
@@ -302,9 +306,13 @@ export function buildTrackMesh(track: Track, palette: ScenePalette): Group {
     );
   }
 
-  group.add(checkeredLine(track, 0, track.startDistance + 2));
-  group.add(checkeredLine(track, track.legs.length - 1, track.finishDistance));
-  group.add(finishBanner(track));
+  group.add(checkeredLine(track, 0, START_LINE));
+  if (circuit) {
+    group.add(finishBanner(track, 0, START_LINE));
+  } else {
+    group.add(checkeredLine(track, track.legs.length - 1, track.finishDistance));
+    group.add(finishBanner(track, track.legs.length - 1, track.finishDistance));
+  }
   for (const j of track.junctions) group.add(junctionSign(j, palette));
   return group;
 }
@@ -331,10 +339,10 @@ function checkeredLine(track: Track, leg: number, distance: number): Mesh {
   return mesh;
 }
 
-function finishBanner(track: Track): Group {
+function finishBanner(track: Track, leg: number, distance: number): Group {
   const g = new Group();
-  const p = track.pointAt(track.legs.length - 1, track.finishDistance);
-  const half = track.halfWidthAt(track.legs.length - 1, track.finishDistance);
+  const p = track.pointAt(leg, distance);
+  const half = track.halfWidthAt(leg, distance);
   const [rx, rz] = [Math.cos(p.heading), Math.sin(p.heading)];
   const postMat = flat(0x2b2f36);
   for (const side of [-1, 1]) {

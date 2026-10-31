@@ -60,10 +60,15 @@ export class Tournaments {
     return this.repo.join(code, { uid: profile.uid, nickname: profile.nickname, country: profile.country });
   }
 
-  /** Solo el creador y con al menos 2 pilotos. */
-  async start(t: Tournament, uid: string, mapIds: readonly string[]): Promise<boolean> {
+  /** Solo el creador y con al menos 2 pilotos. Uno de los tres días es un circuito por vueltas. */
+  async start(
+    t: Tournament,
+    uid: string,
+    mapIds: readonly string[],
+    circuitIds: readonly string[] = [],
+  ): Promise<boolean> {
     if (t.ownerUid !== uid || t.startedAt !== null || t.members.length < 2) return false;
-    await this.repo.start(t.code, pickMaps(mapIds, this.random));
+    await this.repo.start(t.code, pickMaps(mapIds, this.random, circuitIds));
     return true;
   }
 

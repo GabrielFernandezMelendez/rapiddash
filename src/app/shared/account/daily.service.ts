@@ -22,7 +22,7 @@ export class DailyService {
   private readonly challenge = new DailyChallenge(inject(DailyAttemptsRepository), inject(AdsPort));
 
   today(maps: readonly RaceMap[]): DailyToday & { map: RaceMap } {
-    const today = this.challenge.today(maps.map((m) => m.id));
+    const today = this.challenge.today(maps);
     return { ...today, map: findMap(today.mapId)! };
   }
 

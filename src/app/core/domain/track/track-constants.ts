@@ -14,6 +14,10 @@ export const SAMPLE_STEP = 0.5;
 /** Posición de salida y metros que quedan tras la meta para frenar. */
 export const START_DISTANCE = 8;
 export const FINISH_RUNOFF = 24;
+/** Línea de salida (y de meta en los circuitos): un poco por delante del coche al empezar. */
+export const START_LINE = START_DISTANCE + 2;
+/** Vueltas de una carrera en un circuito. */
+export const CIRCUIT_LAPS = 3;
 
 /** Centro del carril `index` (0 = el de más a la izquierda de la carretera ancha). */
 export const laneCenter = (index: number): number => -TRACK_HALF_WIDTH + LANE_WIDTH * (index + 0.5);

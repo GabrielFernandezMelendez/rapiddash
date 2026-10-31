@@ -1,6 +1,6 @@
 import { InputPort } from '../../core/application/ports/out/input.port';
 import { DriveInput, Swipe } from '../../core/domain/car/car';
-import { SwipeDetector } from './touch/swipe-detector';
+import { FingerTracker } from './touch/finger-tracker';
 
 const KEY_SWIPES: Record<string, Swipe> = {
   ArrowLeft: 'left',
@@ -10,14 +10,14 @@ const KEY_SWIPES: Record<string, Swipe> = {
 /**
  * Controles del juego:
  * - Móvil: mantener el dedo acelera; deslizar a un lado cambia de carril (o gira en un cruce).
+ *   Se puede jugar con un dedo o con dos: uno quieto acelerando y el otro haciendo los swipes.
  * - Ordenador: espacio acelera, flechas ← → equivalen a los swipes.
  *   Arrastrar con el ratón también funciona, porque se usan Pointer Events.
  */
 export class DeviceInputAdapter extends InputPort {
   private surface: HTMLElement | null = null;
-  private readonly detector = new SwipeDetector();
+  private readonly fingers = new FingerTracker();
   private readonly queue: Swipe[] = [];
-  private pointerId: number | null = null;
   private keyThrottle = false;
 
   attach(surface: HTMLElement): void {
@@ -34,7 +34,7 @@ export class DeviceInputAdapter extends InputPort {
 
   read(): DriveInput {
     const swipes = this.queue.splice(0, this.queue.length);
-    return { throttle: this.pointerId !== null || this.keyThrottle, swipes };
+    return { throttle: this.fingers.pressing || this.keyThrottle, swipes };
   }
 
   dispose(): void {
@@ -55,22 +55,17 @@ export class DeviceInputAdapter extends InputPort {
   private readonly onPointerDown = (e: PointerEvent) => {
     // Los botones de la interfaz (salir, repetir...) no cuentan como acelerar
     if ((e.target as HTMLElement | null)?.closest('button')) return;
-    if (this.pointerId !== null) return;
-    this.pointerId = e.pointerId;
-    this.detector.down(e.clientX, e.clientY);
+    if (!this.fingers.down(e.pointerId, e.clientX, e.clientY)) return;
     this.surface?.setPointerCapture?.(e.pointerId);
   };
 
   private readonly onPointerMove = (e: PointerEvent) => {
-    if (e.pointerId !== this.pointerId) return;
-    const swipe = this.detector.move(e.clientX, e.clientY, e.timeStamp);
+    const swipe = this.fingers.move(e.pointerId, e.clientX, e.clientY, e.timeStamp);
     if (swipe) this.queue.push(swipe);
   };
 
   private readonly onPointerUp = (e: PointerEvent) => {
-    if (e.pointerId !== this.pointerId) return;
-    this.pointerId = null;
-    this.detector.up();
+    this.fingers.up(e.pointerId);
   };
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
@@ -92,7 +87,6 @@ export class DeviceInputAdapter extends InputPort {
   // Si la ventana pierde el foco soltamos todo para que el coche no siga acelerando
   private readonly onBlur = () => {
     this.keyThrottle = false;
-    this.pointerId = null;
-    this.detector.up();
+    this.fingers.clear();
   };
 }

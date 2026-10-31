@@ -266,5 +266,15 @@
   "photo.error.denied": "There's no permission to use the camera. You can allow it in your browser settings or choose a photo from your gallery.",
   "photo.error.noCamera": "We couldn't find a camera. You can choose a photo from your gallery.",
   "photo.error.file": "That image couldn't be opened. Try another one.",
-  "photo.error.save": "Couldn't save it. Check your connection and try again."
+  "photo.error.save": "Couldn't save it. Check your connection and try again.",
+  "maps.group.laps": "Lap circuits",
+  "maps.portLoop": "Harbour Circuit",
+  "maps.canyonRing": "Canyon Ring",
+  "maps.summitGp": "Summit Grand Prix",
+  "maps.lighthouseOval": "Lighthouse Oval",
+  "maps.desertHorseshoe": "Desert Horseshoe",
+  "maps.glacierLoop": "Glacier Loop",
+  "maps.neonSnake": "Neon Snake",
+  "maps.canyonMaze": "Canyon Maze",
+  "maps.summitStairs": "Summit Stairs"
 }

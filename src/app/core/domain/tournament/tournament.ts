@@ -52,13 +52,21 @@ export function cleanName(raw: string): string {
   return raw.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
 }
 
-/** Tres mapas distintos al azar. */
-export function pickMaps(mapIds: readonly string[], random: () => number = Math.random): string[] {
-  const pool = [...mapIds];
+/**
+ * Tres mapas distintos al azar. Con `circuitIds`, uno de los tres es siempre un circuito por
+ * vueltas (en un día al azar) y los otros dos, mapas de ida.
+ */
+export function pickMaps(
+  mapIds: readonly string[],
+  random: () => number = Math.random,
+  circuitIds: readonly string[] = [],
+): string[] {
+  const take = (pool: string[]) => pool.splice(Math.floor(random() * pool.length) % pool.length, 1)[0];
+  const circuits = mapIds.filter((id) => circuitIds.includes(id));
+  const pool = circuits.length ? mapIds.filter((id) => !circuitIds.includes(id)) : [...mapIds];
   const picked: string[] = [];
-  while (picked.length < TOURNAMENT_DAYS && pool.length) {
-    picked.push(pool.splice(Math.floor(random() * pool.length) % pool.length, 1)[0]);
-  }
+  while (picked.length < TOURNAMENT_DAYS - (circuits.length ? 1 : 0) && pool.length) picked.push(take(pool));
+  if (circuits.length) picked.splice(Math.floor(random() * (picked.length + 1)) % (picked.length + 1), 0, take(circuits));
   return picked;
 }
 
