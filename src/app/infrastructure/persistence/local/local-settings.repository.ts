@@ -9,6 +9,7 @@ const LANGUAGE_KEY = 'rapiddash.language';
 const AESTHETIC_KEY = 'rapiddash.aesthetic';
 const RIVALS_KEY = 'rapiddash.rivals';
 const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
+const AESTHETIC_HINT_KEY = 'rapiddash.aestheticHintSeen';
 const VOLUMES_KEY = 'rapiddash.volumes';
 const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 
@@ -38,6 +39,14 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setRival(mapId: string, choice: RivalChoice): void {
     writeJson(RIVALS_KEY, { ...readJson<Record<string, unknown>>(RIVALS_KEY), [mapId]: choice });
+  }
+
+  getAestheticHintSeen(): boolean {
+    return readJson<boolean>(AESTHETIC_HINT_KEY) === true;
+  }
+
+  setAestheticHintSeen(): void {
+    writeJson(AESTHETIC_HINT_KEY, true);
   }
 
   getTutorialSeen(): boolean {

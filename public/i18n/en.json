@@ -284,5 +284,8 @@
   "race.finish": "Finish!",
   "race.lapShort": "L",
   "results.laps": "Laps",
-  "results.bestLap": "best"
+  "results.bestLap": "best",
+  "hint.title": "Change the style",
+  "hint.text": "In Settings you can choose the game's look: classic, retro or futuristic.",
+  "hint.ok": "Got it"
 }
