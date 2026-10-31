@@ -87,13 +87,16 @@ export class ThreeRendererAdapter extends RendererPort {
     host.appendChild(this.renderer.domElement);
 
     this.scene = new Scene();
-    if (isSynthwave(aesthetic)) this.buildSynthwave(track, theme);
-    else this.buildClassic(track, theme);
-    this.billboards = new LeaderBillboards(track, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
+    // En un circuito se dibuja una sola vuelta: las demás pasan por los mismos sitios
+    const drawn = track.circuit?.lapTrack ?? track;
+    const circuit = !!track.circuit;
+    if (isSynthwave(aesthetic)) this.buildSynthwave(drawn, theme, circuit);
+    else this.buildClassic(drawn, theme, circuit);
+    this.billboards = new LeaderBillboards(drawn, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
     this.scene.add(this.billboards.group);
     // Cartel con la foto del líder del torneo (borde LED solo en la estética futurista)
     this.photoGantry = new PhotoGantry(
-      track,
+      drawn,
       isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
       aesthetic === 'futurist',
     );
@@ -119,7 +122,7 @@ export class ThreeRendererAdapter extends RendererPort {
   }
 
   /** Estética clásica: cielo claro, árboles y muros de franjas. */
-  private buildClassic(track: Track, theme: MapTheme): void {
+  private buildClassic(track: Track, theme: MapTheme, circuit: boolean): void {
     const palette = PALETTES[theme];
     this.sky = null;
     this.scene.background = new Color(palette.sky);
@@ -128,11 +131,11 @@ export class ThreeRendererAdapter extends RendererPort {
     const sun = new DirectionalLight(0xffffff, 0.75 * Math.PI);
     sun.position.set(-30, 50, 20);
     this.scene.add(sun);
-    this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette));
+    this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette, circuit));
   }
 
   /** Estéticas retro y futurista: noche synthwave con sol a franjas, rejilla y neón. */
-  private buildSynthwave(track: Track, theme: MapTheme): void {
+  private buildSynthwave(track: Track, theme: MapTheme, circuit: boolean): void {
     const palette = SYNTH_PALETTES[theme];
     this.scene.background = skyTexture(palette);
     this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
@@ -146,7 +149,7 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scene.add(
       this.sky.group,
       buildSynthScenery(track, palette),
-      buildTrackMesh(track, palette),
+      buildTrackMesh(track, palette, circuit),
     );
   }
 
