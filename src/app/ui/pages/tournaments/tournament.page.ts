@@ -26,11 +26,13 @@ import { DayCard, DayCards } from '../../molecules/day-cards/day-cards';
 import { StandingsTable } from '../../molecules/standings-table/standings-table';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { describeTournament } from './tournament-view';
+import { leaderOf, shouldOfferPhoto } from '../../../core/domain/tournament/leader-photo';
+import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
 
 /** Un torneo: sala de espera antes de empezar; días y clasificación después. */
 @Component({
   selector: 'rd-tournament-page',
-  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, TranslatePipe],
+  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, LeaderPhoto, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -96,15 +98,67 @@ import { describeTournament } from './tournament-view';
             <p class="note center">{{ waitingFor() }}</p>
           }
         } @else if (status() === 'running') {
-          <button rdButton type="button" [block]="true" class="go" (click)="race()">
-            {{ 'tournament.raceToday' | t }}
-          </button>
+          <div class="race-row">
+            @if (isLeader()) {
+              <!-- Solo el líder: cambiar (o quitar) su foto del cartel -->
+              <button
+                rdButton
+                variant="secondary"
+                type="button"
+                class="camera"
+                [attr.aria-label]="'photo.button' | t"
+                [title]="'photo.button' | t"
+                (click)="photoOpen.set(true)"
+              >
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle>
+                </svg>
+              </button>
+            }
+            <button rdButton type="button" [block]="true" class="go" (click)="race()">
+              {{ 'tournament.raceToday' | t }}
+            </button>
+          </div>
         }
       </div>
     </rd-menu-layout>
+
+    @if (photoOpen()) {
+      <rd-leader-photo
+        [current]="myPhoto()"
+        [busy]="photoBusy()"
+        [error]="photoError()"
+        (save)="savePhoto($event)"
+        (remove)="removePhoto()"
+        (declined)="declinePhoto()"
+        (closed)="closePhoto()"
+      />
+    }
   `,
   styleUrl: './tournaments.page.scss',
   styles: `
+    .race-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .race-row .go {
+      flex: 1;
+      min-width: 0;
+      width: auto;
+      white-space: nowrap;
+      font-size: 18px;
+    }
+    .camera {
+      flex: none;
+      width: 56px;
+      min-height: 56px;
+      padding: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+    }
     .center {
       text-align: center;
       margin-top: 8px;
@@ -127,6 +181,12 @@ export class TournamentPage implements OnInit {
   protected readonly copied = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly now = signal(Date.now());
+  /** Foto del cartel del líder. */
+  protected readonly myPhoto = signal<string | null>(null);
+  protected readonly photoOpen = signal(false);
+  protected readonly photoBusy = signal(false);
+  protected readonly photoError = signal<string | null>(null);
+  private photoChecked = false;
 
   protected readonly status = computed(() => {
     const t = this.t();
@@ -137,6 +197,10 @@ export class TournamentPage implements OnInit {
     const day = t ? dayIndex(t, this.now()) : null;
     return day !== null && day < TOURNAMENT_DAYS ? day : null;
   });
+  /** Voy 1.º en un torneo en curso. */
+  protected readonly isLeader = computed(
+    () => this.status() === 'running' && leaderOf(this.board()?.rows ?? [])?.member.uid === this.myUid,
+  );
   protected readonly isOwner = computed(() => this.t()?.ownerUid === this.myUid);
   protected readonly subtitle = computed(() => {
     const t = this.t();
@@ -235,6 +299,61 @@ export class TournamentPage implements OnInit {
     void this.router.navigate(['/race', t.mapIds[day]], { queryParams: { t: t.code } });
   }
 
+  /** Al ir 1.º sin foto se ofrece una vez por torneo (y siempre desde el botón de la cámara). */
+  private async offerPhoto(): Promise<void> {
+    const t = this.t();
+    if (!t || !this.myUid || !this.isLeader() || this.photoChecked) return;
+    this.photoChecked = true;
+    this.myPhoto.set(await this.tournaments.photoOf(t.code, this.myUid));
+    if (shouldOfferPhoto(true, !!this.myPhoto(), this.tournaments.photoDeclined(t.code))) {
+      this.photoOpen.set(true);
+    }
+  }
+
+  protected async savePhoto(dataUrl: string): Promise<void> {
+    const t = this.t();
+    if (!t) return;
+    this.photoBusy.set(true);
+    this.photoError.set(null);
+    try {
+      await this.tournaments.savePhoto(t.code, dataUrl);
+      this.myPhoto.set(dataUrl);
+      this.photoOpen.set(false);
+    } catch (e) {
+      console.error('[foto]', e);
+      this.photoError.set('photo.error.save');
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected async removePhoto(): Promise<void> {
+    const t = this.t();
+    if (!t) return;
+    this.photoBusy.set(true);
+    this.photoError.set(null);
+    try {
+      await this.tournaments.removePhoto(t.code);
+      this.myPhoto.set(null);
+      this.photoOpen.set(false);
+    } catch (e) {
+      console.error('[foto]', e);
+      this.photoError.set('photo.error.save');
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected declinePhoto(): void {
+    const t = this.t();
+    if (t) this.tournaments.declinePhoto(t.code);
+  }
+
+  protected closePhoto(): void {
+    this.photoOpen.set(false);
+    this.photoError.set(null);
+  }
+
   private async load(): Promise<void> {
     try {
       const t = await this.tournaments.find(this.code());
@@ -242,6 +361,7 @@ export class TournamentPage implements OnInit {
       this.t.set(t);
       this.now.set(Date.now());
       if (t && statusAt(t, Date.now()) !== 'waiting') this.board.set(await this.tournaments.board(t));
+      await this.offerPhoto();
     } catch {
       this.error.set('auth.error.network');
     }

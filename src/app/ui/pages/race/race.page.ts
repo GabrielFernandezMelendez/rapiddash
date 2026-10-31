@@ -37,6 +37,7 @@ import { MoreAttempts } from '../../organisms/more-attempts/more-attempts';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { dayBoardId, dayIndex, isMember, statusAt, Tournament } from '../../../core/domain/tournament/tournament';
 import { rankingBillboards, tournamentBillboards } from './billboard-content';
+import { leaderOf } from '../../../core/domain/tournament/leader-photo';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { Hud } from '../../organisms/hud/hud';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
@@ -290,8 +291,16 @@ export class RacePage {
   private async loadBillboards(): Promise<void> {
     try {
       if (this.tournament) {
-        const board = await this.tournaments.board(this.tournament);
-        this.renderer.setBillboards(tournamentBillboards(this.tournament, board.rows, this.i18n));
+        const t = this.tournament;
+        const board = await this.tournaments.board(t);
+        const content = tournamentBillboards(t, board.rows, this.i18n);
+        this.renderer.setBillboards(content);
+        // Cartel con la foto del líder (o su bandera si no ha puesto foto)
+        const leader = leaderOf(board.rows);
+        if (leader && content.leader) {
+          const photo = await this.tournaments.photoOf(t.code, leader.member.uid);
+          this.renderer.setLeaderPhoto({ leader: content.leader, photo });
+        }
       } else {
         const view = await this.ranking.load(this.boardId);
         // Sin red no se sabe quién va primero: mejor no poner carteles que decir algo falso
