@@ -22,8 +22,7 @@ import { RaceSession, RaceViewState } from '../../../core/application/use-cases/
 import { Standing } from '../../../core/application/use-cases/ranking-board';
 import { RankedRecord } from '../../../core/domain/race/ranking';
 import { BestRun } from '../../../core/domain/race/ghost';
-import { findMap } from '../../../core/domain/track/race-map';
-import { Track } from '../../../core/domain/track/track';
+import { findMap, trackOf } from '../../../core/domain/track/race-map';
 import { provideRaceAdapters } from '../../../infrastructure/di/race.providers';
 import { AccountService } from '../../../shared/account/account.service';
 import { CloudRecordsService } from '../../../shared/account/cloud-records.service';
@@ -233,7 +232,7 @@ export class RacePage {
       this.boardId = boardId;
       this.tournamentCode = this.t()!.toUpperCase();
     }
-    const track = Track.fromSegments(map.segments);
+    const track = trackOf(map);
     const aesthetic = this.aesthetic.aesthetic();
     this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
     this.controls.attach(this.surface().nativeElement as HTMLElement);

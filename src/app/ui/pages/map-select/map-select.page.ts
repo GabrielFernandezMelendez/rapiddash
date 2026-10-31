@@ -8,7 +8,7 @@ import {
   RivalChoice,
   rivalOptions,
 } from '../../../core/domain/race/ranking';
-import { ALL_MAPS, RACE_MAPS, RaceMap, ZIGZAG_MAPS } from '../../../core/domain/track/race-map';
+import { ALL_MAPS, CIRCUIT_MAPS, RACE_MAPS, RaceMap, ZIGZAG_MAPS } from '../../../core/domain/track/race-map';
 import { AccountService } from '../../../shared/account/account.service';
 import { RankingService } from '../../../shared/account/ranking.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -95,6 +95,7 @@ export class MapSelectPage implements OnInit {
   protected readonly groups = [
     { key: 'maps.group.classic', maps: RACE_MAPS },
     { key: 'maps.group.zigzag', maps: ZIGZAG_MAPS },
+    { key: 'maps.group.laps', maps: CIRCUIT_MAPS },
   ];
   protected readonly bestTimes = signal<Partial<Record<string, number>>>({});
   protected readonly selected = signal<RaceMap | null>(null);

@@ -266,5 +266,15 @@
   "photo.error.denied": "No hay permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir una foto de la galería.",
   "photo.error.noCamera": "No encontramos ninguna cámara. Puedes elegir una foto de la galería.",
   "photo.error.file": "No se pudo abrir esa imagen. Prueba con otra.",
-  "photo.error.save": "No se pudo guardar. Revisa la conexión e inténtalo otra vez."
+  "photo.error.save": "No se pudo guardar. Revisa la conexión e inténtalo otra vez.",
+  "maps.group.laps": "Por vueltas",
+  "maps.portLoop": "Circuito del Puerto",
+  "maps.canyonRing": "Anillo del Cañón",
+  "maps.summitGp": "Gran Premio de la Cumbre",
+  "maps.lighthouseOval": "Óvalo del Faro",
+  "maps.desertHorseshoe": "Herradura del Desierto",
+  "maps.glacierLoop": "Lazo del Glaciar",
+  "maps.neonSnake": "Serpiente de Neón",
+  "maps.canyonMaze": "Laberinto del Cañón",
+  "maps.summitStairs": "Escalera de la Cumbre"
 }
