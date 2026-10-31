@@ -31,20 +31,27 @@ import { MenuLayout } from '../../templates/menu-layout/menu-layout';
         <span class="info">
           <span class="name">{{ today.map.nameKey | t }}</span>
           <span class="meta">{{ 'difficulty.' + today.map.difficulty | t }}</span>
-          <span class="meta">{{ 'daily.newIn' | t }} <b>{{ countdown() }}</b></span>
         </span>
       </div>
 
-      <div class="me">
-        @if (standing(); as st) {
-          <rd-trophy [kind]="st.trophy" [size]="40" />
-          <span class="me-text">
-            <b>#{{ st.rank }}</b> {{ 'results.of' | t }} {{ st.total }}
-            <small>{{ 'daily.yourBest' | t }} · {{ time(st.time) }}</small>
-          </span>
-        } @else {
-          <span class="me-text muted">{{ (loading() ? 'daily.loading' : 'daily.noTime') | t }}</span>
-        }
+      <div class="stats">
+        <div class="stat">
+          <span class="label">{{ 'daily.yourPosition' | t }}</span>
+          @if (standing(); as st) {
+            <span class="value">
+              <rd-trophy [kind]="st.trophy" [size]="28" />
+              <b>#{{ st.rank }}</b>
+            </span>
+            <small>{{ time(st.time) }} · {{ 'results.of' | t }} {{ st.total }}</small>
+          } @else {
+            <span class="value muted">{{ (loading() ? 'daily.loading' : 'daily.noTimeShort') | t }}</span>
+          }
+        </div>
+        <div class="stat">
+          <span class="label">{{ 'daily.available' | t }}</span>
+          <span class="value"><b class="clock">{{ countdown() }}</b></span>
+          <small>{{ 'daily.untilNew' | t }}</small>
+        </div>
       </div>
 
       <rd-leaderboard
