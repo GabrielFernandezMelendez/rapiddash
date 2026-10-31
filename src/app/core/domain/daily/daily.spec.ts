@@ -82,8 +82,8 @@ describe('circuitos en el mapa del día', () => {
     { id: 'port-loop', layout: 'laps' },
   ];
 
-  it('desde su día el mapa del día sale solo de los circuitos (antes, no cambia)', () => {
-    expect(dailyPool('2026-11-01', maps).map((m) => m.id)).toEqual(['bay']);
+  it('el mapa del día sale solo de los circuitos', () => {
+    expect(dailyPool('2026-11-01', maps).map((m) => m.id)).toEqual(['port-loop']);
     expect(dailyPool('2026-11-02', maps).map((m) => m.id)).toEqual(['port-loop']);
   });
 });

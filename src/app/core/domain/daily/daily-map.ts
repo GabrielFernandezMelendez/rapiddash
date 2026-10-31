@@ -1,6 +1,6 @@
 /**
- * Mapa del día: el mismo para todos, cambia a medianoche de España. De momento rota entre los
- * mapas que hay.
+ * Mapa del día: el mismo para todos, cambia a medianoche de España. Rota entre los circuitos
+ * por vueltas.
  */
 export const DAILY_TIME_ZONE = 'Europe/Madrid';
 
@@ -25,16 +25,12 @@ export function isDailyBoard(boardId: string): boolean {
   return boardId.startsWith('daily-');
 }
 
-/** Día desde el que el mapa del día sale solo de los circuitos (antes, el de cada día no cambia). */
-export const CIRCUITS_IN_DAILY_FROM = '2026-11-02';
-
-/** Mapas que rotan ese día: los de ida hasta CIRCUITS_IN_DAILY_FROM y desde entonces solo los circuitos. */
+/** Mapas que rotan en el mapa del día: solo los circuitos por vueltas. */
 export function dailyPool<M extends { readonly id: string; readonly layout: string }>(
-  key: string,
+  _key: string,
   maps: readonly M[],
 ): readonly M[] {
-  const circuits = key >= CIRCUITS_IN_DAILY_FROM;
-  return maps.filter((m) => (m.layout === 'laps') === circuits);
+  return maps.filter((m) => m.layout === 'laps');
 }
 
 /** Mapa que toca ese día: rota por orden, un mapa distinto cada día. */
