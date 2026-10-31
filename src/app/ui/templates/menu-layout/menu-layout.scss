@@ -25,6 +25,10 @@ footer {
   overflow-y: auto;
 }
 
+.content.start {
+  align-content: start;
+}
+
 // Carretera de fondo con líneas que avanzan
 .road {
   position: absolute;

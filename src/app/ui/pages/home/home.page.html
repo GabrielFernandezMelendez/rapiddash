@@ -1,4 +1,4 @@
-<rd-menu-layout>
+<rd-menu-layout [align]="synthwave() ? 'start' : 'center'">
   <div menu-backdrop #backdrop class="backdrop" aria-hidden="true"></div>
   <div menu-header class="top">
     @if (account.profile(); as profile) {
@@ -9,8 +9,10 @@
       variant="ghost"
       type="button"
       class="settings"
+      #settingsButton
+      [class.lit]="hint() !== null"
       [attr.aria-label]="'home.settings' | t"
-      (click)="settingsOpen.set(true)"
+      (click)="openSettings()"
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path
@@ -79,6 +81,10 @@
     (volumesChange)="setVolumes($event)"
     (preview)="previewSound($event)"
   />
+}
+
+@if (hint(); as anchor) {
+  <rd-aesthetic-hint [anchor]="anchor" (closed)="closeHint()" />
 }
 
 @if (tutorialOpen()) {
