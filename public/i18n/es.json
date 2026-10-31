@@ -220,7 +220,7 @@
   "tournament.rules": "3 días, un mapa al azar cada día. Corre las veces que quieras: cuenta tu mejor tiempo. Puntos por día: 15, 12, 10, 8, 7, 6, 5, 4, 3, 2. En empate gana quien más días ganó.",
   "tournament.start": "Comenzar torneo",
   "tournament.needTwo": "Hacen falta al menos 2 pilotos. Comparte el enlace.",
-  "tournament.waitingFor": "Esperando a que {owner} lo empiece. Después ya no entra nadie más.",
+  "tournament.waitingFor": "Esperando a que {owner} lo empiece. Se puede seguir invitando cuando ya haya empezado.",
   "tournament.standings": "Clasificación",
   "tournament.provisional": "Los puntos de hoy son provisionales hasta que acabe el día.",
   "tournament.raceToday": "Correr el mapa de hoy",
@@ -230,7 +230,6 @@
   "tournament.driver": "Piloto",
   "tournament.total": "Total",
   "tournament.error.not-found": "No hay ningún torneo con ese código.",
-  "tournament.error.started": "Ese torneo ya ha empezado: no se puede entrar.",
   "tournament.error.full": "Ese torneo ya tiene 20 pilotos.",
   "tournament.error.copy": "No se pudo copiar el enlace.",
   "billboard.leaderOf": "Líder · {name}",
@@ -292,5 +291,7 @@
   "tournament.removeTitle": "¿Eliminar el torneo?",
   "tournament.removeText": "Vas a eliminar «{name}» para todos sus pilotos, con su clasificación y sus fotos. No se puede deshacer. ¿Seguro?",
   "tournament.removeGo": "Eliminar",
-  "tournament.removeAria": "Eliminar el torneo {name}"
+  "tournament.removeAria": "Eliminar el torneo {name}",
+  "tournament.error.finished": "Ese torneo ya ha terminado.",
+  "tournament.inviteMore": "Invita a más pilotos: pueden entrar hasta que acabe el torneo."
 }

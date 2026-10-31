@@ -220,7 +220,7 @@
   "tournament.rules": "3 days, a random map each day. Race as often as you like: your best time counts. Points per day: 15, 12, 10, 8, 7, 6, 5, 4, 3, 2. Ties go to whoever won more days.",
   "tournament.start": "Start tournament",
   "tournament.needTwo": "You need at least 2 drivers. Share the link.",
-  "tournament.waitingFor": "Waiting for {owner} to start it. After that nobody else can join.",
+  "tournament.waitingFor": "Waiting for {owner} to start it. You can keep inviting once it has started.",
   "tournament.standings": "Standings",
   "tournament.provisional": "Today's points are provisional until the day ends.",
   "tournament.raceToday": "Race today's map",
@@ -230,7 +230,6 @@
   "tournament.driver": "Driver",
   "tournament.total": "Total",
   "tournament.error.not-found": "There's no tournament with that code.",
-  "tournament.error.started": "That tournament has already started: you can't join.",
   "tournament.error.full": "That tournament already has 20 drivers.",
   "tournament.error.copy": "Couldn't copy the link.",
   "billboard.leaderOf": "Leader · {name}",
@@ -292,5 +291,7 @@
   "tournament.removeTitle": "Delete the tournament?",
   "tournament.removeText": "You're about to delete \"{name}\" for all its drivers, with its standings and photos. This can't be undone. Are you sure?",
   "tournament.removeGo": "Delete",
-  "tournament.removeAria": "Delete the tournament {name}"
+  "tournament.removeAria": "Delete the tournament {name}",
+  "tournament.error.finished": "That tournament has already finished.",
+  "tournament.inviteMore": "Invite more drivers: they can join until the tournament ends."
 }

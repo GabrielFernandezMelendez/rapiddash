@@ -22,7 +22,8 @@ class MemoryTournaments extends TournamentRepository {
   async join(code: string, member: Tournament['members'][number]): Promise<JoinResult> {
     const t = this.data.get(code);
     if (!t) return 'not-found';
-    const problem = joinProblem(t, member.uid);
+    // En memoria el reloj no corre: se une justo al empezar (o antes)
+    const problem = joinProblem(t, member.uid, t.startedAt ?? 0);
     if (problem) return problem;
     this.data.set(code, { ...t, members: [...t.members, member] });
     return 'joined';
@@ -103,7 +104,8 @@ describe('Tournaments', () => {
     expect(await tournaments.start(saved, 'gabo', ['a', 'b', 'c', 'd'])).toBe(false);
     expect(await tournaments.start(saved, 'ana', ['a', 'b', 'c', 'd'])).toBe(true);
     expect((await repo.get(t.code))!.mapIds).toHaveLength(3);
-    expect(await tournaments.join(t.code, profile('lucia'))).toBe('started');
+    // Ya empezado, todavía se puede entrar con el enlace
+    expect(await tournaments.join(t.code, profile('lucia'))).toBe('joined');
   });
 
   it('si el código ya existe, prueba otro', async () => {

@@ -78,7 +78,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Torneos (id = código): 3 días, hasta 20 pilotos. Unirse solo antes de empezar; empezar,
+    // Torneos (id = código): 3 días, hasta 20 pilotos. Unirse en cualquier momento hasta que acabe; empezar,
     // solo el creador, con al menos 2 pilotos, a la hora del servidor y con los 3 mapas.
     // Eliminar: solo el creador (por ejemplo, si lo creó por error).
     match /tournaments/{code} {
@@ -100,8 +100,9 @@ service cloud.firestore {
         && request.resource.data.mapIds.size() == 0
         && request.resource.data.createdAt == request.time;
       allow update: if signedIn() && (
-        // Unirse: añado solo mi uid y mi ficha, antes de empezar y sin pasar de 20
-        (resource.data.startedAt == null
+        // Unirse: añado solo mi uid y mi ficha, sin pasar de 20 y antes de que acabe (3 días desde el inicio)
+        ((resource.data.startedAt == null
+            || request.time < resource.data.startedAt + duration.value(3, 'd'))
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUids'])
           && !(request.auth.uid in resource.data.memberUids)
           && request.auth.uid in request.resource.data.memberUids

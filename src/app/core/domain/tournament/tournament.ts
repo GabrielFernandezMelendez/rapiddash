@@ -1,6 +1,6 @@
 import { CountryCode } from '../profile/country';
 
-/** Torneos: ligas de 3 días entre amigos, hasta 20 pilotos, un mapa al azar cada día. */
+/** Torneos: ligas de 3 días entre amigos, hasta 20 pilotos, un mapa al azar cada día. Se entra en cualquier momento con el enlace. */
 export const TOURNAMENT_MAX_MEMBERS = 20;
 export const TOURNAMENT_DAYS = 3;
 export const TOURNAMENT_DAY_MS = 24 * 60 * 60 * 1000;
@@ -98,11 +98,12 @@ export function isMember(t: Tournament, uid: string): boolean {
   return t.members.some((m) => m.uid === uid);
 }
 
-export type JoinProblem = 'started' | 'full' | 'already';
+export type JoinProblem = 'finished' | 'full' | 'already';
 
-export function joinProblem(t: Tournament, uid: string): JoinProblem | null {
+/** Se puede entrar en cualquier momento con el enlace, también ya empezado, salvo si ha terminado o está lleno. */
+export function joinProblem(t: Tournament, uid: string, now: number = Date.now()): JoinProblem | null {
   if (isMember(t, uid)) return 'already';
-  if (t.startedAt !== null) return 'started';
+  if (statusAt(t, now) === 'finished') return 'finished';
   if (t.members.length >= TOURNAMENT_MAX_MEMBERS) return 'full';
   return null;
 }
