@@ -1,3 +1,4 @@
+import { LAP_BANNER_TIME, LapBanner, lapBanner } from '../../domain/race/laps';
 import { BestRun, GhostFrame, GhostPlayback, GhostRecorder } from '../../domain/race/ghost';
 import { ghostLabelOpacity } from '../../domain/race/ranking';
 import { PHYSICS_VERSION } from '../../domain/race/physics-version';
@@ -49,6 +50,8 @@ export interface RaceViewState {
   readonly lap: { readonly current: number; readonly total: number } | null;
   /** Tiempos de las vueltas ya terminadas. */
   readonly lapTimes: readonly number[];
+  /** Cartel de vuelta en el centro (solo un momento tras cruzar la línea). */
+  readonly lapBanner: LapBanner | null;
 }
 
 /** Quien recibe cada récord nuevo para publicarlo (el ranking online). */
@@ -82,6 +85,7 @@ export class RaceSession {
   private best: BestRun | null = null;
   /** Rival elegido; sin él, el fantasma es mi mejor vuelta. */
   private rival: RivalGhost | null = null;
+  private banner: LapBanner | null = null;
   private result: RaceResult | null = null;
   private lastCrashAt = -Infinity;
   private listener: (state: RaceViewState) => void = () => {};
@@ -124,6 +128,7 @@ export class RaceSession {
     const frames = this.rival?.frames ?? this.best?.frames;
     this.ghost = frames ? new GhostPlayback(frames) : null;
     this.result = null;
+    this.banner = null;
     this.lastCrashAt = -Infinity;
     this.ports.input.read(); // descarta swipes pendientes
   }
@@ -141,6 +146,15 @@ export class RaceSession {
       this.lastCrashAt = race.raceTime;
     }
     if (events.includes('bump')) this.ports.renderer.bump(car.lateral > 0 ? 1 : -1);
+    if (events.includes('lap')) {
+      const ghost = this.ghost;
+      this.banner = lapBanner(
+        this.track,
+        race.lapTimes,
+        race.raceTime,
+        ghost ? (p) => ghost.timeAtProgress(p) : null,
+      );
+    }
     if (events.includes('finish')) void this.finish();
 
     this.ports.renderer.render(
@@ -219,6 +233,10 @@ export class RaceSession {
       result: this.result,
       lap: this.track.circuit ? { current: race.lap, total: this.track.circuit.laps } : null,
       lapTimes: race.lapTimes,
+      lapBanner:
+        this.banner && race.phase === 'racing' && race.raceTime - this.banner.at < LAP_BANNER_TIME
+          ? this.banner
+          : null,
     };
   }
 }

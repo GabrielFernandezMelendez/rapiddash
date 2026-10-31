@@ -276,5 +276,13 @@
   "maps.glacierLoop": "Lazo del Glaciar",
   "maps.neonSnake": "Serpiente de Neón",
   "maps.canyonMaze": "Laberinto del Cañón",
-  "maps.summitStairs": "Escalera de la Cumbre"
+  "maps.summitStairs": "Escalera de la Cumbre",
+  "hud.lap": "Vuelta",
+  "race.lap": "Vuelta",
+  "race.lastLap": "Última",
+  "race.lastLapSub": "vuelta",
+  "race.finish": "¡Meta!",
+  "race.lapShort": "V",
+  "results.laps": "Vueltas",
+  "results.bestLap": "mejor"
 }

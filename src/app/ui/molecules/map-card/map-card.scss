@@ -1,9 +1,11 @@
 .card {
   display: grid;
-  grid-template-columns: 92px 1fr;
+  // minmax(0, 1fr): un nombre largo no ensancha la tarjeta más que la pantalla
+  grid-template-columns: 92px minmax(0, 1fr);
   gap: 14px;
   align-items: center;
   width: 100%;
+  min-width: 0;
   padding: 10px;
   border: 0;
   border-radius: var(--rd-radius);
@@ -73,10 +75,13 @@
   font-family: var(--rd-font-display);
   font-style: var(--rd-display-style);
   font-weight: 800;
-  font-size: 26px;
+  font-size: clamp(20px, 6.4vw, 26px);
   line-height: 1;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  // Nombres largos («Gran Premio de la Cumbre»): parten línea en vez de salirse
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .meta {

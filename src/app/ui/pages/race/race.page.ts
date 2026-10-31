@@ -39,12 +39,17 @@ import { rankingBillboards, tournamentBillboards } from './billboard-content';
 import { leaderOf } from '../../../core/domain/tournament/leader-photo';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { Hud } from '../../organisms/hud/hud';
+import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
+import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
 
+/** Milisegundos que se ve «¡Meta!» antes de los resultados en un circuito. */
+const FINISH_BANNER_MS = 1300;
+
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, TranslatePipe],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -53,9 +58,21 @@ import { RaceLayout } from '../../templates/race-layout/race-layout';
       @if (state(); as s) {
         <rd-hud [state]="s" [mapName]="mapName()" [rivalName]="rivalName()" (exit)="exit()" />
         <rd-countdown [phase]="s.phase" [light]="s.light" [showGo]="s.showGo" />
-        @if (s.result; as result) {
+        @if (s.lapBanner; as b) {
+          <rd-lap-banner
+            [kind]="b.kind"
+            [lap]="b.lap"
+            [total]="b.total"
+            [time]="b.lapTime"
+            [delta]="b.delta"
+          />
+        }
+        @if (finishBanner() && s.result; as result) {
+          <rd-lap-banner kind="finish" [time]="result.time" [note]="result.isRecord ? ('results.record' | t) : ''" />
+        }
+        @if (s.result && !finishBanner()) {
           <rd-results-panel
-            [result]="result"
+            [result]="s.result!"
             [standing]="standing()"
             [passedLabel]="passedLabel()"
             (retry)="retry()"
@@ -125,6 +142,8 @@ export class RacePage {
       : this.i18n.t('results.passed').replace('{n}', String(gained));
   });
   private lastResult: unknown = null;
+  /** En un circuito, «¡Meta!» se ve un momento antes de la ventana de resultados. */
+  protected readonly finishBanner = signal(false);
   protected readonly dailyService = inject(DailyService);
   protected readonly askMore = signal(false);
   protected readonly adBusy = signal(false);
@@ -324,6 +343,10 @@ export class RacePage {
     const result = state.result;
     if (!result || result === this.lastResult) return;
     this.lastResult = result;
+    if (state.lap) {
+      this.finishBanner.set(true);
+      setTimeout(() => this.finishBanner.set(false), FINISH_BANNER_MS);
+    }
     // Puesto mundial con mi mejor tiempo (el nuevo si es récord)
     if (!this.account.profile()) return;
     const best = result.previousBest === null ? result.time : Math.min(result.time, result.previousBest);

@@ -6,6 +6,9 @@
     <span class="map">{{ mapName() }}</span>
     <span class="time">{{ time() }}</span>
     <span class="row">
+      @if (state().lap; as lap) {
+        <rd-stat [label]="'hud.lap' | t" [value]="lap.current + '/' + lap.total" />
+      }
       <rd-stat [label]="'hud.best' | t" [value]="best()" />
       @if (ghost(); as g) {
         <rd-stat
