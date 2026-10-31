@@ -35,6 +35,8 @@ import { Countdown } from '../../organisms/countdown/countdown';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { MoreAttempts } from '../../organisms/more-attempts/more-attempts';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
+import { dayBoardId, dayIndex, isMember, statusAt } from '../../../core/domain/tournament/tournament';
+import { TournamentService } from '../../../shared/account/tournament.service';
 import { Hud } from '../../organisms/hud/hud';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
@@ -86,6 +88,8 @@ export class RacePage {
   readonly mapId = input.required<string>();
   /** ?daily=1: carrera del mapa del día (cuenta en su ranking y gasta intentos). */
   readonly daily = input<string | undefined>();
+  /** ?t=CODIGO: carrera del día de un torneo (intentos ilimitados, cuenta su mejor tiempo). */
+  readonly t = input<string | undefined>();
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
@@ -125,6 +129,9 @@ export class RacePage {
   protected readonly adBusy = signal(false);
   /** Ranking donde cuenta esta carrera: el del mapa o el del día. */
   private boardId = '';
+  /** Torneo en el que cuenta esta carrera (null fuera de torneo). */
+  private tournamentCode: string | null = null;
+  private readonly tournaments = inject(TournamentService);
   private readonly settings = inject(SettingsRepository);
   /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
   protected readonly tutorialOpen = signal(false);
@@ -149,6 +156,12 @@ export class RacePage {
 
   /** «Repetir»: si hay siguiente rival, la próxima carrera es contra él. */
   protected async retry(): Promise<void> {
+    if (this.tournamentCode) {
+      // En el torneo se corre sin límite y sin rival: el fantasma es mi mejor vuelta del día
+      this.standing.set(null);
+      this.session?.restart();
+      return;
+    }
     if (this.isDaily()) {
       // En el mapa del día cada carrera gasta un intento
       if (!this.dailyService.startAttempt()) {
@@ -169,7 +182,8 @@ export class RacePage {
   }
 
   protected exit(): void {
-    void this.router.navigate([this.isDaily() ? '/daily' : '/maps']);
+    if (this.tournamentCode) void this.router.navigate(['/tournaments', this.tournamentCode]);
+    else void this.router.navigate([this.isDaily() ? '/daily' : '/maps']);
   }
 
   protected async watchAd(): Promise<void> {
@@ -186,6 +200,7 @@ export class RacePage {
     void this.router.navigate(['/daily']);
   }
 
+  /** Carrera con ranking propio (mapa del día o día de torneo). */
   private isDaily(): boolean {
     return this.boardId !== '' && this.boardId !== this.map()?.id;
   }
@@ -205,6 +220,15 @@ export class RacePage {
         return;
       }
       this.boardId = today.boardId;
+    } else if (this.t()) {
+      const boardId = await this.tournamentBoard(this.t()!, map.id);
+      // Torneo que no está en curso, mapa de otro día o no soy miembro: a la pantalla del torneo
+      if (!boardId) {
+        void this.router.navigate(['/tournaments', this.t()]);
+        return;
+      }
+      this.boardId = boardId;
+      this.tournamentCode = this.t()!.toUpperCase();
     }
     const track = Track.fromSegments(map.segments);
     const aesthetic = this.aesthetic.aesthetic();
@@ -219,7 +243,7 @@ export class RacePage {
       loop: this.loop,
       bestRuns: this.bestRuns,
       audio: this.audio,
-      records: this.isDaily() ? { publish: (run) => void this.publishDaily(run) } : this.cloudRecords,
+      records: this.isDaily() ? { publish: (run) => void this.publishSpecial(run) } : this.cloudRecords,
     }, aesthetic, this.boardId);
     if (pick?.ranked) await this.useRival(pick.ranked);
     if (showTutorialBeforeRace(this.settings.getTutorialSeen())) {
@@ -232,10 +256,10 @@ export class RacePage {
   }
 
   /**
-   * Récord del día: se sube al ranking del día y, si además mejora mi récord del mapa, también
-   * cuenta para el ranking normal.
+   * Récord del día o del torneo: se sube a su ranking y, si además mejora mi récord del mapa,
+   * también cuenta para el ranking normal.
    */
-  private async publishDaily(run: BestRun): Promise<void> {
+  private async publishSpecial(run: BestRun): Promise<void> {
     this.cloudRecords.publish(run);
     const map = this.map();
     if (!map) return;
@@ -244,6 +268,17 @@ export class RacePage {
     const mapRun: BestRun = { ...run, mapId: map.id };
     await this.bestRuns.save(mapRun);
     this.cloudRecords.publish(mapRun);
+  }
+
+  /** Ranking del día del torneo si puedo correrlo ahora en este mapa; si no, null. */
+  private async tournamentBoard(code: string, mapId: string): Promise<string | null> {
+    const uid = this.account.profile()?.uid;
+    const t = await this.tournaments.find(code).catch(() => null);
+    if (!t || !uid || !isMember(t, uid)) return null;
+    const now = Date.now();
+    const day = dayIndex(t, now);
+    if (statusAt(t, now) !== 'running' || day === null || t.mapIds[day] !== mapId) return null;
+    return dayBoardId(t.code, day);
   }
 
   /** Descarga el fantasma del rival (máximo 2,5 s); si no llega, se corre contra mi mejor vuelta. */
@@ -264,7 +299,7 @@ export class RacePage {
     const best = result.previousBest === null ? result.time : Math.min(result.time, result.previousBest);
     void this.ranking
       .standing(this.boardId, best)
-      // En el mapa del día «Repetir» no cambia de rival
+      // En el mapa del día y en el torneo «Repetir» no cambia de rival
       .then((s) => this.standing.set(s && this.isDaily() ? { ...s, next: null } : s));
   }
 }

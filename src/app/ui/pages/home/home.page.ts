@@ -19,6 +19,8 @@ import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { DailyService, DailyStanding } from '../../../shared/account/daily.service';
+import { TournamentService } from '../../../shared/account/tournament.service';
+import { statusAt } from '../../../core/domain/tournament/tournament';
 import { provideMenuAdapters } from '../../../infrastructure/di/menu.providers';
 import { AccountService } from '../../../shared/account/account.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
@@ -59,6 +61,9 @@ export class HomePage implements OnInit {
   protected readonly dailyStanding = signal<DailyStanding | null>(null);
   protected readonly dailyLeft = signal('');
   protected readonly tutorialOpen = signal(false);
+  private readonly tournaments = inject(TournamentService);
+  /** Torneos míos en curso (insignia del botón). */
+  protected readonly tournamentsRunning = signal(0);
   private readonly settings = inject(SettingsRepository);
   private readonly audio = inject(AudioPort);
   protected readonly volumes = signal<Volumes>(this.settings.getVolumes());
@@ -85,6 +90,14 @@ export class HomePage implements OnInit {
     void this.daily
       .load(this.dailyToday.boardId)
       .then((view) => this.dailyStanding.set(this.daily.standing(view)));
+    void this.tournaments
+      .mine()
+      .then((list) => this.tournamentsRunning.set(list.filter((t) => statusAt(t, Date.now()) === 'running').length))
+      .catch(() => undefined);
+  }
+
+  protected openTournaments(): void {
+    void this.router.navigate(['/tournaments']);
   }
 
   protected openDaily(): void {
