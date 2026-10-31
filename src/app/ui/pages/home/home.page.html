@@ -44,6 +44,9 @@
     (aestheticChange)="setAesthetic($event)"
     (closed)="settingsOpen.set(false)"
     (tutorial)="openTutorial()"
+    [volumes]="volumes()"
+    (volumesChange)="setVolumes($event)"
+    (preview)="previewSound($event)"
   />
 }
 
