@@ -17,4 +17,7 @@ export abstract class SettingsRepository {
   abstract setTutorialSeen(): void;
   abstract getVolumes(): Volumes;
   abstract setVolumes(volumes: Volumes): void;
+  /** «Ahora no» a poner la foto en el cartel de ese torneo: no se vuelve a ofrecer sola. */
+  abstract getPhotoDeclined(code: string): boolean;
+  abstract setPhotoDeclined(code: string): void;
 }

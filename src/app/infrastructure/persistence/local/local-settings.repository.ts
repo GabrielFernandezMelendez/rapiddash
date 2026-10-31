@@ -10,6 +10,7 @@ const AESTHETIC_KEY = 'rapiddash.aesthetic';
 const RIVALS_KEY = 'rapiddash.rivals';
 const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
 const VOLUMES_KEY = 'rapiddash.volumes';
+const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -53,5 +54,13 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setVolumes(volumes: Volumes): void {
     writeJson(VOLUMES_KEY, toVolumes(volumes));
+  }
+
+  getPhotoDeclined(code: string): boolean {
+    return readJson<Record<string, unknown>>(PHOTO_DECLINED_KEY)?.[code] === true;
+  }
+
+  setPhotoDeclined(code: string): void {
+    writeJson(PHOTO_DECLINED_KEY, { ...readJson<Record<string, unknown>>(PHOTO_DECLINED_KEY), [code]: true });
   }
 }

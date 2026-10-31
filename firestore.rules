@@ -116,6 +116,25 @@ service cloud.firestore {
           && request.resource.data.startedAt == request.time
           && request.resource.data.mapIds.size() == 3));
       allow delete: if false;
+
+      // Foto del cartel del líder (id = uid): solo la ven los miembros y cada uno sube o borra
+      // la suya. JPEG en data URL de como mucho 140 000 caracteres (core/domain/tournament/leader-photo.ts).
+      match /photos/{uid} {
+        function isMember() {
+          return request.auth.uid
+            in get(/databases/$(database)/documents/tournaments/$(code)).data.memberUids;
+        }
+        allow read: if signedIn() && isMember();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && isMember()
+          && request.resource.data.keys().hasOnly(['image', 'updatedAt'])
+          && request.resource.data.image is string
+          && request.resource.data.image.size() <= 140000
+          && request.resource.data.image.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
     }
 
     // Reserva de apodos únicos: el id es el apodo sin mayúsculas ni tildes.
