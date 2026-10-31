@@ -145,25 +145,26 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
       display: grid;
       gap: 10px;
     }
-    /* Medalla: roseta dorada y botón de oro; late y rebota cada 2,3 s */
+    /* Medalla: roseta dorada y botón de oro; late suavemente cada 5,5 s */
     .medal {
       position: relative;
       justify-self: start;
       display: grid;
       place-items: center;
-      width: 76px;
-      height: 76px;
-      margin-left: -10px;
+      width: 88px;
+      height: 88px;
+      margin-left: -16px;
+      margin-block: -6px;
       filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.45));
-      animation: medal 2.3s ease-in-out infinite;
+      animation: medal 5.5s ease-in-out infinite;
     }
-    /* Roseta de 16 puntas redondeadas que gira despacio en el sentido de las agujas del reloj */
+    /* Roseta de cinta plisada (22 pliegues con luz y sombra) que gira despacio en el sentido de las agujas del reloj */
     .medal::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff3b8'/%3E%3Cstop offset='.86' stop-color='%23f3c13a'/%3E%3Cstop offset='1' stop-color='%23d39d1a'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M50.00 9.00Q51.54 1.02 59.75 0.96Q67.32 4.16 65.69 12.12Q70.16 5.34 77.78 8.43Q83.54 14.28 78.99 21.01Q85.72 16.46 91.57 22.22Q94.66 29.84 87.88 34.31Q95.84 32.68 99.04 40.25Q98.98 48.46 91.00 50.00Q98.98 51.54 99.04 59.75Q95.84 67.32 87.88 65.69Q94.66 70.16 91.57 77.78Q85.72 83.54 78.99 78.99Q83.54 85.72 77.78 91.57Q70.16 94.66 65.69 87.88Q67.32 95.84 59.75 99.04Q51.54 98.98 50.00 91.00Q48.46 98.98 40.25 99.04Q32.68 95.84 34.31 87.88Q29.84 94.66 22.22 91.57Q16.46 85.72 21.01 78.99Q14.28 83.54 8.43 77.78Q5.34 70.16 12.12 65.69Q4.16 67.32 0.96 59.75Q1.02 51.54 9.00 50.00Q1.02 48.46 0.96 40.25Q4.16 32.68 12.12 34.31Q5.34 29.84 8.43 22.22Q14.28 16.46 21.01 21.01Q16.46 14.28 22.22 8.43Q29.84 5.34 34.31 12.12Q32.68 4.16 40.25 0.96Q48.46 1.02 50.00 9.00Z' fill='url%28%23g%29'/%3E%3C/svg%3E") center / contain no-repeat;
-      animation: medal-spin 10s linear infinite;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='l' cx='50' cy='50' r='50' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='.62' stop-color='%23ffe680'/%3E%3Cstop offset='1' stop-color='%23f0bc35'/%3E%3C/radialGradient%3E%3CradialGradient id='d' cx='50' cy='50' r='50' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='.62' stop-color='%23d9a21c'/%3E%3Cstop offset='1' stop-color='%23b5850f'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='%23c9931a'/%3E%3Cpath d='M50.00 50.00L50.00 6.00Q52.80 1.08 57.12 0.51Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L57.12 0.51Q61.10 2.27 62.40 7.78Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L62.40 7.78Q66.47 3.85 70.77 4.52Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L70.77 4.52Q74.09 7.33 73.79 12.98Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L73.79 12.98Q78.80 10.36 82.74 12.21Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L82.74 12.21Q85.14 15.85 83.25 21.19Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L83.25 21.19Q88.80 20.08 92.06 22.97Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L92.06 22.97Q93.34 27.13 90.02 31.72Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L90.02 31.72Q95.66 32.22 97.97 35.91Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L97.97 35.91Q98.02 40.27 93.55 43.74Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L93.55 43.74Q98.82 45.81 100.00 50.00Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L100.00 50.00Q98.82 54.19 93.55 56.26Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L93.55 56.26Q98.02 59.73 97.97 64.09Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L97.97 64.09Q95.66 67.78 90.02 68.28Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L90.02 68.28Q93.34 72.87 92.06 77.03Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L92.06 77.03Q88.80 79.92 83.25 78.81Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L83.25 78.81Q85.14 84.15 82.74 87.79Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L82.74 87.79Q78.80 89.64 73.79 87.02Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L73.79 87.02Q74.09 92.67 70.77 95.48Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L70.77 95.48Q66.47 96.15 62.40 92.22Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L62.40 92.22Q61.10 97.73 57.12 99.49Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L57.12 99.49Q52.80 98.92 50.00 94.00Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L50.00 94.00Q47.20 98.92 42.88 99.49Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L42.88 99.49Q38.90 97.73 37.60 92.22Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L37.60 92.22Q33.53 96.15 29.23 95.48Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L29.23 95.48Q25.91 92.67 26.21 87.02Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L26.21 87.02Q21.20 89.64 17.26 87.79Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L17.26 87.79Q14.86 84.15 16.75 78.81Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L16.75 78.81Q11.20 79.92 7.94 77.03Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L7.94 77.03Q6.66 72.87 9.98 68.28Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L9.98 68.28Q4.34 67.78 2.03 64.09Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L2.03 64.09Q1.98 59.73 6.45 56.26Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L6.45 56.26Q1.18 54.19 0.00 50.00Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L0.00 50.00Q1.18 45.81 6.45 43.74Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L6.45 43.74Q1.98 40.27 2.03 35.91Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L2.03 35.91Q4.34 32.22 9.98 31.72Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L9.98 31.72Q6.66 27.13 7.94 22.97Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L7.94 22.97Q11.20 20.08 16.75 21.19Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L16.75 21.19Q14.86 15.85 17.26 12.21Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L17.26 12.21Q21.20 10.36 26.21 12.98Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L26.21 12.98Q25.91 7.33 29.23 4.52Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L29.23 4.52Q33.53 3.85 37.60 7.78Z' fill='url%28%23d%29'/%3E%3Cpath d='M50.00 50.00L37.60 7.78Q38.90 2.27 42.88 0.51Z' fill='url%28%23l%29'/%3E%3Cpath d='M50.00 50.00L42.88 0.51Q47.20 1.08 50.00 6.00Z' fill='url%28%23d%29'/%3E%3C/svg%3E") center / contain no-repeat;
+      animation: medal-spin 18s linear infinite;
     }
     .camera {
       position: relative;
@@ -182,23 +183,18 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         inset 0 0 0 2px rgb(255 255 255 / 0.4),
         0 0 0 2px #a87908;
     }
+    /* Un latido suave cada 5,5 s: crece un poco, baja y se asienta (sin cansar la vista) */
     @keyframes medal {
       0%,
-      62%,
+      76%,
       100% {
         transform: translateY(0) scale(1);
       }
-      72% {
-        transform: translateY(-7px) scale(1.14);
+      85% {
+        transform: translateY(-4px) scale(1.08);
       }
-      80% {
-        transform: translateY(0) scale(0.94);
-      }
-      87% {
-        transform: translateY(-2px) scale(1.05);
-      }
-      94% {
-        transform: translateY(0) scale(0.99);
+      93% {
+        transform: translateY(0) scale(0.98);
       }
     }
     @keyframes medal-spin {
