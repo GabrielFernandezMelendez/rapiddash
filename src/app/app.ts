@@ -1,5 +1,9 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+import { AudioPort } from './core/application/ports/out/audio.port';
+import { SettingsRepository } from './core/application/ports/out/settings.repository';
+import { AestheticService } from './shared/aesthetic/aesthetic.service';
 import { AccountService } from './shared/account/account.service';
 
 /**
@@ -52,6 +56,18 @@ export class App {
       const has = account.profile() !== null;
       if (had && !has && !router.url.startsWith('/welcome')) void router.navigate(['/welcome']);
       had = has;
+    });
+
+    // Música de los menús en todas las pantallas menos la carrera (que tiene la suya)
+    const audio = inject(AudioPort);
+    const aesthetic = inject(AestheticService);
+    audio.setVolumes(inject(SettingsRepository).getVolumes());
+    const inRace = signal(true);
+    router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      inRace.set(e.urlAfterRedirects.startsWith('/race'));
+    });
+    effect(() => {
+      if (!inRace()) audio.playMenu(aesthetic.aesthetic());
     });
   }
 }

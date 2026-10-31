@@ -67,10 +67,7 @@ export class HomePage implements OnInit {
       const aesthetic = this.aesthetic.aesthetic();
       void this.backdrop.attach(this.backdropHost().nativeElement, aesthetic);
     });
-    inject(DestroyRef).onDestroy(() => {
-      this.backdrop.dispose();
-      this.audio.dispose();
-    });
+    inject(DestroyRef).onDestroy(() => this.backdrop.dispose());
   }
 
   ngOnInit(): void {
@@ -83,8 +80,9 @@ export class HomePage implements OnInit {
     this.audio.setVolumes(volumes);
   }
 
+  /** La música del menú ya suena con el volumen nuevo; el motor necesita un ejemplo. */
   protected previewSound(channel: VolumeChannel): void {
-    this.audio.preview(channel, this.volumes(), this.aesthetic.aesthetic());
+    if (channel === 'effects') this.audio.preview(channel, this.volumes(), this.aesthetic.aesthetic());
   }
 
   protected openTutorial(): void {
