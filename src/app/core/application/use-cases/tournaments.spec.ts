@@ -4,7 +4,7 @@ import { Profile } from '../../domain/profile/profile';
 import { joinProblem, Tournament, TOURNAMENT_DAY_MS } from '../../domain/tournament/tournament';
 import { CloudRecordRepository } from '../ports/out/cloud-record.repository';
 import { JoinResult, TournamentRepository } from '../ports/out/tournament.repository';
-import { Tournaments } from './tournaments';
+import { Tournaments, withFreshIdentity } from './tournaments';
 
 class MemoryTournaments extends TournamentRepository {
   data = new Map<string, Tournament>();
@@ -148,5 +148,32 @@ describe('Tournaments', () => {
       ['ana', 15],
     ]);
     expect(board.dayWinners).toEqual(['ana', null]);
+  });
+
+  it('si un piloto cambia apodo o bandera, la clasificación usa los de su récord más reciente', () => {
+    const t = {
+      code: 'ABCDEF',
+      name: 'Liga',
+      ownerUid: 'ana',
+      members: [
+        { uid: 'ana', nickname: 'ana', country: 'ES' },
+        { uid: 'gabo', nickname: 'gabo', country: 'ES' },
+      ],
+      startedAt: 0,
+      mapIds: [],
+    } as Tournament;
+    const record = (day: number, country: 'AR' | 'MX'): CloudRecord => ({
+      mapId: `t-ABCDEF-d${day}`,
+      uid: 'gabo',
+      nickname: 'gabo',
+      country,
+      time: 40,
+      physicsVersion: PHYSICS_VERSION,
+    });
+    const fresh = withFreshIdentity(t, [record(0, 'AR'), record(1, 'MX')]);
+    expect(fresh.members.map((m) => [m.uid, m.country])).toEqual([
+      ['ana', 'ES'],
+      ['gabo', 'MX'],
+    ]);
   });
 });
