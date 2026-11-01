@@ -178,7 +178,7 @@ export class RacePage {
   /** «Repetir»: si hay siguiente rival, la próxima carrera es contra él. */
   protected async retry(): Promise<void> {
     if (this.tournamentCode) {
-      // En el torneo se corre sin límite y sin rival: el fantasma es mi mejor vuelta del día
+      // En el torneo se corre sin límite y contra el mismo rival
       this.standing.set(null);
       this.session?.restart();
       return;
@@ -258,9 +258,8 @@ export class RacePage {
     // Los carteles se rellenan cuando llegan los datos, sin hacer esperar a la carrera
     void this.loadBillboards();
     this.audio.setVolumes(this.settings.getVolumes());
-    // En el torneo no hay rival (el fantasma es mi mejor vuelta del día); en el mapa del día, el
-    // elegido en su pantalla, del ranking de hoy
-    const pick = this.tournamentCode ? null : this.ranking.picked(this.boardId);
+    // Rival elegido antes de correr: en el mapa del día y en el torneo, del ranking de ese día
+    const pick = this.ranking.picked(this.boardId);
     this.session = new RaceSession(map, track, {
       renderer: this.renderer,
       input: this.controls,
