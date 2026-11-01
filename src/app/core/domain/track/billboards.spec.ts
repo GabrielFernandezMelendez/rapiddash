@@ -41,11 +41,12 @@ describe('carteles de líderes', () => {
     }
   });
 
-  it('los cuatro carteles con foto van lejos, fuera de la carretera y separados', () => {
+  it('los carteles con foto van lejos, fuera de la carretera y separados', () => {
     for (const map of CIRCUIT_MAPS) {
       const track = trackOf(map).circuit!.lapTrack;
       const spots = distantPhotoSpots(track);
-      expect(spots.length, map.id).toBe(4);
+      // Cuatro, menos el que queda justo enfrente de la salida (si lo hay)
+      expect(spots.length, map.id).toBeGreaterThanOrEqual(3);
       const road = roadPoints(track);
       for (const s of spots) {
         const nearest = Math.min(...road.map((p) => Math.hypot(p.x - s.x, p.z - s.z)));
