@@ -191,6 +191,90 @@ export function photoSpots(track: Track, closed = false): PhotoSpot[] {
     .map(({ p }) => ({ leg: p.leg, distance: p.distance }));
 }
 
+/** Cartel lejano con la foto: fuera de la carretera, de frente al final de una recta. */
+export interface DistantPhotoSpot {
+  readonly x: number;
+  readonly z: number;
+  /** Rumbo de la recta que mira al cartel (el cartel queda de frente al que llega). */
+  readonly heading: number;
+}
+
+/** Carteles lejanos: rectas mínimas, distancia tras el final de la recta y hueco con la carretera. */
+export const DISTANT_PHOTO = {
+  minRun: 20,
+  minAhead: 45,
+  maxAhead: 260,
+  /** Desplazamientos laterales que se prueban si justo enfrente está la carretera. */
+  lateral: [0, 20, -20, 40, -40, 60, -60],
+  /** Ángulo máximo con la recta visto desde su mitad: más, y se sale de la pantalla. */
+  maxAngle: (13 * Math.PI) / 180,
+  /** Distancia mínima del cartel al eje de cualquier tramo (el cartel mide 14 m de ancho). */
+  roadClearance: 22,
+  /** Distancia mínima entre los dos carteles lejanos. */
+  apart: 80,
+  /** Separación mínima, vista desde la recta, con los carteles sobre la carretera (que no se tapen). */
+  minSeparation: (10 * Math.PI) / 180,
+} as const;
+
+/**
+ * Dos carteles lejanos con la foto: al fondo de las dos rectas más largas, en la prolongación de
+ * la recta (se ven de frente todo el rato que se va por ella), lo más cerca posible sin pisar la
+ * carretera ni otro tramo, y sin quedar detrás de los carteles de `avoid` (los de sobre la carretera).
+ */
+export function distantPhotoSpots(
+  track: Track,
+  avoid: readonly { x: number; z: number }[] = [],
+): DistantPhotoSpot[] {
+  const road = roadPoints(track);
+  const runs = track.legs
+    .flatMap((leg) => straightRuns(leg).map((r) => ({ leg, ...r })))
+    .filter((r) => r.run >= DISTANT_PHOTO.minRun)
+    .sort((a, b) => b.run - a.run);
+  const spots: DistantPhotoSpot[] = [];
+  for (const r of runs) {
+    if (spots.length === 2) break;
+    const end = track.pointAt(r.leg.index, r.end);
+    const f = forward(end.heading);
+    const spot = distantSpotAfter(end.x, end.z, f, r.run, road, spots, avoid);
+    if (spot) spots.push({ ...spot, heading: end.heading });
+  }
+  return spots;
+}
+
+/** El sitio más cercano tras el final de la recta que se vea desde ella y no pise la carretera. */
+function distantSpotAfter(
+  ex: number,
+  ez: number,
+  f: { x: number; z: number },
+  run: number,
+  road: readonly RoadPoint[],
+  taken: readonly DistantPhotoSpot[],
+  avoid: readonly { x: number; z: number }[],
+): { x: number; z: number } | null {
+  // Desde la mitad de la recta: lo que se ve delante
+  const mx = ex - f.x * (run / 2);
+  const mz = ez - f.z * (run / 2);
+  const hidden = (x: number, z: number) =>
+    avoid.some((o) => {
+      const ahead = (o.x - mx) * f.x + (o.z - mz) * f.z;
+      return ahead > 0 && angleBetween(x - mx, z - mz, o.x - mx, o.z - mz) < DISTANT_PHOTO.minSeparation;
+    });
+  for (let ahead = DISTANT_PHOTO.minAhead; ahead <= DISTANT_PHOTO.maxAhead; ahead += 5) {
+    for (const side of DISTANT_PHOTO.lateral) {
+      // Visto desde la mitad de la recta, que no se salga por el lado de la pantalla
+      if (Math.atan2(Math.abs(side), ahead + run / 2) > DISTANT_PHOTO.maxAngle) continue;
+      // Derecha de la recta: (cos h, sin h) = (-f.z, f.x)
+      const x = ex + f.x * ahead - f.z * side;
+      const z = ez + f.z * ahead + f.x * side;
+      if (road.some((p) => Math.hypot(p.x - x, p.z - z) < DISTANT_PHOTO.roadClearance)) continue;
+      if (taken.some((o) => Math.hypot(o.x - x, o.z - z) < DISTANT_PHOTO.apart)) continue;
+      if (hidden(x, z)) continue;
+      return { x, z };
+    }
+  }
+  return null;
+}
+
 /** Rectas (tramos sin curvatura seguidos) de un tramo: dónde acaban y cuánto miden. */
 export function straightRuns(leg: Leg): { end: number; run: number }[] {
   const s = leg.samples;

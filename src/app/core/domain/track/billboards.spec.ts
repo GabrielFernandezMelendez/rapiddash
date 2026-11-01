@@ -4,6 +4,8 @@ import { arc, left, right, straight } from './track-segment';
 import { Track } from './track';
 import {
   billboardLegs,
+  DISTANT_PHOTO,
+  distantPhotoSpots,
   MAX_BILLBOARDS,
   photoSpot,
   photoSpots,
@@ -77,6 +79,22 @@ describe('carteles de líderes', () => {
         expect(photoViewMeters(points, i, true), map.id).toBeGreaterThanOrEqual(60);
         if (s.leg === 0) expect(s.distance, map.id).toBeGreaterThan(60);
       }
+    }
+  });
+
+  it('los dos carteles lejanos van al fondo de una recta, fuera de la carretera y separados', () => {
+    for (const map of CIRCUIT_MAPS) {
+      const track = trackOf(map).circuit!.lapTrack;
+      const overRoad = photoSpots(track, true).map((s) => track.pointAt(s.leg, s.distance));
+      const spots = distantPhotoSpots(track, overRoad);
+      expect(spots.length, map.id).toBe(2);
+      const road = roadPoints(track);
+      for (const s of spots) {
+        const nearest = Math.min(...road.map((p) => Math.hypot(p.x - s.x, p.z - s.z)));
+        expect(nearest, map.id).toBeGreaterThanOrEqual(DISTANT_PHOTO.roadClearance);
+      }
+      const [a, b] = spots;
+      expect(Math.hypot(a.x - b.x, a.z - b.z), map.id).toBeGreaterThanOrEqual(DISTANT_PHOTO.apart);
     }
   });
 });

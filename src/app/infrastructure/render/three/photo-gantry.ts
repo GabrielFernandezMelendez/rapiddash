@@ -14,8 +14,7 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { flagEmoji } from '../../../core/domain/profile/country';
-import { LeaderPhotoContent, PHOTO_VIEW, PhotoSpot } from '../../../core/domain/track/billboards';
-import { Track } from '../../../core/domain/track/track';
+import { LeaderPhotoContent, PHOTO_VIEW } from '../../../core/domain/track/billboards';
 import { BillboardStyle } from './billboards';
 
 const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
@@ -26,6 +25,9 @@ const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-s
 const W = 7;
 const H = 8;
 const BOTTOM = PHOTO_VIEW.centerHeight - H / 2;
+/** Cartel lejano: el doble de grande y sobre dos postes, con el borde de abajo a esta altura. */
+const DISTANT_SCALE = 2;
+const DISTANT_BOTTOM = 4;
 const PX = 560;
 const PH = 640;
 /** Bombillas del borde LED (estética futurista) y vueltas de color por segundo. */
@@ -33,7 +35,19 @@ const LEDS_PER_SIDE = { x: 14, y: 16 };
 const LED_SPEED = 0.25;
 
 /**
- * Cartel con la foto del líder del torneo, colgado sobre la carretera donde más tiempo se ve: una línea
+ * Dónde va un cartel con la foto. Con `roadHalf` cuelga de una viga sobre la carretera (mitad
+ * del ancho de la carretera ahí); sin él es un cartel lejano, grande y sobre dos postes, fuera de
+ * la carretera. `heading` es el rumbo de quien llega: el cartel le queda de frente.
+ */
+export interface PhotoPlacement {
+  readonly x: number;
+  readonly z: number;
+  readonly heading: number;
+  readonly roadHalf: number | null;
+}
+
+/**
+ * Cartel con la foto del líder del torneo, sobre la carretera o a lo lejos: una línea
  * arriba con bandera, apodo y puntos, y la foto grande debajo. En la estética futurista lleva un
  * borde de LEDs que va cambiando de color.
  */
@@ -47,10 +61,11 @@ export class PhotoGantry {
   private glow: MeshBasicMaterial | null = null;
   private time = 0;
   private readonly color = new Color();
+  /** El panel (foto, trasera, brillo y LEDs) con su centro en el origen. */
+  private readonly board = new Group();
 
   constructor(
-    track: Track,
-    spot: PhotoSpot,
+    place: PhotoPlacement,
     private readonly style: BillboardStyle,
     ledBorder: boolean,
   ) {
@@ -59,18 +74,21 @@ export class PhotoGantry {
     this.texture.colorSpace = SRGBColorSpace;
     this.texture.minFilter = LinearFilter;
 
-    const p = track.pointAt(spot.leg, spot.distance);
-    const half = track.halfWidthAt(spot.leg, spot.distance);
-    this.group.position.set(p.x, 0, p.z);
-    this.group.rotation.y = -p.heading;
+    this.group.position.set(place.x, 0, place.z);
+    this.group.rotation.y = -place.heading;
     this.group.visible = false;
+    const distant = place.roadHalf === null;
 
-    const face = new Mesh(new PlaneGeometry(W, H), new MeshBasicMaterial({ map: this.texture }));
-    face.position.y = BOTTOM + H / 2;
+    // Lejos, sin niebla: se ve nítido desde el principio de la recta
+    const face = new Mesh(
+      new PlaneGeometry(W, H),
+      new MeshBasicMaterial({ map: this.texture, fog: !distant }),
+    );
     const back = new Mesh(new PlaneGeometry(W, H), new MeshBasicMaterial({ color: style.post }));
-    back.position.set(0, BOTTOM + H / 2, -0.05);
+    back.position.z = -0.05;
     back.rotation.y = Math.PI;
-    this.group.add(face, back);
+    this.board.add(face, back);
+    this.group.add(this.board);
 
     if (style.glow) {
       this.glow = new MeshBasicMaterial({
@@ -82,21 +100,35 @@ export class PhotoGantry {
         side: DoubleSide,
       });
       const glow = new Mesh(new PlaneGeometry(W + 1, H + 1), this.glow);
-      glow.position.set(0, BOTTOM + H / 2, -0.08);
-      this.group.add(glow);
+      glow.position.z = -0.08;
+      this.board.add(glow);
     }
     if (ledBorder) this.buildLeds();
 
-    // Viga y dos postes al borde de la carretera
     const postMat = new MeshBasicMaterial({ color: style.post });
-    const top = BOTTOM + H * 0.75;
-    const beam = new Mesh(new BoxGeometry(half * 2 + 1, 0.35, 0.35), postMat);
-    beam.position.set(0, top, -0.3);
-    this.group.add(beam);
-    for (const side of [-1, 1]) {
-      const post = new Mesh(new BoxGeometry(0.4, top, 0.4), postMat);
-      post.position.set(side * (half + 0.5), top / 2, -0.3);
-      this.group.add(post);
+    if (place.roadHalf === null) {
+      // Cartel lejano: el doble de grande, sobre dos postes
+      this.board.scale.setScalar(DISTANT_SCALE);
+      this.board.position.y = DISTANT_BOTTOM + (H * DISTANT_SCALE) / 2;
+      const top = DISTANT_BOTTOM + H * DISTANT_SCALE * 0.5;
+      for (const side of [-1, 1]) {
+        const post = new Mesh(new BoxGeometry(0.8, top, 0.8), postMat);
+        post.position.set(side * W * DISTANT_SCALE * 0.3, top / 2, -0.6);
+        this.group.add(post);
+      }
+    } else {
+      // Viga y dos postes al borde de la carretera
+      this.board.position.y = BOTTOM + H / 2;
+      const half = place.roadHalf;
+      const top = BOTTOM + H * 0.75;
+      const beam = new Mesh(new BoxGeometry(half * 2 + 1, 0.35, 0.35), postMat);
+      beam.position.set(0, top, -0.3);
+      this.group.add(beam);
+      for (const side of [-1, 1]) {
+        const post = new Mesh(new BoxGeometry(0.4, top, 0.4), postMat);
+        post.position.set(side * (half + 0.5), top / 2, -0.3);
+        this.group.add(post);
+      }
     }
 
     const fonts = [style.nameFont, style.valueFont].map((f) => f.replace('{px}', '40'));
@@ -155,13 +187,13 @@ export class PhotoGantry {
     );
     const o = new Object3D();
     spots.forEach(([x, y], i) => {
-      o.position.set(x, BOTTOM + H / 2 + y, 0.03);
+      o.position.set(x, y, 0.03);
       o.updateMatrix();
       leds.setMatrixAt(i, o.matrix);
       leds.setColorAt(i, this.color.setHSL(i / spots.length, 1, 0.55));
     });
     this.leds = leds;
-    this.group.add(leds);
+    this.board.add(leds);
   }
 
   private draw(): void {

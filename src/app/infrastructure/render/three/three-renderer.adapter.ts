@@ -15,7 +15,12 @@ import {
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
 import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
-import { BillboardContent, LeaderPhotoContent, photoSpots } from '../../../core/domain/track/billboards';
+import {
+  BillboardContent,
+  distantPhotoSpots,
+  LeaderPhotoContent,
+  photoSpots,
+} from '../../../core/domain/track/billboards';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
@@ -94,16 +99,17 @@ export class ThreeRendererAdapter extends RendererPort {
     else this.buildClassic(drawn, theme, circuit);
     this.billboards = new LeaderBillboards(drawn, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
     this.scene.add(this.billboards.group);
-    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): dos,
-    // donde más tiempo los ve la cámara (en un circuito, mirando también el final de la vuelta)
-    this.photoGantries = photoSpots(drawn, circuit).map(
-      (spot) =>
-        new PhotoGantry(
-          drawn,
-          spot,
-          isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
-          aesthetic === 'futurist',
-        ),
+    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): dos
+    // sobre la carretera, donde más tiempo los ve la cámara (en un circuito, mirando también el
+    // final de la vuelta), y dos lejanos, grandes, al fondo de las rectas más largas
+    const overRoad = photoSpots(drawn, circuit).map((spot) => ({
+      ...drawn.pointAt(spot.leg, spot.distance),
+      roadHalf: drawn.halfWidthAt(spot.leg, spot.distance),
+    }));
+    const distant = distantPhotoSpots(drawn, overRoad).map((spot) => ({ ...spot, roadHalf: null }));
+    const photoStyle = isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD;
+    this.photoGantries = [...overRoad, ...distant].map(
+      (place) => new PhotoGantry(place, photoStyle, aesthetic === 'futurist'),
     );
     for (const g of this.photoGantries) this.scene.add(g.group);
     const vehicle = VEHICLES[aesthetic];
