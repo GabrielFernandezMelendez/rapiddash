@@ -5,7 +5,7 @@ import { TournamentPhotoRepository } from '../../core/application/ports/out/tour
 import { isValidPhoto } from '../../core/domain/tournament/leader-photo';
 import { JoinResult, TournamentRepository } from '../../core/application/ports/out/tournament.repository';
 import { TournamentBoard, Tournaments } from '../../core/application/use-cases/tournaments';
-import { Tournament } from '../../core/domain/tournament/tournament';
+import { Tournament, TournamentMember } from '../../core/domain/tournament/tournament';
 import { AccountService } from './account.service';
 
 /** Torneos para las pantallas, con el piloto de la sesión. */
@@ -30,8 +30,9 @@ export class TournamentService {
     return this.tournaments.create(name, this.requireProfile());
   }
 
-  find(code: string): Promise<Tournament | null> {
-    return this.tournaments.find(code);
+  async find(code: string): Promise<Tournament | null> {
+    const t = await this.tournaments.find(code);
+    return t && { ...t, members: t.members.map((m) => this.fresh(m)) };
   }
 
   join(code: string): Promise<JoinResult> {
@@ -52,7 +53,8 @@ export class TournamentService {
   }
 
   async board(t: Tournament): Promise<TournamentBoard> {
-    const board = await this.tournaments.board(t);
+    const raw = await this.tournaments.board(t);
+    const board = { ...raw, rows: raw.rows.map((r) => ({ ...r, member: this.fresh(r.member) })) };
     this.boards.set(t.code, board);
     return board;
   }
@@ -99,6 +101,12 @@ export class TournamentService {
   /** Enlace para invitar: abre la pantalla de unirse con el código ya puesto. */
   inviteLink(code: string): string {
     return `${location.origin}/t/${code}`;
+  }
+
+  /** Mi ficha con el apodo y el país de mi perfil (el torneo guarda los de cuando me uní). */
+  private fresh<M extends TournamentMember>(m: M): M {
+    const me = this.account.profile();
+    return me && m.uid === me.uid ? { ...m, nickname: me.nickname, country: me.country } : m;
   }
 
   private requireProfile() {

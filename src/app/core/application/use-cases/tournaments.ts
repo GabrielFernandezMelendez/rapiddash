@@ -1,4 +1,5 @@
 import { Profile } from '../../domain/profile/profile';
+import { CloudRecord } from '../../domain/race/cloud-record';
 import { isCurrentPhysics } from '../../domain/race/physics-version';
 import {
   cleanName,
@@ -94,18 +95,34 @@ export class Tournaments {
     const today = dayIndex(t, this.now());
     if (today === null) return { rows: standings(t, []), dayWinners: [] };
     const days = Math.min(today + 1, TOURNAMENT_DAYS);
-    const dayTimes: DayTime[][] = await Promise.all(
+    const dayRecords = await Promise.all(
       Array.from({ length: days }, (_, day) =>
         this.records
           .top(dayBoardId(t.code, day), TOURNAMENT_MAX_MEMBERS * 3)
-          .then((rs) => rs.filter(isCurrentPhysics).map((r) => ({ uid: r.uid, time: r.time })))
+          .then((rs) => rs.filter(isCurrentPhysics))
           .catch(() => []),
       ),
     );
+    const dayTimes: DayTime[][] = dayRecords.map((rs) => rs.map((r) => ({ uid: r.uid, time: r.time })));
     const members = new Set(t.members.map((m) => m.uid));
     return {
-      rows: standings(t, dayTimes),
+      rows: standings(withFreshIdentity(t, dayRecords.flat()), dayTimes),
       dayWinners: dayTimes.map((times, day) => (day < today ? winnerOf(times, members) : null)),
     };
   }
+}
+
+/**
+ * El torneo guarda el apodo y el país de cada piloto al unirse; si después los cambia, sus
+ * récords (que se actualizan con el perfil) llevan los nuevos. Gana el del día más reciente.
+ */
+export function withFreshIdentity(t: Tournament, records: readonly CloudRecord[]): Tournament {
+  const latest = new Map(records.map((r) => [r.uid, r]));
+  return {
+    ...t,
+    members: t.members.map((m) => {
+      const r = latest.get(m.uid);
+      return r ? { ...m, nickname: r.nickname, country: r.country } : m;
+    }),
+  };
 }

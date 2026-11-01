@@ -4,7 +4,12 @@ import { CloudRecordRepository } from '../../core/application/ports/out/cloud-re
 import { CloudRecords } from '../../core/application/use-cases/cloud-records';
 import { RecordSink } from '../../core/application/use-cases/race-session';
 import { BestRun } from '../../core/domain/race/ghost';
+import { TournamentRepository } from '../../core/application/ports/out/tournament.repository';
+import { dailyBoardId, dailyKey } from '../../core/domain/daily/daily-map';
+import { dayBoardId, TOURNAMENT_DAYS } from '../../core/domain/tournament/tournament';
 import { AccountService } from './account.service';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Publica los récords del piloto: al hacer uno nuevo y, una vez por sesión, los locales que
@@ -13,6 +18,7 @@ import { AccountService } from './account.service';
 @Injectable({ providedIn: 'root' })
 export class CloudRecordsService implements RecordSink {
   private readonly account = inject(AccountService);
+  private readonly tournaments = inject(TournamentRepository);
   private readonly records = new CloudRecords(inject(CloudRecordRepository), inject(BestRunRepository));
   private syncedFor: string | null = null;
   /** Apodo y país con los que se subieron los récords de este piloto. */
@@ -46,14 +52,25 @@ export class CloudRecordsService implements RecordSink {
     });
   }
 
-  private async updateIdentity(): Promise<void> {
+  /**
+   * Rankings donde puedo tener récord: los mapas, el mapa del día de hoy y de ayer y los días de
+   * mis torneos (todos llevan mi apodo y mi bandera).
+   */
+  private async updateIdentity(withMaps = true): Promise<void> {
     const profile = this.account.profile();
     if (!profile) return;
     const { ALL_MAPS } = await import('../../core/domain/track/race-map');
-    await this.records.updateIdentity(
-      profile,
-      ALL_MAPS.map((m) => m.id),
-    );
+    const now = Date.now();
+    const daily = [now, now - DAY_MS].map((ms) => dailyBoardId(dailyKey(new Date(ms))));
+    const mine = await this.tournaments.mine(profile.uid).catch(() => []);
+    const tournamentDays = mine
+      .filter((t) => t.startedAt !== null)
+      .flatMap((t) => Array.from({ length: TOURNAMENT_DAYS }, (_, day) => dayBoardId(t.code, day)));
+    await this.records.updateIdentity(profile, [
+      ...(withMaps ? ALL_MAPS.map((m) => m.id) : []),
+      ...daily,
+      ...tournamentDays,
+    ]);
   }
 
   private async sync(): Promise<void> {
@@ -65,5 +82,8 @@ export class CloudRecordsService implements RecordSink {
       profile,
       ALL_MAPS.map((m) => m.id),
     );
+    // Los rankings del día y de los torneos, por si el apodo o la bandera cambiaron en otra sesión
+    // (o antes de que existiera esto); los de los mapas ya se actualizan al cambiar el perfil
+    await this.updateIdentity(false);
   }
 }
