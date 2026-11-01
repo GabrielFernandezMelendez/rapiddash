@@ -14,15 +14,18 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { flagEmoji } from '../../../core/domain/profile/country';
-import { LeaderPhotoContent, photoSpot } from '../../../core/domain/track/billboards';
+import { LeaderPhotoContent, PHOTO_VIEW, PhotoSpot } from '../../../core/domain/track/billboards';
 import { Track } from '../../../core/domain/track/track';
 import { BillboardStyle } from './billboards';
 
 const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
-/** Panel en alto (m): por encima de la cámara para no tapar las curvas. */
+/**
+ * Panel en alto (m): el borde de abajo poco por debajo de la cámara, para que se vea entero de
+ * lejos sin tapar la carretera de delante. El centro es el de PHOTO_VIEW (donde se mide si se ve).
+ */
 const W = 7;
 const H = 8;
-const BOTTOM = 10.5;
+const BOTTOM = PHOTO_VIEW.centerHeight - H / 2;
 const PX = 560;
 const PH = 640;
 /** Bombillas del borde LED (estética futurista) y vueltas de color por segundo. */
@@ -30,7 +33,7 @@ const LEDS_PER_SIDE = { x: 14, y: 16 };
 const LED_SPEED = 0.25;
 
 /**
- * Cartel con la foto del líder del torneo, colgado sobre la recta más larga del mapa: una línea
+ * Cartel con la foto del líder del torneo, colgado sobre la carretera donde más tiempo se ve: una línea
  * arriba con bandera, apodo y puntos, y la foto grande debajo. En la estética futurista lleva un
  * borde de LEDs que va cambiando de color.
  */
@@ -45,13 +48,17 @@ export class PhotoGantry {
   private time = 0;
   private readonly color = new Color();
 
-  constructor(track: Track, private readonly style: BillboardStyle, ledBorder: boolean) {
+  constructor(
+    track: Track,
+    spot: PhotoSpot,
+    private readonly style: BillboardStyle,
+    ledBorder: boolean,
+  ) {
     this.canvas.width = PX;
     this.canvas.height = PH;
     this.texture.colorSpace = SRGBColorSpace;
     this.texture.minFilter = LinearFilter;
 
-    const spot = photoSpot(track);
     const p = track.pointAt(spot.leg, spot.distance);
     const half = track.halfWidthAt(spot.leg, spot.distance);
     this.group.position.set(p.x, 0, p.z);
@@ -99,6 +106,8 @@ export class PhotoGantry {
   }
 
   set(content: LeaderPhotoContent | null): void {
+    // Lo mismo otra vez (la caché y luego la red): no se vuelve a cargar la foto
+    if (content && this.content && sameContent(content, this.content)) return;
     this.content = content;
     this.group.visible = !!content;
     this.image = null;
@@ -208,4 +217,13 @@ export class PhotoGantry {
     c.strokeRect(x, y, side, side);
     this.texture.needsUpdate = true;
   }
+}
+
+function sameContent(a: LeaderPhotoContent, b: LeaderPhotoContent): boolean {
+  return (
+    a.photo === b.photo &&
+    a.leader.nickname === b.leader.nickname &&
+    a.leader.country === b.leader.country &&
+    a.leader.value === b.leader.value
+  );
 }

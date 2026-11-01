@@ -15,7 +15,7 @@ import {
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
 import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
-import { BillboardContent, LeaderPhotoContent } from '../../../core/domain/track/billboards';
+import { BillboardContent, LeaderPhotoContent, photoSpots } from '../../../core/domain/track/billboards';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
@@ -72,7 +72,7 @@ export class ThreeRendererAdapter extends RendererPort {
   /** Sol y montañas synthwave: siguen a la cámara (null en la estética clásica). */
   private sky: SynthSky | null = null;
   private billboards: LeaderBillboards | null = null;
-  private photoGantry: PhotoGantry | null = null;
+  private photoGantries: PhotoGantry[] = [];
 
   attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
     this.dispose();
@@ -94,13 +94,18 @@ export class ThreeRendererAdapter extends RendererPort {
     else this.buildClassic(drawn, theme, circuit);
     this.billboards = new LeaderBillboards(drawn, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
     this.scene.add(this.billboards.group);
-    // Cartel con la foto del líder del torneo (borde LED solo en la estética futurista)
-    this.photoGantry = new PhotoGantry(
-      drawn,
-      isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
-      aesthetic === 'futurist',
+    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): dos,
+    // donde más tiempo los ve la cámara (en un circuito, mirando también el final de la vuelta)
+    this.photoGantries = photoSpots(drawn, circuit).map(
+      (spot) =>
+        new PhotoGantry(
+          drawn,
+          spot,
+          isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
+          aesthetic === 'futurist',
+        ),
     );
-    this.scene.add(this.photoGantry.group);
+    for (const g of this.photoGantries) this.scene.add(g.group);
     const vehicle = VEHICLES[aesthetic];
     this.car = vehicle(false);
     this.ghost = vehicle(true);
@@ -159,7 +164,7 @@ export class ThreeRendererAdapter extends RendererPort {
     if (!track || !renderer) return;
 
     this.place(this.car, frame.car);
-    this.photoGantry?.update(dt);
+    for (const g of this.photoGantries) g.update(dt);
     this.carBounce.apply(this.car, dt, frame.car.leg, frame.car.lateral);
     this.ghost.visible = frame.ghost !== null;
     if (frame.ghost) {
@@ -222,12 +227,12 @@ export class ThreeRendererAdapter extends RendererPort {
   }
 
   setLeaderPhoto(content: LeaderPhotoContent | null): void {
-    this.photoGantry?.set(content);
+    for (const g of this.photoGantries) g.set(content);
   }
 
   dispose(): void {
     this.billboards = null;
-    this.photoGantry = null;
+    this.photoGantries = [];
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.scene.traverse((obj) => {

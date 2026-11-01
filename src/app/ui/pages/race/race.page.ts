@@ -20,6 +20,7 @@ import { InputPort } from '../../../core/application/ports/out/input.port';
 import { RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { RaceSession, RaceViewState } from '../../../core/application/use-cases/race-session';
 import { Standing } from '../../../core/application/use-cases/ranking-board';
+import { TournamentBoard } from '../../../core/application/use-cases/tournaments';
 import { RankedRecord } from '../../../core/domain/race/ranking';
 import { BestRun } from '../../../core/domain/race/ghost';
 import { findMap, trackOf } from '../../../core/domain/track/race-map';
@@ -310,15 +311,10 @@ export class RacePage {
     try {
       if (this.tournament) {
         const t = this.tournament;
-        const board = await this.tournaments.board(t);
-        const content = tournamentBillboards(t, board.rows, this.i18n);
-        this.renderer.setBillboards(content);
-        // Cartel con la foto del líder (o su bandera si no ha puesto foto)
-        const leader = leaderOf(board.rows);
-        if (leader && content.leader) {
-          const photo = await this.tournaments.photoOf(t.code, leader.member.uid);
-          this.renderer.setLeaderPhoto({ leader: content.leader, photo });
-        }
+        // Con lo que ya trajo la pantalla del torneo, los carteles salen desde el semáforo
+        const cached = this.tournaments.cachedBoard(t.code);
+        if (cached) await this.showTournamentBoard(t, cached, true);
+        await this.showTournamentBoard(t, await this.tournaments.board(t), false);
       } else {
         const view = await this.ranking.load(this.boardId);
         // Sin red no se sabe quién va primero: mejor no poner carteles que decir algo falso
@@ -328,6 +324,24 @@ export class RacePage {
     } catch {
       // Los carteles son decoración: si falla la red, la carrera sigue igual
     }
+  }
+
+  /**
+   * Carteles del torneo y el de la foto del líder (o su bandera si no ha puesto foto). Con
+   * `cachedOnly` no espera a la red: usa la foto ya descargada (o la bandera mientras llega).
+   */
+  private async showTournamentBoard(t: Tournament, board: TournamentBoard, cachedOnly: boolean): Promise<void> {
+    const content = tournamentBillboards(t, board.rows, this.i18n);
+    this.renderer.setBillboards(content);
+    const leader = leaderOf(board.rows);
+    if (!leader || !content.leader) return;
+    const cachedPhoto = this.tournaments.cachedPhoto(t.code, leader.member.uid);
+    if (cachedPhoto !== undefined || cachedOnly) {
+      this.renderer.setLeaderPhoto({ leader: content.leader, photo: cachedPhoto ?? null });
+    }
+    if (cachedOnly) return;
+    const photo = await this.tournaments.photoOf(t.code, leader.member.uid);
+    this.renderer.setLeaderPhoto({ leader: content.leader, photo });
   }
 
   /** Descarga el fantasma del rival (máximo 2,5 s); si no llega, se corre contra mi mejor vuelta. */

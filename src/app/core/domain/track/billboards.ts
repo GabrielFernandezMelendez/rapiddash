@@ -90,6 +90,107 @@ export function photoSpot(track: Track): PhotoSpot {
   return best ?? { leg: 0, distance: START_LINE + PHOTO_CLEAR_AFTER_START };
 }
 
+/** Cámara de la carrera y altura del centro del cartel con foto (los del render en 3D). */
+export const PHOTO_VIEW = {
+  cameraBack: 12.5,
+  cameraHeight: 9.2,
+  /** Mitad del ángulo horizontal que se ve en vertical (con margen para que no quede al borde). */
+  halfAngle: (16 * Math.PI) / 180,
+  /** Altura del centro del cartel. */
+  centerHeight: 12,
+  minDistance: 20,
+  maxDistance: 150,
+  /** Ángulo máximo entre la carretera en el cartel y la mirada: más, y se ve de canto. */
+  facing: (75 * Math.PI) / 180,
+} as const;
+
+/** Distancia mínima por la carretera entre los dos carteles con foto. */
+const PHOTO_SPOTS_GAP = 100;
+const VIEW_STEP = 2;
+
+export interface RoadPoint {
+  readonly leg: number;
+  readonly distance: number;
+  readonly progress: number;
+  readonly x: number;
+  readonly z: number;
+  readonly heading: number;
+}
+
+/** La carretera muestreada cada VIEW_STEP metros (sin el interior de los cruces). */
+export function roadPoints(track: Track): RoadPoint[] {
+  const points: RoadPoint[] = [];
+  for (const leg of track.legs) {
+    for (let d = 0; d <= leg.length; d += VIEW_STEP) {
+      const p = track.pointAt(leg.index, d);
+      points.push({ leg: leg.index, distance: d, progress: leg.startProgress + d, ...p });
+    }
+  }
+  return points;
+}
+
+/** Hacia dónde mira la carretera con ese rumbo (el mismo convenio que la cámara). */
+const forward = (heading: number) => ({ x: Math.sin(heading), z: -Math.cos(heading) });
+
+const angleBetween = (ax: number, az: number, bx: number, bz: number) =>
+  Math.acos(Math.max(-1, Math.min(1, (ax * bx + az * bz) / (Math.hypot(ax, az) * Math.hypot(bx, bz)))));
+
+/**
+ * Metros de carretera durante los que la cámara ve un cartel puesto en `target`: delante, ni muy
+ * cerca ni muy lejos y de frente. En un circuito se mira también el final de la vuelta.
+ */
+export function photoViewMeters(points: readonly RoadPoint[], target: number, closed: boolean): number {
+  const p = points[target];
+  const face = forward(p.heading);
+  const lookBack = Math.ceil((PHOTO_VIEW.maxDistance + PHOTO_VIEW.cameraBack + 60) / VIEW_STEP);
+  let meters = 0;
+  for (let k = 1; k <= lookBack; k++) {
+    const j = target - k;
+    if (j < 0 && !closed) break;
+    const c = points[(j + points.length) % points.length];
+    const f = forward(c.heading);
+    const camX = c.x - f.x * PHOTO_VIEW.cameraBack;
+    const camZ = c.z - f.z * PHOTO_VIEW.cameraBack;
+    const dx = p.x - camX;
+    const dz = p.z - camZ;
+    const dist = Math.hypot(dx, dz);
+    if (dist < PHOTO_VIEW.minDistance || dist > PHOTO_VIEW.maxDistance) continue;
+    if (angleBetween(f.x, f.z, dx, dz) > PHOTO_VIEW.halfAngle) continue;
+    if (angleBetween(face.x, face.z, dx, dz) > PHOTO_VIEW.facing) continue;
+    meters += VIEW_STEP;
+  }
+  return meters;
+}
+
+/**
+ * Sitios de los carteles con foto: los dos donde la cámara los ve durante más metros (pueden
+ * estar en curva), separados al menos PHOTO_SPOTS_GAP metros por la carretera y nunca pegados a
+ * la salida. Si no hay ninguno que se vea, el de la recta más larga.
+ */
+export function photoSpots(track: Track, closed = false): PhotoSpot[] {
+  const points = roadPoints(track);
+  const total = points.at(-1)!.progress;
+  const last = track.legs.length - 1;
+  const scored = points
+    .map((p, i) => ({ p, meters: photoViewMeters(points, i, closed) }))
+    .filter(({ p, meters }) => {
+      if (meters === 0) return false;
+      if (p.leg === 0 && p.distance < START_LINE + PHOTO_CLEAR_AFTER_START) return false;
+      return !(p.leg === last && track.legs[last].length - p.distance < PHOTO_CLEAR_BEFORE_END);
+    })
+    .sort((a, b) => b.meters - a.meters);
+  const apart = (a: RoadPoint, b: RoadPoint) => {
+    const gap = Math.abs(a.progress - b.progress);
+    return Math.min(gap, closed ? total - gap : gap) >= PHOTO_SPOTS_GAP;
+  };
+  const first = scored[0];
+  if (!first) return [photoSpot(track)];
+  const second = scored.find(({ p }) => apart(p, first.p));
+  return [first, second]
+    .filter((s): s is (typeof scored)[number] => !!s)
+    .map(({ p }) => ({ leg: p.leg, distance: p.distance }));
+}
+
 /** Rectas (tramos sin curvatura seguidos) de un tramo: dónde acaban y cuánto miden. */
 export function straightRuns(leg: Leg): { end: number; run: number }[] {
   const s = leg.samples;
