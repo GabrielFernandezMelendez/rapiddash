@@ -229,6 +229,7 @@
   "tournament.dayShort": "D",
   "tournament.driver": "Piloto",
   "tournament.total": "Total",
+  "tournament.time": "Tiempo",
   "tournament.error.not-found": "No hay ningún torneo con ese código.",
   "tournament.error.full": "Ese torneo ya tiene 20 pilotos.",
   "tournament.error.copy": "No se pudo copiar el enlace.",
