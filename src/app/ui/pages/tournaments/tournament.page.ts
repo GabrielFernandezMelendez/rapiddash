@@ -496,6 +496,9 @@ export class TournamentPage implements OnInit {
       this.now.set(Date.now());
       if (t && statusAt(t, Date.now()) !== 'waiting') this.board.set(await this.tournaments.board(t));
       await this.loadRivals();
+      // La foto del líder se descarga ya: al correr, el cartel sale con ella desde la salida
+      const leader = leaderOf(this.board()?.rows ?? []);
+      if (t && leader) void this.tournaments.photoOf(t.code, leader.member.uid);
       await this.offerPhoto();
     } catch {
       this.error.set('auth.error.network');

@@ -14,6 +14,9 @@ export class TournamentService {
   private readonly account = inject(AccountService);
   private readonly photos = inject(TournamentPhotoRepository);
   private readonly settings = inject(SettingsRepository);
+  /** Clasificaciones y fotos ya descargadas: la carrera las usa sin esperar a la red. */
+  private readonly boards = new Map<string, TournamentBoard>();
+  private readonly photoCache = new Map<string, string | null>();
   private readonly tournaments = new Tournaments(
     inject(TournamentRepository),
     inject(CloudRecordRepository),
@@ -48,22 +51,41 @@ export class TournamentService {
     return uid ? this.tournaments.mine(uid) : Promise.resolve([]);
   }
 
-  board(t: Tournament): Promise<TournamentBoard> {
-    return this.tournaments.board(t);
+  async board(t: Tournament): Promise<TournamentBoard> {
+    const board = await this.tournaments.board(t);
+    this.boards.set(t.code, board);
+    return board;
+  }
+
+  /** Última clasificación cargada (para pintar los carteles al instante al entrar en carrera). */
+  cachedBoard(code: string): TournamentBoard | null {
+    return this.boards.get(code) ?? null;
   }
 
   /** Foto del cartel de un piloto en el torneo (null sin foto o sin red). */
-  photoOf(code: string, uid: string): Promise<string | null> {
-    return this.photos.get(code, uid).catch(() => null);
+  async photoOf(code: string, uid: string): Promise<string | null> {
+    const photo = await this.photos.get(code, uid).catch(() => undefined);
+    if (photo === undefined) return this.photoCache.get(`${code}/${uid}`) ?? null;
+    this.photoCache.set(`${code}/${uid}`, photo);
+    return photo;
+  }
+
+  /** Foto ya descargada (undefined si aún no se ha pedido). */
+  cachedPhoto(code: string, uid: string): string | null | undefined {
+    return this.photoCache.get(`${code}/${uid}`);
   }
 
   async savePhoto(code: string, dataUrl: string): Promise<void> {
     if (!isValidPhoto(dataUrl)) throw new Error('Foto no válida');
-    await this.photos.save(code, this.requireProfile().uid, dataUrl);
+    const uid = this.requireProfile().uid;
+    await this.photos.save(code, uid, dataUrl);
+    this.photoCache.set(`${code}/${uid}`, dataUrl);
   }
 
   async removePhoto(code: string): Promise<void> {
-    await this.photos.remove(code, this.requireProfile().uid);
+    const uid = this.requireProfile().uid;
+    await this.photos.remove(code, uid);
+    this.photoCache.set(`${code}/${uid}`, null);
   }
 
   photoDeclined(code: string): boolean {
