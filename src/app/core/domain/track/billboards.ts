@@ -1,5 +1,13 @@
 import { CountryCode } from '../profile/country';
 import { Leg, Track } from './track';
+import { START_LINE } from './track-constants';
+
+/**
+ * Metros libres alrededor de la salida para el cartel con foto: justo después de la salida lo
+ * tapa el HUD durante el semáforo y justo antes se mezcla con la pancarta de meta.
+ */
+const PHOTO_CLEAR_AFTER_START = 60;
+const PHOTO_CLEAR_BEFORE_END = 20;
 
 /** Carteles de líderes como máximo por mapa. */
 export const MAX_BILLBOARDS = 2;
@@ -59,10 +67,47 @@ export interface PhotoSpot {
   readonly distance: number;
 }
 
-/** Recta más larga del mapa; el cartel va en su primer tercio largo para verlo bien de lejos. */
+/**
+ * Recta más larga del mapa, esté donde esté dentro del tramo (en los circuitos las rectas largas
+ * suelen acabar en una curva, no en un cruce). El cartel va al 65 % de la recta para verlo de
+ * lejos, y nunca pegado a la salida.
+ */
 export function photoSpot(track: Track): PhotoSpot {
-  const leg = track.legs.reduce((a, l) => (straightApproach(l) > straightApproach(a) ? l : a));
-  return { leg: leg.index, distance: leg.length - straightApproach(leg) * 0.35 };
+  const last = track.legs.length - 1;
+  let best: PhotoSpot | null = null;
+  let bestRun = 0;
+  for (const leg of track.legs) {
+    for (const { end, run } of straightRuns(leg)) {
+      const distance = end - run * 0.35;
+      if (leg.index === 0 && distance < START_LINE + PHOTO_CLEAR_AFTER_START) continue;
+      if (leg.index === last && leg.length - distance < PHOTO_CLEAR_BEFORE_END) continue;
+      if (run > bestRun) {
+        best = { leg: leg.index, distance };
+        bestRun = run;
+      }
+    }
+  }
+  return best ?? { leg: 0, distance: START_LINE + PHOTO_CLEAR_AFTER_START };
+}
+
+/** Rectas (tramos sin curvatura seguidos) de un tramo: dónde acaban y cuánto miden. */
+export function straightRuns(leg: Leg): { end: number; run: number }[] {
+  const s = leg.samples;
+  const runs: { end: number; run: number }[] = [];
+  let along = 0;
+  let run = 0;
+  for (let i = 1; i < s.length; i++) {
+    const step = Math.hypot(s[i].x - s[i - 1].x, s[i].z - s[i - 1].z);
+    along += step;
+    if (s[i].curvature === 0 && s[i - 1].curvature === 0) {
+      run += step;
+    } else {
+      if (run > 0) runs.push({ end: along - step, run });
+      run = 0;
+    }
+  }
+  if (run > 0) runs.push({ end: along, run });
+  return runs;
 }
 
 /** Cartel con la foto del líder del torneo (sin foto: su bandera en grande). */
