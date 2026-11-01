@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_MAPS } from './race-map';
-import { left, right, straight } from './track-segment';
+import { arc, left, right, straight } from './track-segment';
 import { Track } from './track';
 import { billboardLegs, MAX_BILLBOARDS, photoSpot, straightApproach } from './billboards';
 
@@ -39,5 +39,16 @@ describe('carteles de líderes', () => {
     expect(spot.leg).toBe(1);
     expect(spot.distance).toBeGreaterThan(30);
     expect(spot.distance).toBeLessThan(track.legs[1].length);
+  });
+
+  it('el cartel con foto va en la recta más larga aunque acabe en curva (circuitos)', () => {
+    const track = Track.fromSegments([
+      straight(20), right(), straight(100), arc(45, 45), straight(10), left(), straight(30),
+    ]);
+    const spot = photoSpot(track);
+    expect(spot.leg).toBe(1);
+    // Al 65 % de la recta de 100 m, no en los 10 m que hay antes del cruce
+    expect(spot.distance).toBeGreaterThan(55);
+    expect(spot.distance).toBeLessThan(75);
   });
 });
