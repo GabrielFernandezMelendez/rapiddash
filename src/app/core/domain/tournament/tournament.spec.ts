@@ -95,6 +95,9 @@ describe('Torneos', () => {
       ['ana', 25, [15, 10]],
       ['nico', 12, [null, 12]],
     ]);
+    // El tiempo de cada día va con la fila (null si no corrió)
+    expect(rows.find((r) => r.member.uid === 'nico')?.times).toEqual([null, 59]);
+    expect(rows.find((r) => r.member.uid === 'gabo')?.times).toEqual([61, 58]);
     // Empate a puntos: gana quien ganó más días
     const tie = standings(t, [[{ uid: 'ana', time: 1 }, { uid: 'gabo', time: 2 }], [{ uid: 'gabo', time: 1 }, { uid: 'ana', time: 2 }]]);
     expect(tie[0].total).toBe(tie[1].total);

@@ -6,7 +6,7 @@ import {
   RankedRecord,
   RankingView,
 } from '../../../core/domain/race/ranking';
-import { formatTime } from '../../../shared/format-time';
+import { formatTime, NO_TIME } from '../../../shared/format-time';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Flag } from '../../atoms/flag/flag';
 
@@ -108,7 +108,7 @@ function emptyRow(rank: number): Row {
     rank,
     name: '———',
     country: null,
-    time: '–:––.––',
+    time: NO_TIME,
     empty: true,
     me: false,
     rival: false,

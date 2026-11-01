@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CAR_TUNING } from '../../../core/domain/car/car-tuning';
 import { RaceViewState } from '../../../core/application/use-cases/race-session';
-import { formatDelta, formatTime } from '../../../shared/format-time';
+import { formatDelta, formatTime, NO_TIME } from '../../../shared/format-time';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { Stat } from '../../atoms/stat/stat';
@@ -26,7 +26,7 @@ export class Hud {
   protected readonly time = computed(() => formatTime(this.state().time));
   protected readonly best = computed(() => {
     const b = this.state().bestTime;
-    return b === null ? '–:––.––' : formatTime(b);
+    return b === null ? NO_TIME : formatTime(b);
   });
   protected readonly ghost = computed(() => {
     const d = this.state().ghostDelta;
