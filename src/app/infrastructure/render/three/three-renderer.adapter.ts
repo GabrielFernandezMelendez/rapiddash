@@ -19,7 +19,6 @@ import {
   BillboardContent,
   distantPhotoSpots,
   LeaderPhotoContent,
-  photoSpots,
 } from '../../../core/domain/track/billboards';
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
@@ -57,7 +56,8 @@ const CAMERA = {
 export class ThreeRendererAdapter extends RendererPort {
   private renderer: WebGLRenderer | null = null;
   private scene = new Scene();
-  private camera = new PerspectiveCamera(CAMERA.fov, 9 / 19, 0.1, 500);
+  // Lejos (900 m) para ver los carteles lejanos con la foto del líder
+  private camera = new PerspectiveCamera(CAMERA.fov, 9 / 19, 0.1, 900);
   private track: Track | null = null;
   private car = buildCar();
   private ghost = buildCar(true);
@@ -99,17 +99,11 @@ export class ThreeRendererAdapter extends RendererPort {
     else this.buildClassic(drawn, theme, circuit);
     this.billboards = new LeaderBillboards(drawn, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
     this.scene.add(this.billboards.group);
-    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): dos
-    // sobre la carretera, donde más tiempo los ve la cámara (en un circuito, mirando también el
-    // final de la vuelta), y dos lejanos, muy grandes, al fondo de las rectas más largas
-    const overRoad = photoSpots(drawn, circuit).map((spot) => ({
-      ...drawn.pointAt(spot.leg, spot.distance),
-      roadHalf: drawn.halfWidthAt(spot.leg, spot.distance),
-    }));
-    const distant = distantPhotoSpots(drawn, overRoad).map((spot) => ({ ...spot, roadHalf: null }));
+    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): cuatro,
+    // enormes y lejos de la carretera, al fondo de las rectas más largas
     const photoStyle = isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD;
-    this.photoGantries = [...overRoad, ...distant].map(
-      (place) => new PhotoGantry(place, photoStyle, aesthetic === 'futurist'),
+    this.photoGantries = distantPhotoSpots(drawn).map(
+      (spot) => new PhotoGantry(spot, photoStyle, aesthetic === 'futurist'),
     );
     for (const g of this.photoGantries) this.scene.add(g.group);
     const vehicle = VEHICLES[aesthetic];
