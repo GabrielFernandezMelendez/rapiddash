@@ -20,13 +20,14 @@ import { BillboardStyle } from './billboards';
 
 const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
 /**
- * Panel de 7 × 8 m escalado nueve veces (63 × 72 m), sobre dos postes, con el borde de abajo a
- * BOTTOM y curvado hacia el que llega (RADIUS en metros sin escalar), como una pantalla de estadio.
+ * Panel de 7 × 8 m escalado ocho veces (56 × 64 m), sobre dos postes, con el borde de abajo a
+ * BOTTOM (más alto que la cámara, 9,2 m: siempre por encima del horizonte) y curvado hacia el que
+ * llega (RADIUS en metros sin escalar), como una pantalla de estadio.
  */
 const W = 7;
 const H = 8;
-const SCALE = 9;
-const BOTTOM = 4;
+const SCALE = 8;
+const BOTTOM = 12;
 const RADIUS = 6;
 const PX = 560;
 const PH = 640;
@@ -99,6 +100,16 @@ export class PhotoGantry {
       post.position.set(side * W * SCALE * 0.3, top / 2, -0.6);
       this.group.add(post);
     }
+
+    // El panel va siempre por encima del horizonte (su borde de abajo está más alto que la
+    // cámara), así que se pinta encima de árboles, palmeras y montañas sin tapar nunca la
+    // carretera ni los coches
+    this.board.traverse((o) => {
+      if (o instanceof Mesh || o instanceof InstancedMesh) {
+        (o.material as MeshBasicMaterial).depthTest = false;
+        o.renderOrder = 10;
+      }
+    });
 
     const fonts = [style.nameFont, style.valueFont].map((f) => f.replace('{px}', '40'));
     void Promise.all(fonts.map((f) => document.fonts?.load(f).catch(() => undefined))).then(() =>
