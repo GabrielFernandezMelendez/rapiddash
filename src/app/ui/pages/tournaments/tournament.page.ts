@@ -9,8 +9,17 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
 import { TournamentBoard } from '../../../core/application/use-cases/tournaments';
 import {
+  defaultRival,
+  EMPTY_RANKING,
+  RankingView,
+  RivalChoice,
+  rivalOptions,
+} from '../../../core/domain/race/ranking';
+import {
+  dayBoardId,
   dayIndex,
   statusAt,
   Tournament,
@@ -18,22 +27,28 @@ import {
   TOURNAMENT_MAX_MEMBERS,
 } from '../../../core/domain/tournament/tournament';
 import { CIRCUIT_MAPS, findMap } from '../../../core/domain/track/race-map';
+import { AccountService } from '../../../shared/account/account.service';
+import { RankingService } from '../../../shared/account/ranking.service';
 import { TournamentService } from '../../../shared/account/tournament.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { Flag } from '../../atoms/flag/flag';
 import { DayCard, DayCards } from '../../molecules/day-cards/day-cards';
+import { RivalPicker } from '../../molecules/rival-picker/rival-picker';
 import { StandingsTable } from '../../molecules/standings-table/standings-table';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { describeTournament } from './tournament-view';
 import { leaderOf, shouldOfferPhoto } from '../../../core/domain/tournament/leader-photo';
 import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
 
+/** Clave con la que se recuerda el rival en los torneos (la misma en todos). */
+const TOURNAMENT_RIVAL_KEY = 'tournament';
+
 /** Un torneo: sala de espera antes de empezar; días y clasificación después. */
 @Component({
   selector: 'rd-tournament-page',
-  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, LeaderPhoto, TranslatePipe],
+  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, RivalPicker, LeaderPhoto, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -80,6 +95,17 @@ import { LeaderPhoto } from '../../organisms/leader-photo/leader-photo';
         <rd-standings-table [rows]="board()?.rows ?? []" [myUid]="myUid" [today]="today()" />
         @if (status() === 'running') {
           <p class="note">{{ 'tournament.provisional' | t }}</p>
+          <!-- Contra quién corro hoy: del ranking del día del torneo -->
+          @if (today() !== null) {
+            <rd-rival-picker
+              [options]="rivalOptions()"
+              [selected]="rivalChoice()"
+              [myTime]="dayBest()"
+              [myName]="account.profile()?.nickname ?? ''"
+              [myCountry]="account.profile()?.country ?? null"
+              (picked)="rivalChoice.set($event)"
+            />
+          }
           <!-- Se puede seguir entrando con el enlace mientras dure el torneo -->
           @if (t()!.members.length < maxMembers) {
             <div class="code invite-more">
@@ -243,6 +269,9 @@ export class TournamentPage implements OnInit {
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
   private readonly tournaments = inject(TournamentService);
+  private readonly ranking = inject(RankingService);
+  private readonly bestRuns = inject(BestRunRepository);
+  protected readonly account = inject(AccountService);
 
   protected readonly myUid = this.tournaments.uid();
   protected readonly maxMembers = TOURNAMENT_MAX_MEMBERS;
@@ -259,6 +288,13 @@ export class TournamentPage implements OnInit {
   protected readonly photoBusy = signal(false);
   protected readonly photoError = signal<string | null>(null);
   private photoChecked = false;
+  /** Rival de hoy: ranking del día del torneo y mi mejor tiempo de hoy en este dispositivo. */
+  protected readonly dayView = signal<RankingView>(EMPTY_RANKING);
+  protected readonly dayBest = signal<number | null>(null);
+  protected readonly rivalChoice = signal<RivalChoice | null>(null);
+  protected readonly rivalOptions = computed(() =>
+    rivalOptions(this.dayView(), this.myUid, this.dayBest() !== null),
+  );
 
   protected readonly status = computed(() => {
     const t = this.t();
@@ -372,6 +408,13 @@ export class TournamentPage implements OnInit {
     const t = this.t();
     const day = this.today();
     if (!t || day === null) return;
+    // El rival sale del ranking del día; la elección se recuerda para todos los torneos
+    const choice = this.rivalChoice();
+    this.ranking.pick(
+      dayBoardId(t.code, day),
+      choice ? { choice, ranked: choice === 'mine' ? null : this.rivalOptions()[choice] } : null,
+      TOURNAMENT_RIVAL_KEY,
+    );
     void this.router.navigate(['/race', t.mapIds[day]], { queryParams: { t: t.code } });
   }
 
@@ -430,6 +473,21 @@ export class TournamentPage implements OnInit {
     this.photoError.set(null);
   }
 
+  /** Ranking del día del torneo para elegir rival (sin red: solo mi mejor de hoy o el reloj). */
+  private async loadRivals(): Promise<void> {
+    const t = this.t();
+    const day = this.today();
+    if (!t || day === null || this.status() !== 'running') return;
+    const boardId = dayBoardId(t.code, day);
+    const [view, best] = await Promise.all([
+      this.ranking.load(boardId).catch(() => EMPTY_RANKING),
+      this.bestRuns.get(boardId),
+    ]);
+    this.dayView.set(view);
+    this.dayBest.set(best?.time ?? null);
+    this.rivalChoice.set(defaultRival(this.rivalOptions(), this.ranking.rememberedChoice(TOURNAMENT_RIVAL_KEY)));
+  }
+
   private async load(): Promise<void> {
     try {
       const t = await this.tournaments.find(this.code());
@@ -437,6 +495,7 @@ export class TournamentPage implements OnInit {
       this.t.set(t);
       this.now.set(Date.now());
       if (t && statusAt(t, Date.now()) !== 'waiting') this.board.set(await this.tournaments.board(t));
+      await this.loadRivals();
       await this.offerPhoto();
     } catch {
       this.error.set('auth.error.network');
