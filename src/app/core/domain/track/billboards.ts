@@ -1,5 +1,6 @@
 import { CountryCode } from '../profile/country';
 import { Leg, Track } from './track';
+import { START_LINE } from './track-constants';
 
 /** Carteles de líderes como máximo por mapa. */
 export const MAX_BILLBOARDS = 2;
@@ -100,6 +101,8 @@ export const DISTANT_PHOTO = {
   roadClearance: 60,
   /** Distancia mínima entre los dos carteles lejanos. */
   apart: 150,
+  /** Ángulo, visto desde la salida, dentro del cual se quita el cartel más centrado (lo tapa el sol). */
+  startClear: (25 * Math.PI) / 180,
 } as const;
 
 /**
@@ -121,7 +124,19 @@ export function distantPhotoSpots(track: Track, count = 4): DistantPhotoSpot[] {
     const spot = distantSpotAfter(end.x, end.z, f, r.run, road, spots);
     if (spot) spots.push({ ...spot, heading: end.heading });
   }
-  return spots;
+  // Fuera el que queda justo enfrente de la salida (el más centrado, si lo hay): en synthwave el
+  // sol, que se pinta encima, lo tapa
+  const start = track.pointAt(0, START_LINE);
+  const ahead = forward(start.heading);
+  const angleFromStart = (s: DistantPhotoSpot) =>
+    Math.acos(
+      ((s.x - start.x) * ahead.x + (s.z - start.z) * ahead.z) /
+        Math.hypot(s.x - start.x, s.z - start.z),
+    );
+  const front = spots
+    .filter((s) => angleFromStart(s) < DISTANT_PHOTO.startClear)
+    .sort((a, b) => angleFromStart(a) - angleFromStart(b))[0];
+  return spots.filter((s) => s !== front);
 }
 
 /** El sitio más cercano tras el final de la recta que se vea desde ella y no pise la carretera. */
