@@ -202,23 +202,24 @@ export interface DistantPhotoSpot {
 /** Carteles lejanos: rectas mínimas, distancia tras el final de la recta y hueco con la carretera. */
 export const DISTANT_PHOTO = {
   minRun: 20,
-  minAhead: 45,
-  maxAhead: 260,
+  minAhead: 120,
+  maxAhead: 380,
   /** Desplazamientos laterales que se prueban si justo enfrente está la carretera. */
-  lateral: [0, 20, -20, 40, -40, 60, -60],
+  lateral: [0, 25, -25, 50, -50, 75, -75],
   /** Ángulo máximo con la recta visto desde su mitad: más, y se sale de la pantalla. */
   maxAngle: (13 * Math.PI) / 180,
-  /** Distancia mínima del cartel al eje de cualquier tramo (el cartel mide 14 m de ancho). */
-  roadClearance: 22,
+  /** Distancia mínima del cartel al eje de cualquier tramo (el cartel mide 28 m de ancho). */
+  roadClearance: 30,
   /** Distancia mínima entre los dos carteles lejanos. */
-  apart: 80,
+  apart: 120,
   /** Separación mínima, vista desde la recta, con los carteles sobre la carretera (que no se tapen). */
   minSeparation: (10 * Math.PI) / 180,
 } as const;
 
 /**
- * Dos carteles lejanos con la foto: al fondo de las dos rectas más largas, en la prolongación de
- * la recta (se ven de frente todo el rato que se va por ella), lo más cerca posible sin pisar la
+ * Dos carteles lejanos con la foto: muy grandes y al fondo de las dos rectas más largas, en la
+ * prolongación de la recta (a 120 m o más del final: de lejos ocupan casi lo mismo en pantalla
+ * pero se quedan mucho más tiempo, también al girar), lo más cerca posible sin pisar la
  * carretera ni otro tramo, y sin quedar detrás de los carteles de `avoid` (los de sobre la carretera).
  */
 export function distantPhotoSpots(

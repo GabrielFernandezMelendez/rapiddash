@@ -101,7 +101,7 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scene.add(this.billboards.group);
     // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): dos
     // sobre la carretera, donde más tiempo los ve la cámara (en un circuito, mirando también el
-    // final de la vuelta), y dos lejanos, grandes, al fondo de las rectas más largas
+    // final de la vuelta), y dos lejanos, muy grandes, al fondo de las rectas más largas
     const overRoad = photoSpots(drawn, circuit).map((spot) => ({
       ...drawn.pointAt(spot.leg, spot.distance),
       roadHalf: drawn.halfWidthAt(spot.leg, spot.distance),

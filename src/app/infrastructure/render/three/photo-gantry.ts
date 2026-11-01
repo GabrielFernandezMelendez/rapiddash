@@ -25,9 +25,9 @@ const EMOJI = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-s
 const W = 7;
 const H = 8;
 const BOTTOM = PHOTO_VIEW.centerHeight - H / 2;
-/** Cartel lejano: el doble de grande y sobre dos postes, con el borde de abajo a esta altura. */
-const DISTANT_SCALE = 2;
-const DISTANT_BOTTOM = 4;
+/** Cartel lejano: cuatro veces más grande (28 × 32 m) y sobre dos postes, con el borde de abajo a esta altura. */
+const DISTANT_SCALE = 4;
+const DISTANT_BOTTOM = 6;
 const PX = 560;
 const PH = 640;
 /** Bombillas del borde LED (estética futurista) y vueltas de color por segundo. */
@@ -107,12 +107,12 @@ export class PhotoGantry {
 
     const postMat = new MeshBasicMaterial({ color: style.post });
     if (place.roadHalf === null) {
-      // Cartel lejano: el doble de grande, sobre dos postes
+      // Cartel lejano: cuatro veces más grande, sobre dos postes
       this.board.scale.setScalar(DISTANT_SCALE);
       this.board.position.y = DISTANT_BOTTOM + (H * DISTANT_SCALE) / 2;
       const top = DISTANT_BOTTOM + H * DISTANT_SCALE * 0.5;
       for (const side of [-1, 1]) {
-        const post = new Mesh(new BoxGeometry(0.8, top, 0.8), postMat);
+        const post = new Mesh(new BoxGeometry(1.4, top, 1.4), postMat);
         post.position.set(side * W * DISTANT_SCALE * 0.3, top / 2, -0.6);
         this.group.add(post);
       }
