@@ -5,6 +5,7 @@ import { StandingRow } from './tournament';
 const row = (uid: string, total: number): StandingRow => ({
   member: { uid, nickname: uid, country: null },
   days: [total],
+  times: [null],
   total,
   wins: 0,
 });

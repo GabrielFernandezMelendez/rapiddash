@@ -122,6 +122,8 @@ export interface StandingRow {
   readonly member: TournamentMember;
   /** Puntos de cada día; null si ese día aún no ha llegado o no corrió. */
   readonly days: readonly (number | null)[];
+  /** Mejor tiempo de cada día (s); null si ese día no corrió. */
+  readonly times: readonly (number | null)[];
   readonly total: number;
   /** Días ganados (desempate). */
   readonly wins: number;
@@ -142,10 +144,12 @@ export function standings(t: Tournament, dayTimes: readonly (readonly DayTime[])
   });
   const rows = t.members.map((member) => {
     const days = perDay.map((points) => points.get(member.uid) ?? null);
+    const times = dayTimes.map((list) => bestOf(list, member.uid));
     const winsList = dayTimes.map((times) => winnerOf(times, members) === member.uid);
     return {
       member,
       days,
+      times,
       total: days.reduce<number>((sum, p) => sum + (p ?? 0), 0),
       wins: winsList.filter(Boolean).length,
     };
@@ -153,6 +157,12 @@ export function standings(t: Tournament, dayTimes: readonly (readonly DayTime[])
   return rows.sort(
     (a, b) => b.total - a.total || b.wins - a.wins || a.member.nickname.localeCompare(b.member.nickname),
   );
+}
+
+/** Mejor tiempo de un piloto en la lista de un día; null si no corrió. */
+function bestOf(times: readonly DayTime[], uid: string): number | null {
+  const mine = times.filter((d) => d.uid === uid).map((d) => d.time);
+  return mine.length ? Math.min(...mine) : null;
 }
 
 /** Ganador de un día (el más rápido entre los miembros); null si nadie corrió. */
