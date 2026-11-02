@@ -1,0 +1,114 @@
+.showroom {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  color: white;
+  font-family: sans-serif;
+  overflow: hidden;
+
+  .canvas-container {
+    position: absolute;
+    inset: 0;
+  }
+
+  .ui {
+    position: relative;
+    z-index: 10;
+    padding: 20px;
+    pointer-events: none;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px cyan;
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      pointer-events: auto;
+      max-width: 400px;
+
+      h3 {
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      button {
+        background: #222;
+        border: 1px solid #444;
+        color: #ccc;
+        padding: 8px;
+        font-size: 11px;
+        cursor: pointer;
+        text-align: left;
+        border-radius: 4px;
+
+        &:hover {
+          background: #333;
+        }
+
+        &.active {
+          background: #0088aa;
+          color: white;
+          border-color: #00ccff;
+          box-shadow: 0 0 8px #0088aa;
+        }
+      }
+
+      &.actions {
+        margin-top: auto;
+        text-align: center;
+        max-width: none;
+        width: fit-content;
+        align-self: center;
+
+        .accel {
+          background: #ff5a36;
+          color: white;
+          padding: 15px 30px;
+          font-weight: bold;
+          font-size: 16px;
+          border: none;
+          box-shadow: 0 4px #aa3311;
+          margin-bottom: 10px;
+
+          &:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #aa3311;
+          }
+        }
+
+        p {
+          margin: 0;
+          font-size: 12px;
+          color: #888;
+        }
+      }
+    }
+
+    .notice {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 10px;
+      color: #ff4444;
+      font-weight: bold;
+    }
+  }
+}

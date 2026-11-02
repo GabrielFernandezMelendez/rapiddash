@@ -1,0 +1,44 @@
+<div class="showroom">
+  <div #canvasHost class="canvas-container"></div>
+
+  <div class="ui">
+    <h1>SHOWROOM PROTOTIPOS</h1>
+    
+    <div class="panel">
+      <h3>MODELOS</h3>
+      <div class="grid">
+        <button *ngFor="let car of cars" 
+                [class.active]="car.id === currentCarId"
+                (click)="selectCar(car.id)">
+          {{ car.name }}
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>EFECTOS (RAYOS)</h3>
+      <div class="grid">
+        <button *ngFor="let fx of fxs" 
+                [class.active]="fx.id === currentFxId"
+                (click)="selectFx(fx.id)">
+          {{ fx.name }}
+        </button>
+      </div>
+    </div>
+
+    <div class="panel actions">
+      <button class="accel" 
+              (mousedown)="toggleAccelerate(true)" 
+              (mouseup)="toggleAccelerate(false)"
+              (touchstart)="toggleAccelerate(true)"
+              (touchend)="toggleAccelerate(false)">
+        MANTENER PARA ACELERAR
+      </button>
+      <p>Pulsa para ver el efecto</p>
+    </div>
+
+    <div class="notice">
+      PRUEBA DE CONCEPTO - NO MERGEAR
+    </div>
+  </div>
+</div>

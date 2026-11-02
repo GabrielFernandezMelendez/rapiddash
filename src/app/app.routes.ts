@@ -64,6 +64,15 @@ export const routes: Routes = [
     loadComponent: () => import('./ui/pages/profile/profile.page').then((m) => m.ProfilePage),
   },
   { path: 'welcome', canMatch: [welcomeAllowed], loadComponent: welcome },
-  { path: 'welcome/:step', canMatch: [welcomeAllowed], loadComponent: welcome },
+  {
+    path: 'welcome/:step',
+    canMatch: [welcomeAllowed],
+    loadComponent: welcome,
+  },
+  {
+    path: 'mockup-garage',
+    loadComponent: () =>
+      import('./ui/pages/mockup-garage/mockup-garage.page').then((m) => m.MockupGaragePage),
+  },
   { path: '**', redirectTo: '' },
 ];
