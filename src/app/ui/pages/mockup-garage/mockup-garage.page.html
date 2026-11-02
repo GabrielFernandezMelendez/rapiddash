@@ -1,0 +1,93 @@
+<div class="showroom" [class.photo]="photoMode">
+  <div #canvasHost class="canvas-container"></div>
+
+  <div class="ui">
+    <header class="masthead">
+      <p class="eyebrow">RapidDash · laboratorio de diseño</p>
+      <h1>Showroom retrowave</h1>
+      <p class="subtitle">
+        10 recoloreados del deportivo retro + 10 propuestas nuevas, con la misma construcción
+        low-poly del juego.
+      </p>
+    </header>
+
+    <div class="panels">
+      <section class="panel">
+        <h3><span>01</span> Recoloreados retro</h3>
+        <div class="grid">
+          <button
+            *ngFor="let car of retroCars"
+            [class.active]="car.id === currentCarId"
+            (click)="selectCar(car.id)"
+          >
+            <span class="id">{{ car.id }}</span>
+            <span class="copy">
+              <span class="name">{{ car.name }}</span>
+              <span class="tag">{{ car.tagline }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3><span>02</span> Propuestas retrowave</h3>
+        <div class="grid">
+          <button
+            *ngFor="let car of newCars"
+            [class.active]="car.id === currentCarId"
+            (click)="selectCar(car.id)"
+          >
+            <span class="id">{{ car.id }}</span>
+            <span class="copy">
+              <span class="name">{{ car.name }}</span>
+              <span class="tag">{{ car.tagline }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="current-card">
+      <span class="current-id">{{ currentCar.id }}</span>
+      <div class="current-copy">
+        <strong>{{ currentCar.name }}</strong>
+        <p>{{ currentCar.tagline }}</p>
+      </div>
+      <span class="badge">{{ currentCar.group === 'retro' ? 'RECOLOR' : 'PROPUESTA' }}</span>
+    </div>
+
+    <section class="panel fx-panel">
+      <h3><span>FX</span> Efecto de escape</h3>
+      <div class="grid compact">
+        <button
+          *ngFor="let fx of fxs"
+          [class.active]="fx.id === currentFxId"
+          (click)="selectFx(fx.id)"
+        >
+          <span class="id">{{ fx.id }}</span>
+          <span class="copy">
+            <span class="name">{{ fx.name }}</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button
+        class="accel"
+        (mousedown)="toggleAccelerate(true)"
+        (mouseup)="toggleAccelerate(false)"
+        (mouseleave)="toggleAccelerate(false)"
+        (touchstart)="toggleAccelerate(true)"
+        (touchend)="toggleAccelerate(false)"
+      >
+        MANTENER PARA ACELERAR
+      </button>
+      <p>Pulsa un coche para verlo girar · ← → para cambiar</p>
+    </div>
+
+    <div class="notice">
+      PRUEBA DE CONCEPTO · NO MERGEAR · {{ photoMode ? 'MODO CAPTURA' : 'MODO SHOWROOM' }}
+    </div>
+  </div>
+</div>

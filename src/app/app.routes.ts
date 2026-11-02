@@ -65,5 +65,11 @@ export const routes: Routes = [
   },
   { path: 'welcome', canMatch: [welcomeAllowed], loadComponent: welcome },
   { path: 'welcome/:step', canMatch: [welcomeAllowed], loadComponent: welcome },
+  // Showroom de pruebas: no forma parte del juego, solo sirve para validar diseños.
+  {
+    path: 'mockup-garage',
+    loadComponent: () =>
+      import('./ui/pages/mockup-garage/mockup-garage.page').then((m) => m.MockupGaragePage),
+  },
   { path: '**', redirectTo: '' },
 ];
