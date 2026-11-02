@@ -7,7 +7,8 @@ import {
   MeshBasicMaterial,
   PlaneGeometry,
 } from 'three';
-import { flat } from '../track-mesh';
+
+const flat = (color: number) => new MeshBasicMaterial({ color });
 
 /**
  * Iteración 3: Solo el coche clásico (el que ya está en el juego) con 10 variantes de color.

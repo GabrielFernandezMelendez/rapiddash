@@ -11,7 +11,14 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { canvasTexture } from './track-mesh';
+
+function canvasTexture(size: number, draw: (g: CanvasRenderingContext2D) => void): Texture {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  draw(g);
+  return new Texture(c);
+}
 
 export class MockupExhaustFx {
   private particles: { obj: any; life: number; velocity: Vector3; type: number }[] = [];
@@ -112,7 +119,7 @@ export class MockupExhaustFx {
   private createSprite(color: number, size: number): Sprite {
     const key = `${color}`;
     if (!this.textureCache[key]) {
-      this.textureCache[key] = canvasTexture(32, 32, (g) => {
+      this.textureCache[key] = canvasTexture(32, (g) => {
         const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
         const c = '#' + color.toString(16).padStart(6, '0');
         grad.addColorStop(0, '#ffffff');
