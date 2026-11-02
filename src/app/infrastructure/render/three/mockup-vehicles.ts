@@ -391,13 +391,6 @@ function cometGt(): Group {
   box(g, 1.58, 0.14, 0.16, 0xd94f00, 0, 0.28, -1.48);
   box(g, 0.55, 0.1, 0.45, 0x111111, 0, 0.7, -0.75);
 
-  // Ensanche de aletas en las cuatro ruedas.
-  for (const x of [-0.81, 0.81]) {
-    for (const z of [-0.82, 0.9]) {
-      box(g, 0.1, 0.28, 0.75, 0xd94f00, x, 0.4, z);
-    }
-  }
-
   // Cuatro faros redondos y alerón trasero.
   for (const x of [-0.65, -0.45, 0.45, 0.65]) {
     roundLight(g, 0.1, paint.head, x, 0.52, -1.46);
@@ -1095,6 +1088,10 @@ function solarisX(): Group {
     fin.position.set(x, 0.45, 0.95);
     g.add(fin);
     addOutline(g, fin, paint.accent, 20);
+
+    // Línea roja sobre el borde inclinado de cada aleta.
+    const edge = box(g, 0.01, 0.02, 0.66, 0xff1a2e, x * 1.05, 0.7, 1.425);
+    edge.rotation.x = 0.838;
   }
 
   // Barra de luz frontal y piloto trasero.
