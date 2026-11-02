@@ -38,16 +38,16 @@ export class MockupGaragePage implements OnInit {
   protected accelerating = false;
 
   protected cars = [
-    { id: 1, name: 'Classic' },
-    { id: 2, name: 'Wedge (Retro)' },
-    { id: 3, name: 'Arrow (Ship)' },
-    { id: 4, name: 'Muscle' },
-    { id: 5, name: 'JDM-Drift' },
-    { id: 6, name: 'Cyber-Truck' },
-    { id: 7, name: 'F-Race' },
-    { id: 8, name: 'Hyper-Pod' },
-    { id: 9, name: 'Van-Life' },
-    { id: 10, name: 'Proto-LeMans' },
+    { id: 1, name: 'Clásico Naranja' },
+    { id: 2, name: 'Clásico Azul' },
+    { id: 3, name: 'Clásico Rosa' },
+    { id: 4, name: 'Clásico Verde' },
+    { id: 5, name: 'Clásico Amarillo' },
+    { id: 6, name: 'Clásico Púrpura' },
+    { id: 7, name: 'Clásico Blanco' },
+    { id: 8, name: 'Clásico Negro' },
+    { id: 9, name: 'Clásico Azul Marino' },
+    { id: 10, name: 'Clásico Naranja Quemado' },
   ];
 
   protected fxs = [
