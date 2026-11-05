@@ -145,10 +145,12 @@ export class Hud {
     return target === null ? '' : formatTime(target);
   });
   protected readonly sparks = Array.from({ length: 9 }, (_, i) => i);
-  /** Chispas de la punta de la velocidad a tope (muchas: sensación de velocidad). */
+  /** Píxeles de la punta de la velocidad a tope (muchos: sensación de velocidad). */
   protected readonly tipSparks = Array.from({ length: 20 }, (_, k) => ({
     k,
     // Distancias variadas (34-70 px) para que no salgan todas a la vez en línea
     len: 34 + ((k * 7) % 5) * 9,
+    // Tres tonos de rojo para los píxeles
+    color: ['#ff2a2a', '#ff6a3a', '#ffd0c0'][k % 3],
   }));
 }

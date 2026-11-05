@@ -29,7 +29,7 @@ muelles y brillos synthwave. Referencia: `src/app/ui/organisms/hud/` y
      barra palpita con su color. Si ya no llega: se apaga (opacidad 0,45 + escala de grises) y ✕.
    - La velocidad son 24 segmentos del amarillo al rosa (no cambiar a barra continua), con un
      margen del 9 % a cada lado. A tope y acelerando: laten en ola y la punta «rompe» el límite
-     (orbe rojo, anillo que se abre y 20 chispas rojas alargadas disparadas hacia fuera, a la
+     (orbe rojo, anillo que se abre y 20 píxeles cuadrados rojos (tres tonos) disparados hacia fuera, a la
      derecha y en abanico de ±50°, más allá de la barra; nunca por encima de los segmentos).
 4. **Brillo con el color de la cosa**, nunca blanco genérico: `box-shadow` y `text-shadow` con
    `color-mix(in srgb, var(--c) 30-60 %, transparent)`.

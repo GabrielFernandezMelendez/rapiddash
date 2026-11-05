@@ -401,15 +401,16 @@
     box-shadow: 0 0 10px #ff1a1a;
     animation: ring 0.45s ease-out infinite;
   }
-  // Chispas alargadas en la dirección en la que salen: dan sensación de velocidad
+  // Chispas de píxel: cuadrados sin redondear (3 tonos de rojo), como un juego retro
   .spark {
     position: absolute;
-    width: 9px;
-    height: 3px;
-    margin: -1.5px 0 0 0;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #ff7a5a 40%, #fff);
-    box-shadow: 0 0 6px var(--c);
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 0;
+    border-radius: 0;
+    background: var(--px, #ff2a2a);
+    box-shadow: 0 0 4px var(--c);
+    image-rendering: pixelated;
     transform-origin: 0 50%;
     // Abanico hacia fuera: de −50° a 50° respecto a la derecha
     --a: calc((var(--k) - 9.5) * 5.2deg);
@@ -548,12 +549,16 @@
 }
 @keyframes spark-out {
   0% {
-    transform: translateX(0) scaleX(0.6);
+    transform: translateX(0) scale(1.2);
+    opacity: 1;
+  }
+  // Los píxeles se apagan a saltos, no suave
+  70% {
     opacity: 1;
   }
   100% {
-    // Hacia fuera en su dirección (la rotación ya la orienta)
-    transform: translateX(var(--len)) scaleX(1.6);
+    // Hacia fuera en su dirección (la rotación ya la orienta), encogiéndose
+    transform: translateX(var(--len)) scale(0.4);
     opacity: 0;
   }
 }

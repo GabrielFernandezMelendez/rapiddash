@@ -79,7 +79,7 @@
           <i class="ring"></i>
           <i class="orb"></i>
           @for (p of tipSparks; track p.k) {
-            <i class="spark" [style.--k]="p.k" [style.--len.px]="p.len"></i>
+            <i class="spark" [style.--k]="p.k" [style.--len.px]="p.len" [style.--px]="p.color"></i>
           }
         </span>
       }
