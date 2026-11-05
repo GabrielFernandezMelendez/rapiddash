@@ -1,3 +1,4 @@
+import { GarageChoice } from '../../../domain/garage/garage';
 import { CarPose } from '../../../domain/race/ghost';
 import { Aesthetic } from '../../../domain/settings/aesthetic';
 import { BillboardContent, LeaderPhotoContent } from '../../../domain/track/billboards';
@@ -23,8 +24,17 @@ export interface RenderFrame {
  * sin que el núcleo dependa del framework.
  */
 export abstract class RendererPort {
-  /** `theme` es el ambiente del mapa; `aesthetic`, la estética elegida en Ajustes. */
-  abstract attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void;
+  /**
+   * `theme` es el ambiente del mapa; `aesthetic`, la estética elegida en Ajustes; `garage`, el
+   * coche (solo en retro y futurista) y el efecto al acelerar elegidos en el garaje.
+   */
+  abstract attach(
+    host: HTMLElement,
+    track: Track,
+    theme: MapTheme,
+    aesthetic: Aesthetic,
+    garage?: GarageChoice,
+  ): void;
   abstract render(frame: RenderFrame, dt: number): void;
   /** Sacude la cámara (choques). */
   abstract impact(): void;

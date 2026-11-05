@@ -35,6 +35,11 @@ export const routes: Routes = [
     loadComponent: () => import('./ui/pages/race/race.page').then((m) => m.RacePage),
   },
   {
+    path: 'garage',
+    canMatch: [hasPilot],
+    loadComponent: () => import('./ui/pages/garage/garage.page').then((m) => m.GaragePage),
+  },
+  {
     path: 'daily',
     canMatch: [hasPilot],
     loadComponent: () => import('./ui/pages/daily/daily.page').then((m) => m.DailyPage),
