@@ -40,9 +40,28 @@ export const DEFAULT_GARAGE: GarageChoice = { car: null, fx: CLASSIC_EXHAUST };
 const STARTER_CARS: ReadonlySet<number> = new Set([1]);
 const STARTER_FX: ReadonlySet<number> = new Set([CLASSIC_EXHAUST]);
 
-export function isCarUnlocked(car: number | null, debug: boolean): boolean {
+/** Abiertos sin debug: los de serie y los ganados con el cubo del mapa del día (`won`). */
+export function isCarUnlocked(
+  car: number | null,
+  debug: boolean,
+  won: readonly number[] = [],
+): boolean {
   if (car === null) return true;
-  return GARAGE_CARS.some((c) => c.id === car) && (debug || STARTER_CARS.has(car));
+  return (
+    GARAGE_CARS.some((c) => c.id === car) && (debug || STARTER_CARS.has(car) || won.includes(car))
+  );
+}
+
+/** Coches que aún se pueden ganar (sin contar el debug). */
+export function lockedCars(won: readonly number[]): number[] {
+  return GARAGE_CARS.map((c) => c.id).filter((id) => !isCarUnlocked(id, false, won));
+}
+
+/** Coche que regala el cubo: uno cerrado al azar (null si ya están todos). */
+export function pickPrize(won: readonly number[], random: () => number = Math.random): number | null {
+  const locked = lockedCars(won);
+  if (!locked.length) return null;
+  return locked[Math.min(locked.length - 1, Math.floor(random() * locked.length))];
 }
 
 export function isFxUnlocked(fx: number, debug: boolean): boolean {
@@ -53,9 +72,13 @@ export function isFxUnlocked(fx: number, debug: boolean): boolean {
  * Lo guardado, ya comprobado: lo que no existe o está cerrado (por ejemplo, al quitar el debug)
  * vuelve a lo de serie.
  */
-export function usableGarage(stored: unknown, debug: boolean): GarageChoice {
+export function usableGarage(
+  stored: unknown,
+  debug: boolean,
+  won: readonly number[] = [],
+): GarageChoice {
   const raw = (stored ?? {}) as { car?: unknown; fx?: unknown };
-  const car = typeof raw.car === 'number' && isCarUnlocked(raw.car, debug) ? raw.car : null;
+  const car = typeof raw.car === 'number' && isCarUnlocked(raw.car, debug, won) ? raw.car : null;
   const fx = typeof raw.fx === 'number' && isFxUnlocked(raw.fx, debug) ? raw.fx : CLASSIC_EXHAUST;
   return { car, fx };
 }

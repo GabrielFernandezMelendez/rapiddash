@@ -45,13 +45,15 @@ import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
+import { CarUnlocked } from '../../organisms/car-unlocked/car-unlocked';
+import { dailyCube } from '../../../core/domain/daily/daily-cube';
 
 /** Milisegundos que se ve «¡Meta!» antes de los resultados en un circuito. */
 const FINISH_BANNER_MS = 1300;
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, TranslatePipe],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, CarUnlocked, TranslatePipe],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -80,6 +82,9 @@ const FINISH_BANNER_MS = 1300;
             (retry)="retry()"
             (maps)="exit()"
           />
+          @if (wonCar(); as car) {
+            <rd-car-unlocked [carName]="'garage.car.' + car | t" (closed)="wonCar.set(null)" />
+          }
         }
       }
     </rd-race-layout>
@@ -146,6 +151,10 @@ export class RacePage {
   private lastResult: unknown = null;
   /** En un circuito, «¡Meta!» se ve un momento antes de la ventana de resultados. */
   protected readonly finishBanner = signal(false);
+  /** Coche ganado con el cubo azul en esta carrera: se anuncia con los resultados. */
+  protected readonly wonCar = signal<number | null>(null);
+  /** Día del mapa del día que se está corriendo (null fuera de él). */
+  private dailyKey: string | null = null;
   protected readonly dailyService = inject(DailyService);
   private readonly garage = inject(GarageService);
   protected readonly askMore = signal(false);
@@ -244,6 +253,7 @@ export class RacePage {
         return;
       }
       this.boardId = today.boardId;
+      this.dailyKey = today.key;
     } else if (this.t()) {
       const boardId = await this.tournamentBoard(this.t()!, map.id);
       // Torneo que no está en curso, mapa de otro día o no soy miembro: a la pantalla del torneo
@@ -284,6 +294,13 @@ export class RacePage {
         this.tutorialClosed = resolve;
         this.tutorialOpen.set(true);
       });
+    }
+    // Cubo azul del mapa del día: en su carril hasta que se coja (una vez al día)
+    const key = this.dailyKey;
+    if (key && this.garage.cubeAvailable(key)) {
+      this.session.useCube(dailyCube(key, track.circuit?.lapTrack ?? track), () =>
+        this.wonCar.set(this.garage.claimCube(key)),
+      );
     }
     await this.session.start((s) => this.onState(s));
   }

@@ -15,6 +15,8 @@ const VOLUMES_KEY = 'rapiddash.volumes';
 const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 const GARAGE_KEY = 'rapiddash.garage';
 const DEBUG_KEY = 'rapiddash.debug';
+const WON_CARS_KEY = 'rapiddash.wonCars';
+const CUBE_DAY_KEY = 'rapiddash.cubeDay';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -90,5 +92,24 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setDebug(on: boolean): void {
     writeJson(DEBUG_KEY, on);
+  }
+
+  getWonCars(): number[] {
+    const value = readJson<unknown>(WON_CARS_KEY);
+    return Array.isArray(value) ? value.filter((v): v is number => Number.isInteger(v)) : [];
+  }
+
+  addWonCar(car: number): void {
+    const won = this.getWonCars();
+    if (!won.includes(car)) writeJson(WON_CARS_KEY, [...won, car]);
+  }
+
+  getCubeDay(): string | null {
+    const value = readJson<unknown>(CUBE_DAY_KEY);
+    return typeof value === 'string' ? value : null;
+  }
+
+  setCubeDay(key: string): void {
+    writeJson(CUBE_DAY_KEY, key);
   }
 }
