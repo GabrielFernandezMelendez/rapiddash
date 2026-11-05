@@ -256,7 +256,14 @@ export class RacePage {
     }
     const track = trackOf(map);
     const aesthetic = this.aesthetic.aesthetic();
-    this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic, this.garage.choice());
+    this.renderer.attach(
+      this.scene().nativeElement,
+      track,
+      map.theme,
+      aesthetic,
+      this.garage.choice(),
+      map.terrain,
+    );
     this.controls.attach(this.surface().nativeElement as HTMLElement);
     // Los carteles se rellenan cuando llegan los datos, sin hacer esperar a la carrera
     void this.loadBillboards();

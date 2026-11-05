@@ -87,3 +87,14 @@ describe('circuitos en el mapa del día', () => {
     expect(dailyPool('2026-11-02', maps).map((m) => m.id)).toEqual(['port-loop']);
   });
 });
+
+describe('circuitos nuevos en el mapa del día', () => {
+  it('entran desde su día, así el mapa de hoy no cambia al añadirlos', () => {
+    const maps = [
+      { id: 'a', layout: 'laps' },
+      { id: 'b', layout: 'laps', dailyFrom: '2026-11-06' },
+    ];
+    expect(dailyPool('2026-11-05', maps).map((m) => m.id)).toEqual(['a']);
+    expect(dailyPool('2026-11-06', maps).map((m) => m.id)).toEqual(['a', 'b']);
+  });
+});

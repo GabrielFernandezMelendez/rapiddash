@@ -25,17 +25,19 @@ export function isDailyBoard(boardId: string): boolean {
   return boardId.startsWith('daily-');
 }
 
-/** Mapas que rotan en el mapa del día: solo los circuitos por vueltas. */
-export function dailyPool<M extends { readonly id: string; readonly layout: string }>(
-  _key: string,
-  maps: readonly M[],
-): readonly M[] {
-  return maps.filter((m) => m.layout === 'laps');
+/** Mapas que rotan en el mapa del día: solo los circuitos por vueltas (los nuevos, desde su día). */
+export function dailyPool<
+  M extends { readonly id: string; readonly layout: string; readonly dailyFrom?: string },
+>(key: string, maps: readonly M[]): readonly M[] {
+  // Un circuito nuevo entra desde su día: el mapa de hoy no cambia a mitad del día
+  return maps.filter((m) => m.layout === 'laps' && (!m.dailyFrom || m.dailyFrom <= key));
 }
 
 /** Mapa que toca ese día: rota por orden, un mapa distinto cada día. */
 export function dailyMapId(key: string, mapIds: readonly string[]): string {
-  const days = Math.floor(Date.UTC(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10)) / DAY_MS);
+  const days = Math.floor(
+    Date.UTC(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10)) / DAY_MS,
+  );
   return mapIds[((days % mapIds.length) + mapIds.length) % mapIds.length];
 }
 

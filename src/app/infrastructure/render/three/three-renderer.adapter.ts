@@ -6,6 +6,7 @@ import {
   HemisphereLight,
   Material,
   Mesh,
+  Object3D,
   PerspectiveCamera,
   Scene,
   Sprite,
@@ -24,6 +25,8 @@ import {
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
+import { applyTerrain } from './terrain-mesh';
+import { buildTerrain, FLAT, Terrain, TerrainSpec } from '../../../core/domain/track/terrain';
 import { buildGarageCar } from './garage/garage-cars';
 import { GarageFx } from './garage/garage-fx';
 import {
@@ -90,6 +93,9 @@ export class ThreeRendererAdapter extends RendererPort {
   private garageFx: GarageFx | null = null;
   private fxAnchor: Group | null = null;
   private fxId: number = CLASSIC_EXHAUST;
+  /** Relieve del circuito (llano en los mapas sin colinas). */
+  private terrain: Terrain = FLAT;
+  private cameraGround = Number.NaN;
 
   attach(
     host: HTMLElement,
@@ -97,6 +103,7 @@ export class ThreeRendererAdapter extends RendererPort {
     theme: MapTheme,
     aesthetic: Aesthetic,
     garage: GarageChoice = DEFAULT_GARAGE,
+    terrainSpec?: TerrainSpec,
   ): void {
     this.dispose();
     this.host = host;
@@ -112,6 +119,7 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scene = new Scene();
     // En un circuito se dibuja una sola vuelta: las demás pasan por los mismos sitios
     const drawn = track.circuit?.lapTrack ?? track;
+    this.terrain = terrainSpec ? buildTerrain(drawn, terrainSpec) : FLAT;
     const circuit = !!track.circuit;
     if (isSynthwave(aesthetic)) this.buildSynthwave(drawn, theme, circuit);
     else this.buildClassic(drawn, theme, circuit);
@@ -123,10 +131,23 @@ export class ThreeRendererAdapter extends RendererPort {
     // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): cuatro,
     // enormes y lejos de la carretera, al fondo de las rectas más largas
     const photoStyle = isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD;
-    this.photoGantries = distantPhotoSpots(drawn).map(
-      (spot) => new PhotoGantry(spot, photoStyle, aesthetic === 'futurist'),
+    // Con colinas: más lejos (en el llano), más grandes y más altos, por encima de las lomas
+    const hills = terrainSpec !== undefined;
+    this.photoGantries = distantPhotoSpots(drawn, 4, hills ? 120 : 0).map(
+      (spot) =>
+        new PhotoGantry(
+          spot,
+          photoStyle,
+          aesthetic === 'futurist',
+          hills ? { scale: 10, lift: this.terrain.maxRoad * 2 + 4 } : {},
+        ),
     );
-    for (const g of this.photoGantries) this.scene.add(g.group);
+    for (const g of this.photoGantries) {
+      g.group.userData['terrain'] = 'rigid';
+      this.scene.add(g.group);
+    }
+    // Todo lo de hasta aquí (menos el cielo) se pone sobre el relieve
+    if (hills) applyTerrain(this.scene, this.terrain);
     const vehicle = VEHICLES[aesthetic];
     // Coche del garaje (en retro y futurista); el fantasma sigue siendo el de la estética
     const garageCar = garageCarFor(garage, aesthetic);
@@ -158,6 +179,7 @@ export class ThreeRendererAdapter extends RendererPort {
     }
     this.scrape = new ScrapeFx(this.car, this.scene);
     this.cameraHeading = null;
+    this.cameraGround = Number.NaN;
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -189,6 +211,8 @@ export class ThreeRendererAdapter extends RendererPort {
     rim.position.set(6, 4, 10);
     this.scene.add(key, rim);
     this.sky = new SynthSky(palette);
+    // El cielo (sol y montañas) sigue a la cámara: no va sobre el relieve
+    this.sky.group.userData['terrain'] = 'skip';
     this.scene.add(
       this.sky.group,
       buildSynthScenery(track, palette),
@@ -204,23 +228,26 @@ export class ThreeRendererAdapter extends RendererPort {
     this.place(this.car, frame.car);
     for (const g of this.photoGantries) g.update(dt);
     this.carBounce.apply(this.car, dt, frame.car.leg, frame.car.lateral);
+    this.onGround(this.car);
     this.ghost.visible = frame.ghost !== null;
     if (frame.ghost) {
       this.place(this.ghost, frame.ghost);
       this.ghostBounce.apply(this.ghost, dt, frame.ghost.leg, frame.ghost.lateral);
+      this.onGround(this.ghost);
     }
     this.ghostLabel?.update(
       frame.ghost ? frame.ghostLabel : null,
       this.ghost.position.x,
       this.ghost.position.z,
     );
+    if (this.ghostLabel) this.ghostLabel.sprite.position.y += this.ghost.position.y;
     this.exhaust?.update(dt, frame.car.accelerating);
     // Velocidad aproximada para la intensidad de las chispas
     const moved = dt > 0 ? Math.abs(frame.car.distance - this.lastDistance) / dt : 0;
     this.lastDistance = frame.car.distance;
     if (this.garageFx && this.fxAnchor) {
-      this.fxAnchor.position.set(this.car.position.x, 0, this.car.position.z);
-      this.fxAnchor.rotation.set(0, this.car.rotation.y, 0);
+      this.fxAnchor.position.set(this.car.position.x, this.groundAt(this.car), this.car.position.z);
+      this.fxAnchor.rotation.set(this.car.rotation.x, this.car.rotation.y, 0, 'YXZ');
       // Al cambiar de tramo la distancia vuelve a 0: ese fotograma no cuenta como velocidad
       this.garageFx.update(dt, frame.car.accelerating, this.fxId, Math.min(moved, 80));
     }
@@ -246,12 +273,18 @@ export class ThreeRendererAdapter extends RendererPort {
     const fz = -Math.cos(this.cameraHeading);
     this.shake = Math.max(0, this.shake - dt);
     const jitter = () => (Math.random() - 0.5) * this.shake;
+    // Con colinas, la cámara sube y baja con la carretera (suavizado, sin tirones)
+    const ground = this.terrain.height(p.x, p.z);
+    if (Number.isNaN(this.cameraGround)) this.cameraGround = ground;
+    this.cameraGround += (ground - this.cameraGround) * Math.min(1, dt * 6);
+    const aheadX = p.x + fx * CAMERA.lookAhead;
+    const aheadZ = p.z + fz * CAMERA.lookAhead;
     this.camera.position.set(
       p.x - fx * CAMERA.back + jitter(),
-      CAMERA.height + jitter(),
+      this.cameraGround + CAMERA.height + jitter(),
       p.z - fz * CAMERA.back,
     );
-    this.camera.lookAt(p.x + fx * CAMERA.lookAhead, 0.6, p.z + fz * CAMERA.lookAhead);
+    this.camera.lookAt(aheadX, this.terrain.height(aheadX, aheadZ) + 0.6, aheadZ);
     this.sky?.follow(this.camera.position.x, this.camera.position.z);
 
     renderer.render(this.scene, this.camera);
@@ -301,6 +334,29 @@ export class ThreeRendererAdapter extends RendererPort {
     this.renderer = null;
     this.track = null;
     this.host = null;
+  }
+
+  /**
+   * Sube el coche a la altura del suelo y lo inclina con la pendiente (morro arriba al subir).
+   * Va después de los botes, que ponen la altura del saltito.
+   */
+  private onGround(obj: Group): void {
+    if (this.terrain === FLAT) return;
+    const yaw = obj.rotation.y;
+    // El morro mira a -Z local: hacia delante en el mundo es (-sin, -cos)
+    const fx = -Math.sin(yaw);
+    const fz = -Math.cos(yaw);
+    const x = obj.position.x;
+    const z = obj.position.z;
+    const front = this.terrain.height(x + fx * 1.2, z + fz * 1.2);
+    const back = this.terrain.height(x - fx * 1.2, z - fz * 1.2);
+    obj.position.y += (front + back) / 2;
+    obj.rotation.order = 'YXZ';
+    obj.rotation.x = Math.atan2(front - back, 2.4);
+  }
+
+  private groundAt(obj: Object3D): number {
+    return this.terrain.height(obj.position.x, obj.position.z);
   }
 
   private place(obj: Group, pose: CarPose): void {

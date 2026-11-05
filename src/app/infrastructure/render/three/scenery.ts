@@ -81,6 +81,7 @@ export function buildScenery(track: Track, palette: ScenePalette): Group {
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.set((minX + maxX) / 2, -0.05, (minZ + maxZ) / 2);
+  ground.userData['terrain'] = 'ground';
   group.add(ground);
 
   const trees = spots.filter((p) => p.tree);

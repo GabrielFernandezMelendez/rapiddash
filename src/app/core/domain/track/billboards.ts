@@ -110,7 +110,8 @@ export const DISTANT_PHOTO = {
  * prolongación de la recta (a 250 m o más del final: se quedan mucho tiempo en pantalla, también
  * al girar) o poco desviados, lo más cerca posible sin acercarse a la carretera ni a otro cartel.
  */
-export function distantPhotoSpots(track: Track, count = 4): DistantPhotoSpot[] {
+/** `farther` (m): cuánto más lejos van (en los circuitos con colinas, para quedar en el llano). */
+export function distantPhotoSpots(track: Track, count = 4, farther = 0): DistantPhotoSpot[] {
   const road = roadPoints(track);
   const runs = track.legs
     .flatMap((leg) => straightRuns(leg).map((r) => ({ leg, ...r })))
@@ -121,7 +122,7 @@ export function distantPhotoSpots(track: Track, count = 4): DistantPhotoSpot[] {
     if (spots.length === count) break;
     const end = track.pointAt(r.leg.index, r.end);
     const f = forward(end.heading);
-    const spot = distantSpotAfter(end.x, end.z, f, r.run, road, spots);
+    const spot = distantSpotAfter(end.x, end.z, f, r.run, road, spots, farther);
     if (spot) spots.push({ ...spot, heading: end.heading });
   }
   // Fuera el que queda justo enfrente de la salida (el más centrado, si lo hay): en synthwave el
@@ -147,8 +148,13 @@ function distantSpotAfter(
   run: number,
   road: readonly RoadPoint[],
   taken: readonly DistantPhotoSpot[],
+  farther: number,
 ): { x: number; z: number } | null {
-  for (let ahead = DISTANT_PHOTO.minAhead; ahead <= DISTANT_PHOTO.maxAhead; ahead += 5) {
+  for (
+    let ahead = DISTANT_PHOTO.minAhead + farther;
+    ahead <= DISTANT_PHOTO.maxAhead + farther;
+    ahead += 5
+  ) {
     for (const side of DISTANT_PHOTO.lateral) {
       // Visto desde la mitad de la recta, que no se salga por el lado de la pantalla
       if (Math.atan2(Math.abs(side), ahead + run / 2) > DISTANT_PHOTO.maxAngle) continue;
