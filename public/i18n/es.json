@@ -267,6 +267,7 @@
   "photo.error.file": "No se pudo abrir esa imagen. Prueba con otra.",
   "photo.error.save": "No se pudo guardar. Revisa la conexión e inténtalo otra vez.",
   "maps.group.laps": "Por vueltas",
+  "maps.group.experimental": "Pruebas · mundo curvo y montaña rusa",
   "maps.portLoop": "Circuito del Puerto",
   "maps.canyonRing": "Anillo del Cañón",
   "maps.summitGp": "Gran Premio de la Cumbre",
@@ -375,5 +376,8 @@
   "garage.fxDesc.10": "Descargas entre los escapes y el suelo",
   "maps.canyonRingHills": "Anillo del Cañón · Colinas",
   "maps.summitGpHills": "Gran Premio de la Cumbre · Colinas",
-  "maps.lighthouseOvalHills": "Óvalo del Faro · Colinas"
+  "maps.lighthouseOvalHills": "Óvalo del Faro · Colinas",
+  "maps.canyonRingPlanet": "Anillo del Cañón · Mini planeta",
+  "maps.lighthouseOvalTube": "Óvalo del Faro · Tubo",
+  "maps.summitGpCoaster": "Gran Premio de la Cumbre · Montaña rusa"
 }

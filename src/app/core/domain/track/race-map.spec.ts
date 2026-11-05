@@ -1,12 +1,28 @@
-import { ALL_MAPS, CIRCUIT_MAPS, trackOf, ZIGZAG_MAPS } from './race-map';
+import { ALL_MAPS, CIRCUIT_MAPS, EXPERIMENTAL_MAPS, trackOf, ZIGZAG_MAPS } from './race-map';
 import { SAMPLE_STEP, TRACK_HALF_WIDTH } from './track-constants';
 import { Track } from './track';
 
 describe('ALL_MAPS', () => {
-  it('hay 18 mapas (3 clásicos, 3 zigzag y 12 circuitos, 3 de ellos con colinas) con identificador único', () => {
-    expect(ALL_MAPS.length).toBe(18);
+  it('hay 21 mapas (3 clásicos, 3 zigzag, 12 circuitos, 3 de ellos con colinas, y 3 de prueba) con identificador único', () => {
+    expect(ALL_MAPS.length).toBe(21);
     expect(CIRCUIT_MAPS.length).toBe(12);
-    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(18);
+    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(21);
+  });
+
+  it('los mapas de prueba son circuitos ya existentes con otro mundo, fuera de los torneos', () => {
+    expect(EXPERIMENTAL_MAPS.map((m) => m.id)).toEqual([
+      'canyon-ring-planet',
+      'lighthouse-oval-tube',
+      'summit-gp-coaster',
+    ]);
+    for (const map of EXPERIMENTAL_MAPS) {
+      expect(map.experimental).toBe(true);
+      expect(map.layout).toBe('laps');
+      expect(CIRCUIT_MAPS).not.toContain(map);
+      // Mismo trazado que su circuito
+      const base = CIRCUIT_MAPS.find((m) => m.id === map.id.replace(/-(planet|tube|coaster)$/, ''))!;
+      expect(map.segments).toBe(base.segments);
+    }
   });
 
   for (const map of CIRCUIT_MAPS) {

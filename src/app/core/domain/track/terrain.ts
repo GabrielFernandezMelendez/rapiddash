@@ -14,6 +14,23 @@ export interface TerrainSpec {
   readonly amplitude: number;
   /** Cambia la forma de las ondas y de las lomas. */
   readonly seed: number;
+  /** Ciclos por vuelta de las dos ondas de la carretera (por defecto 2 y 3; más = más empinado). */
+  readonly waves?: readonly [number, number];
+  /** Mundo curvado alrededor del jugador (solo visual). */
+  readonly curve?: WorldCurve;
+}
+
+/**
+ * Curvatura del mundo, siempre alrededor de la cámara (como en los juegos de «mundo curvo»):
+ * - planet: el suelo cae como si fuera un planeta pequeño de ese radio; el horizonte se curva
+ *   hacia abajo.
+ * - tube: lo que queda a los lados se enrolla hacia arriba como el interior de un tubo de ese
+ *   radio; la pista lejana se ve en las paredes y por encima.
+ */
+export interface WorldCurve {
+  readonly kind: 'planet' | 'tube';
+  /** Radio (m). */
+  readonly radius: number;
 }
 
 export interface Terrain {
@@ -59,7 +76,8 @@ const smooth = (t: number) => {
 export function roadHeight(progress: number, lapLength: number, spec: TerrainSpec): number {
   const t = (progress / lapLength) * Math.PI * 2;
   const a = spec.seed * 1.7;
-  const wave = 0.65 * Math.sin(2 * t + a) + 0.35 * Math.sin(3 * t + a * 2.3);
+  const [w1, w2] = spec.waves ?? [2, 3];
+  const wave = 0.65 * Math.sin(w1 * t + a) + 0.35 * Math.sin(w2 * t + a * 2.3);
   // De 0 a `amplitude`: la carretera nunca baja del llano
   return (spec.amplitude * (wave + 1)) / 2;
 }

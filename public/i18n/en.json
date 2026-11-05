@@ -267,6 +267,7 @@
   "photo.error.file": "That image couldn't be opened. Try another one.",
   "photo.error.save": "Couldn't save it. Check your connection and try again.",
   "maps.group.laps": "Lap circuits",
+  "maps.group.experimental": "Tests · curved world and roller coaster",
   "maps.portLoop": "Harbour Circuit",
   "maps.canyonRing": "Canyon Ring",
   "maps.summitGp": "Summit Grand Prix",
@@ -375,5 +376,8 @@
   "garage.fxDesc.10": "Electric arcs between the exhausts and the ground",
   "maps.canyonRingHills": "Canyon Ring · Hills",
   "maps.summitGpHills": "Summit Grand Prix · Hills",
-  "maps.lighthouseOvalHills": "Lighthouse Oval · Hills"
+  "maps.lighthouseOvalHills": "Lighthouse Oval · Hills",
+  "maps.canyonRingPlanet": "Canyon Ring · Mini planet",
+  "maps.lighthouseOvalTube": "Lighthouse Oval · Tube",
+  "maps.summitGpCoaster": "Summit Grand Prix · Roller coaster"
 }
