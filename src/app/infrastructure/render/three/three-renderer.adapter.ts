@@ -16,7 +16,6 @@ import {
 } from 'three';
 import { RenderFrame, RendererPort } from '../../../core/application/ports/out/renderer.port';
 import { CarPose } from '../../../core/domain/race/ghost';
-import { Aesthetic, isSynthwave } from '../../../core/domain/settings/aesthetic';
 import {
   BillboardContent,
   distantPhotoSpots,
@@ -29,28 +28,14 @@ import { applyTerrain } from './terrain-mesh';
 import { buildTerrain, FLAT, Terrain, TerrainSpec } from '../../../core/domain/track/terrain';
 import { buildGarageCar } from './garage/garage-cars';
 import { GarageFx } from './garage/garage-fx';
-import {
-  CLASSIC_EXHAUST,
-  DEFAULT_GARAGE,
-  GarageChoice,
-  garageCarFor,
-} from '../../../core/domain/garage/garage';
-import { CLASSIC_BILLBOARD, LeaderBillboards, SYNTH_BILLBOARD } from './billboards';
-import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
+import { CLASSIC_EXHAUST, DEFAULT_GARAGE, GarageChoice } from '../../../core/domain/garage/garage';
+import { LeaderBillboards, SYNTH_BILLBOARD } from './billboards';
+import { CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { GhostLabel } from './ghost-label';
-import { buildScenery } from './scenery';
-import { PALETTES } from './themes';
 import { SYNTH_PALETTES } from './synthwave/synth-palettes';
 import { buildSynthScenery, skyTexture, SynthSky } from './synthwave/synth-world';
-import { buildRetroCar, buildShip } from './synthwave/vehicles';
+import { buildRetroCar } from './synthwave/vehicles';
 import { buildTrackMesh } from './track-mesh';
-
-/** Vehículo de cada estética (el fantasma usa la misma forma, translúcida). */
-const VEHICLES: Record<Aesthetic, (ghost: boolean) => Group> = {
-  classic: buildCar,
-  retro: buildRetroCar,
-  futurist: buildShip,
-};
 
 // Cámara estilo Subway Surfers, algo alejada para leer la carretera con antelación
 const CAMERA = {
@@ -71,8 +56,8 @@ export class ThreeRendererAdapter extends RendererPort {
   // Lejos (900 m) para ver los carteles lejanos con la foto del líder
   private camera = new PerspectiveCamera(CAMERA.fov, 9 / 19, 0.1, 900);
   private track: Track | null = null;
-  private car = buildCar();
-  private ghost = buildCar(true);
+  private car = buildRetroCar();
+  private ghost = buildRetroCar(true);
   private exhaust: ExhaustFx | null = null;
   private scrape: ScrapeFx | null = null;
   private carBounce = new CarBounce();
@@ -86,7 +71,7 @@ export class ThreeRendererAdapter extends RendererPort {
   /** Lateral que sigue la cámara: va con algo de retraso para que el coche se vea moverse. */
   private cameraLateral = 0;
   private cameraLeg = -1;
-  /** Sol y montañas synthwave: siguen a la cámara (null en la estética clásica). */
+  /** Sol y montañas synthwave: siguen a la cámara. */
   private sky: SynthSky | null = null;
   private billboards: LeaderBillboards | null = null;
   private photoGantries: PhotoGantry[] = [];
@@ -101,7 +86,6 @@ export class ThreeRendererAdapter extends RendererPort {
     host: HTMLElement,
     track: Track,
     theme: MapTheme,
-    aesthetic: Aesthetic,
     garage: GarageChoice = DEFAULT_GARAGE,
     terrainSpec?: TerrainSpec,
   ): void {
@@ -120,25 +104,18 @@ export class ThreeRendererAdapter extends RendererPort {
     // En un circuito se dibuja una sola vuelta: las demás pasan por los mismos sitios
     const drawn = track.circuit?.lapTrack ?? track;
     this.terrain = terrainSpec ? buildTerrain(drawn, terrainSpec) : FLAT;
-    const circuit = !!track.circuit;
-    if (isSynthwave(aesthetic)) this.buildSynthwave(drawn, theme, circuit);
-    else this.buildClassic(drawn, theme, circuit);
-    this.billboards = new LeaderBillboards(
-      drawn,
-      isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
-    );
+    this.buildWorld(drawn, theme, !!track.circuit);
+    this.billboards = new LeaderBillboards(drawn, SYNTH_BILLBOARD);
     this.scene.add(this.billboards.group);
-    // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): cuatro,
-    // enormes y lejos de la carretera, al fondo de las rectas más largas
-    const photoStyle = isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD;
+    // Carteles con la foto del líder del torneo: cuatro, enormes y lejos de la carretera, al
+    // fondo de las rectas más largas
     // Con colinas: más lejos (en el llano), más grandes y más altos, por encima de las lomas
     const hills = terrainSpec !== undefined;
     this.photoGantries = distantPhotoSpots(drawn, 4, hills ? 120 : 0).map(
       (spot) =>
         new PhotoGantry(
           spot,
-          photoStyle,
-          aesthetic === 'futurist',
+          SYNTH_BILLBOARD,
           hills ? { scale: 10, lift: this.terrain.maxRoad * 2 + 4 } : {},
         ),
     );
@@ -148,18 +125,16 @@ export class ThreeRendererAdapter extends RendererPort {
     }
     // Todo lo de hasta aquí (menos el cielo) se pone sobre el relieve
     if (hills) applyTerrain(this.scene, this.terrain);
-    const vehicle = VEHICLES[aesthetic];
-    // Coche del garaje (en retro y futurista); el fantasma sigue siendo el de la estética
-    const garageCar = garageCarFor(garage, aesthetic);
-    this.car = garageCar === null ? vehicle(false) : buildGarageCar(garageCar);
-    this.ghost = vehicle(true);
+    // Coche del garaje; el fantasma sigue siendo el deportivo de serie
+    this.car = garage.car === null ? buildRetroCar() : buildGarageCar(garage.car);
+    this.ghost = buildRetroCar(true);
     this.carBounce = new CarBounce();
     this.ghostBounce = new CarBounce();
     this.cameraLeg = -1;
     this.ghost.visible = false;
     this.scene.add(this.ghost, this.car);
-    // Color del fantasma de cada estética (--rd-ghost)
-    this.ghostLabel = new GhostLabel(isSynthwave(aesthetic) ? '#2de2e6' : '#8fd3ff');
+    // Color del fantasma (--rd-ghost)
+    this.ghostLabel = new GhostLabel('#2de2e6');
     this.scene.add(this.ghostLabel.sprite);
     // Efecto al acelerar: el 1 es el escape de siempre; los demás siguen al coche desde fuera
     // (en un grupo que copia su posición y giro, no los botes ni el aplastado)
@@ -186,21 +161,8 @@ export class ThreeRendererAdapter extends RendererPort {
     this.resizeObserver.observe(host);
   }
 
-  /** Estética clásica: cielo claro, árboles y muros de franjas. */
-  private buildClassic(track: Track, theme: MapTheme, circuit: boolean): void {
-    const palette = PALETTES[theme];
-    this.sky = null;
-    this.scene.background = new Color(palette.sky);
-    this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
-    this.scene.add(new HemisphereLight(0xffffff, palette.ground, 0.65 * Math.PI));
-    const sun = new DirectionalLight(0xffffff, 0.75 * Math.PI);
-    sun.position.set(-30, 50, 20);
-    this.scene.add(sun);
-    this.scene.add(buildScenery(track, palette), buildTrackMesh(track, palette, circuit));
-  }
-
-  /** Estéticas retro y futurista: noche synthwave con sol a franjas, rejilla y neón. */
-  private buildSynthwave(track: Track, theme: MapTheme, circuit: boolean): void {
+  /** Noche synthwave con sol a franjas, rejilla y neón. */
+  private buildWorld(track: Track, theme: MapTheme, circuit: boolean): void {
     const palette = SYNTH_PALETTES[theme];
     this.scene.background = skyTexture(palette);
     this.scene.fog = new Fog(palette.sky, palette.fogNear, palette.fogFar);
@@ -226,7 +188,6 @@ export class ThreeRendererAdapter extends RendererPort {
     if (!track || !renderer) return;
 
     this.place(this.car, frame.car);
-    for (const g of this.photoGantries) g.update(dt);
     this.carBounce.apply(this.car, dt, frame.car.leg, frame.car.lateral);
     this.onGround(this.car);
     this.ghost.visible = frame.ghost !== null;

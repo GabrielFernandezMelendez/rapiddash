@@ -17,17 +17,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { GarageScenePort } from '../../../../core/application/ports/out/garage-scene.port';
-import { Aesthetic } from '../../../../core/domain/settings/aesthetic';
-import { buildCar } from '../car-mesh';
-import { buildRetroCar, buildShip } from '../synthwave/vehicles';
+import { buildRetroCar } from '../synthwave/vehicles';
 import { buildGarageCar } from './garage-cars';
 import { GarageFx } from './garage-fx';
 
-const STOCK: Record<Aesthetic, () => Group> = {
-  classic: () => buildCar(false),
-  retro: () => buildRetroCar(false),
-  futurist: () => buildShip(false),
-};
 
 /** El escape de los vehículos sale a esta altura (los del garaje y los de serie). */
 const EXHAUST_Y = 0.32;
@@ -70,10 +63,10 @@ export class GarageSceneAdapter extends GarageScenePort {
     loop();
   }
 
-  show(car: number | null, aesthetic: Aesthetic): void {
+  show(car: number | null): void {
     this.fx?.dispose();
     this.turntable.clear();
-    const model = car === null ? STOCK[aesthetic]() : buildGarageCar(car);
+    const model = car === null ? buildRetroCar() : buildGarageCar(car);
     // Puntos de salida de los efectos según el tamaño del coche (antes de girarlo)
     const size = new Box3().setFromObject(model);
     this.fx = new GarageFx(model, {

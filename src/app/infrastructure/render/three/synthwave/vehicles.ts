@@ -16,8 +16,8 @@ import {
 } from 'three';
 import { flat } from '../track-mesh';
 
-// Vehículos de las estéticas synthwave. Mismas medidas que el coche clásico (1,4 × 2,6 m,
-// morro hacia -z) para que la física, la cámara y los efectos encajen igual.
+// Deportivo synthwave de serie (1,4 × 2,6 m, morro hacia -z): la física, la cámara y los
+// efectos cuentan con estas medidas.
 
 const NEON_PINK = 0xff4fd8;
 const NEON_CYAN = 0x2de2e6;
@@ -140,42 +140,5 @@ export function buildRetroCar(ghost = false): Group {
     g.add(wheel, ring);
   }
   g.add(underglow(ghost));
-  return g;
-}
-
-/** Futurista: nave en forma de punta de flecha con canto de neón y dos propulsores. */
-export function buildShip(ghost = false): Group {
-  const g = new Group();
-  const hull = new ExtrudeGeometry(
-    shape([
-      [0, 1.6],
-      [0.85, -1.25],
-      [0, -0.75],
-      [-0.85, -1.25],
-    ]),
-    { depth: 0.38, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 1 },
-  );
-  hull.rotateX(-Math.PI / 2);
-  hull.translate(0, 0.22, 0);
-  g.add(new Mesh(hull, ghost ? ghostMaterial() : flat(0x170a35)));
-  g.add(new LineSegments(new EdgesGeometry(hull, 20), new LineBasicMaterial({ color: NEON_CYAN })));
-  const spine = new Mesh(
-    new BoxGeometry(0.08, 0.06, 2.2),
-    new MeshBasicMaterial({ color: ghost ? NEON_CYAN : NEON_PINK }),
-  );
-  spine.position.set(0, 0.72, -0.1);
-  g.add(spine);
-  if (!ghost) {
-    for (const x of [-0.42, 0.42]) {
-      const jet = new Mesh(
-        new BoxGeometry(0.28, 0.16, 0.12),
-        new MeshBasicMaterial({ color: 0xffd319 }),
-      );
-      jet.position.set(x, 0.42, 1.12);
-      g.add(jet);
-    }
-  }
-  // Sin luz de bajos: con la forma de flecha se veía como un cuadrado claro debajo de la nave.
-  // El brillo lo ponen los propulsores (efecto de escape)
   return g;
 }

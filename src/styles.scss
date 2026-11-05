@@ -1,47 +1,45 @@
-// Tokens de diseño globales: asfalto, tiza y bordillo
+// Tokens de diseño globales: noche synthwave (asfalto violeta, neón y sol)
 :root {
-  --rd-asphalt: #171b21;
-  --rd-asphalt-2: #20262e;
-  --rd-asphalt-3: #2a313b;
-  --rd-line: #353e49;
-  --rd-chalk: #ece8de;
-  --rd-muted: #9aa3ad;
-  --rd-kerb: #e2483a;
-  --rd-signal: #f3c13a;
-  --rd-go: #46c06a;
-  --rd-boost: #ffb347;
-  --rd-ghost: #8fd3ff;
+  --rd-asphalt: #0d0420;
+  --rd-asphalt-2: #1a0838;
+  --rd-asphalt-3: #26104a;
+  --rd-line: #3b2766;
+  --rd-chalk: #f4ecff;
+  --rd-muted: #a99cc4;
+  --rd-kerb: #ff2a6d;
+  --rd-signal: #ffd319;
+  --rd-go: #5dff9a;
+  --rd-boost: #ff901f;
+  --rd-ghost: #2de2e6;
 
-  --rd-font-display: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif;
-  --rd-font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --rd-font-display: 'Kanit', 'Arial Narrow', system-ui, sans-serif;
+  --rd-font-body: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /** Estilo de la letra de títulos y botones (cursiva en synthwave). */
-  --rd-display-style: normal;
-  /** HUD de carrera: textos y tiempo (en clásico, la letra de títulos). */
-  --rd-font-hud-text: var(--rd-font-display);
-  --rd-font-hud-time: var(--rd-font-display);
+  /** Estilo de la letra de títulos y botones. */
+  --rd-display-style: italic;
+  /** HUD de carrera: textos y tiempo. */
+  --rd-font-hud-text: 'Chakra Petch', system-ui, sans-serif;
+  --rd-font-hud-time: 'Audiowide', system-ui, sans-serif;
   /* Cartel de vuelta y «¡Meta!»: la letra del «DASH» del logo */
-  --rd-dash-font: 800 italic 64px / 0.9 var(--rd-font-display);
-  --rd-dash-case: uppercase;
-  --rd-dash-color: var(--rd-signal);
-  --rd-dash-shadow: 0 5px 0 #6b4f0c, 0 10px 18px rgb(0 0 0 / 0.45);
-  --rd-dash-transform: skewX(-6deg);
-  --rd-dash-small-shadow: 0 4px 0 #3a3f47, 0 8px 14px rgb(0 0 0 / 0.4);
-  --rd-dash-pill: rgb(13 16 20 / 0.62);
-  --rd-dash-pill-ring: transparent;
+  --rd-dash-font: 400 78px / 1 'Mr Dafoe', cursive;
+  --rd-dash-case: none;
+  --rd-dash-color: #ff5ad9;
+  --rd-dash-shadow: 0 0 6px #ff5ad9, 0 0 18px #ff2a6d, 0 0 36px #ff2a6d, 0 4px 0 #6a0d5c;
+  --rd-dash-transform: rotate(-6deg);
+  --rd-dash-small-shadow: 0 0 6px #2de2e6, 0 0 18px #2de2e6;
+  --rd-dash-pill: rgb(20 7 46 / 0.7);
+  --rd-dash-pill-ring: #2de2e6;
   /** Botones: fondo y relieve del principal; contorno del secundario. */
-  --rd-button-primary-bg: var(--rd-signal);
-  --rd-button-primary-ink: #1a1408;
-  --rd-button-primary-shadow: 0 4px 0 #b88d1e;
-  --rd-button-secondary-shadow: inset 0 0 0 1px var(--rd-line);
-  --rd-button-secondary-ink: var(--rd-chalk);
+  --rd-button-primary-bg: linear-gradient(#ffd319, #ff901f 55%, #ff2a6d);
+  --rd-button-primary-ink: #1a0420;
+  --rd-button-primary-shadow: 0 0 22px rgb(255 42 109 / 0.5), 0 4px 0 #8c1446;
+  --rd-button-secondary-shadow: inset 0 0 0 1.5px var(--rd-neon-cyan), 0 0 12px rgb(45 226 230 / 0.35);
+  --rd-button-secondary-ink: var(--rd-neon-cyan);
 
   --rd-radius: 10px;
-  --rd-kerb-stripe: repeating-linear-gradient(
-    90deg,
-    var(--rd-kerb) 0 10px,
-    var(--rd-chalk) 10px 20px
-  );
+  --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff4fd8 0 10px, #2de2e6 10px 20px);
+  --rd-neon-pink: #ff4fd8;
+  --rd-neon-cyan: #2de2e6;
   color-scheme: dark;
 }
 
@@ -81,51 +79,4 @@ button {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-// Estéticas retro y futurista: noche synthwave. Solo cambian los tokens; los componentes son
-// los mismos. Las fuentes (Kanit, Chakra Petch, Audiowide, Russo One y Mr Dafoe) se cargan
-// desde AestheticService solo cuando se elige una de estas estéticas.
-:root[data-aesthetic='retro'],
-:root[data-aesthetic='futurist'] {
-  --rd-asphalt: #0d0420;
-  --rd-asphalt-2: #1a0838;
-  --rd-asphalt-3: #26104a;
-  --rd-line: #3b2766;
-  --rd-chalk: #f4ecff;
-  --rd-muted: #a99cc4;
-  --rd-kerb: #ff2a6d;
-  --rd-signal: #ffd319;
-  --rd-go: #5dff9a;
-  --rd-boost: #ff901f;
-  --rd-ghost: #2de2e6;
-  --rd-neon-pink: #ff4fd8;
-  --rd-neon-cyan: #2de2e6;
-
-  --rd-font-display: 'Kanit', 'Arial Narrow', system-ui, sans-serif;
-  --rd-font-body: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --rd-display-style: italic;
-  --rd-font-hud-text: 'Chakra Petch', system-ui, sans-serif;
-  --rd-font-hud-time: 'Audiowide', system-ui, sans-serif;
-  --rd-dash-font: 400 78px / 1 'Mr Dafoe', cursive;
-  --rd-dash-case: none;
-  --rd-dash-color: #ff5ad9;
-  --rd-dash-shadow: 0 0 6px #ff5ad9, 0 0 18px #ff2a6d, 0 0 36px #ff2a6d, 0 4px 0 #6a0d5c;
-  --rd-dash-transform: rotate(-6deg);
-  --rd-dash-small-shadow: 0 0 6px #2de2e6, 0 0 18px #2de2e6;
-  --rd-dash-pill: rgb(20 7 46 / 0.7);
-  --rd-dash-pill-ring: #2de2e6;
-
-  --rd-button-primary-bg: linear-gradient(#ffd319, #ff901f 55%, #ff2a6d);
-  --rd-button-primary-ink: #1a0420;
-  --rd-button-primary-shadow: 0 0 22px rgb(255 42 109 / 0.5), 0 4px 0 #8c1446;
-  --rd-button-secondary-shadow:
-    inset 0 0 0 1.5px var(--rd-neon-cyan), 0 0 12px rgb(45 226 230 / 0.35);
-  --rd-button-secondary-ink: var(--rd-neon-cyan);
-  --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff4fd8 0 10px, #2de2e6 10px 20px);
-}
-
-:root[data-aesthetic='retro'] body,
-:root[data-aesthetic='futurist'] body {
-  background: #0d0420;
 }

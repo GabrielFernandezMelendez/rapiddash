@@ -30,7 +30,6 @@ import { CloudRecordsService } from '../../../shared/account/cloud-records.servi
 import { DailyService } from '../../../shared/account/daily.service';
 import { GarageService } from '../../../shared/garage/garage.service';
 import { RankingService } from '../../../shared/account/ranking.service';
-import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { Countdown } from '../../organisms/countdown/countdown';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
@@ -113,7 +112,6 @@ export class RacePage {
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
-  private readonly aesthetic = inject(AestheticService);
   private readonly renderer = inject(RendererPort);
   private readonly controls = inject(InputPort);
   private readonly loop = inject(GameLoopPort);
@@ -255,12 +253,10 @@ export class RacePage {
       this.tournamentCode = this.t()!.toUpperCase();
     }
     const track = trackOf(map);
-    const aesthetic = this.aesthetic.aesthetic();
     this.renderer.attach(
       this.scene().nativeElement,
       track,
       map.theme,
-      aesthetic,
       this.garage.choice(),
       map.terrain,
     );
@@ -277,7 +273,7 @@ export class RacePage {
       bestRuns: this.bestRuns,
       audio: this.audio,
       records: this.isDaily() ? { publish: (run) => void this.publishSpecial(run) } : this.cloudRecords,
-    }, aesthetic, this.boardId);
+    }, this.boardId);
     if (pick?.ranked) await this.useRival(pick.ranked);
     if (showTutorialBeforeRace(this.settings.getTutorialSeen())) {
       await new Promise<void>((resolve) => {

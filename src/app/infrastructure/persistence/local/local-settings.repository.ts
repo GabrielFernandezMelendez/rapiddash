@@ -1,5 +1,4 @@
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
-import { Aesthetic, isAesthetic } from '../../../core/domain/settings/aesthetic';
 import { isLanguage, Language } from '../../../core/domain/settings/language';
 import { toVolumes, Volumes } from '../../../core/domain/settings/volume';
 import { RIVAL_CHOICES, RivalChoice } from '../../../core/domain/race/ranking';
@@ -7,10 +6,8 @@ import { GarageChoice } from '../../../core/domain/garage/garage';
 import { readJson, writeJson } from './safe-storage';
 
 const LANGUAGE_KEY = 'rapiddash.language';
-const AESTHETIC_KEY = 'rapiddash.aesthetic';
 const RIVALS_KEY = 'rapiddash.rivals';
 const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
-const AESTHETIC_HINT_KEY = 'rapiddash.aestheticHintSeen';
 const VOLUMES_KEY = 'rapiddash.volumes';
 const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 const GARAGE_KEY = 'rapiddash.garage';
@@ -26,15 +23,6 @@ export class LocalSettingsRepository extends SettingsRepository {
     writeJson(LANGUAGE_KEY, language);
   }
 
-  getAesthetic(): Aesthetic | null {
-    const value = readJson<unknown>(AESTHETIC_KEY);
-    return isAesthetic(value) ? value : null;
-  }
-
-  setAesthetic(aesthetic: Aesthetic): void {
-    writeJson(AESTHETIC_KEY, aesthetic);
-  }
-
   getRival(mapId: string): RivalChoice | null {
     const value = readJson<Record<string, unknown>>(RIVALS_KEY)?.[mapId];
     return RIVAL_CHOICES.includes(value as RivalChoice) ? (value as RivalChoice) : null;
@@ -42,14 +30,6 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setRival(mapId: string, choice: RivalChoice): void {
     writeJson(RIVALS_KEY, { ...readJson<Record<string, unknown>>(RIVALS_KEY), [mapId]: choice });
-  }
-
-  getAestheticHintSeen(): boolean {
-    return readJson<boolean>(AESTHETIC_HINT_KEY) === true;
-  }
-
-  setAestheticHintSeen(): void {
-    writeJson(AESTHETIC_HINT_KEY, true);
   }
 
   getTutorialSeen(): boolean {

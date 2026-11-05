@@ -1,26 +1,20 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { APP_VERSION } from '../../../core/domain/settings/app-version';
 import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
-import { AestheticSwitch } from '../../molecules/aesthetic-switch/aesthetic-switch';
 import { LanguageSwitch } from '../../molecules/language-switch/language-switch';
 import { Modal } from '../../molecules/modal/modal';
 import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
 
 @Component({
   selector: 'rd-settings-dialog',
-  imports: [Modal, LanguageSwitch, AestheticSwitch, VolumeSlider, Button, TranslatePipe],
+  imports: [Modal, LanguageSwitch, VolumeSlider, Button, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-modal [label]="'settings.title' | t" (dismiss)="closed.emit()">
       <span modal-title>{{ 'settings.title' | t }}</span>
-      <div class="field">
-        <span class="label">{{ 'settings.aesthetic' | t }}</span>
-        <rd-aesthetic-switch [value]="aesthetic()" (changed)="aestheticChange.emit($event)" />
-      </div>
       <div class="field">
         <span class="label">{{ 'settings.sound' | t }}</span>
         <rd-volume-slider
@@ -156,8 +150,6 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
 export class SettingsDialog {
   readonly language = input.required<Language>();
   readonly languageChange = output<Language>();
-  readonly aesthetic = input.required<Aesthetic>();
-  readonly aestheticChange = output<Aesthetic>();
   readonly closed = output<void>();
   readonly tutorial = output<void>();
   readonly volumes = input.required<Volumes>();

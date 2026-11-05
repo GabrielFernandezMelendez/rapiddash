@@ -1,7 +1,6 @@
 import { TerrainSpec } from '../../../domain/track/terrain';
 import { GarageChoice } from '../../../domain/garage/garage';
 import { CarPose } from '../../../domain/race/ghost';
-import { Aesthetic } from '../../../domain/settings/aesthetic';
 import { BillboardContent, LeaderPhotoContent } from '../../../domain/track/billboards';
 import { MapTheme } from '../../../domain/track/race-map';
 import { Track } from '../../../domain/track/track';
@@ -26,15 +25,13 @@ export interface RenderFrame {
  */
 export abstract class RendererPort {
   /**
-   * `theme` es el ambiente del mapa; `aesthetic`, la estética elegida en Ajustes; `garage`, el
-   * coche (solo en retro y futurista) y el efecto al acelerar elegidos en el garaje; `terrain`,
-   * el relieve de los circuitos con colinas (solo visual).
+   * `theme` es el ambiente del mapa; `garage`, el coche y el efecto al acelerar elegidos en el
+   * garaje; `terrain`, el relieve de los circuitos con colinas (solo visual).
    */
   abstract attach(
     host: HTMLElement,
     track: Track,
     theme: MapTheme,
-    aesthetic: Aesthetic,
     garage?: GarageChoice,
     terrain?: TerrainSpec,
   ): void;

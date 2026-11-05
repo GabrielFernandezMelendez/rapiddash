@@ -1,5 +1,3 @@
-import { Aesthetic, isSynthwave } from '../settings/aesthetic';
-
 /**
  * Canción de carrera. Rutas relativas a public/audio. Tiempos en segundos:
  * empieza en `start` y, al llegar al final (o a `loopEnd`), vuelve a `loopStart`.
@@ -11,13 +9,9 @@ export interface MusicTrack {
   readonly loopEnd?: number;
 }
 
-/**
- * Motor. «rev»: una subida de vueltas; arranca en el punto que toca por la velocidad y repite
- * el tramo alto. «loop»: un zumbido continuo que se repite entero y sube de tono con la velocidad.
- */
+/** Motor: un zumbido continuo que se repite entero y sube de tono con la velocidad. */
 export interface EngineSound {
   readonly file: string;
-  readonly mode: 'rev' | 'loop';
 }
 
 const track = (file: string, start = 0, loopStart = start): MusicTrack => ({
@@ -26,33 +20,14 @@ const track = (file: string, start = 0, loopStart = start): MusicTrack => ({
   loopStart,
 });
 
-/** Clásico: canciones variadas. Retro y futurista comparten las synthwave. */
-const CLASSIC_MUSIC: readonly MusicTrack[] = [
-  track('music/classic/tea-tyme.mp3'),
-  track('music/classic/future-beat-619128.mp3'),
-  track('music/classic/sport-sports-rock-music-622904.mp3', 3),
-  track('music/classic/jazz-music-619412.mp3', 8, 10),
-];
-
-const SYNTH_MUSIC: readonly MusicTrack[] = [
+/** Canciones synthwave de carrera y de los menús. */
+export const MUSIC: readonly MusicTrack[] = [
   track('music/synth/circuit-synthwave-alt-23844.mp3'),
   track('music/synth/80s-synthwave-vibe-loop-22508.mp3', 28),
   track('music/synth/forgotten-melody-cassette-retrowave-beat-411173.mp3', 8),
 ];
 
-const ENGINES: Record<Aesthetic, EngineSound> = {
-  classic: { file: 'engine/classic.mp3', mode: 'rev' },
-  retro: { file: 'engine/retro.mp3', mode: 'loop' },
-  futurist: { file: 'engine/futurist.mp3', mode: 'loop' },
-};
-
-export function musicFor(aesthetic: Aesthetic): readonly MusicTrack[] {
-  return isSynthwave(aesthetic) ? SYNTH_MUSIC : CLASSIC_MUSIC;
-}
-
-export function engineFor(aesthetic: Aesthetic): EngineSound {
-  return ENGINES[aesthetic];
-}
+export const ENGINE: EngineSound = { file: 'engine/retro.mp3' };
 
 /** Canción al azar para una carrera nueva, sin repetir la anterior si hay donde elegir. */
 export function pickTrack(

@@ -1,8 +1,7 @@
 /**
  * Garaje: el coche y el efecto al acelerar que lleva el jugador.
  *
- * Los coches son synthwave: se usan en las estéticas retro y futurista (sustituyen al deportivo y
- * a la nave). En clásico sigue el coche de siempre. El efecto vale en las tres.
+ * Los coches sustituyen al deportivo retro de serie; el efecto acompaña a cualquiera.
  * Hasta que haya forma de ganarlos, solo están abiertos los de serie; el modo debug lo abre todo.
  */
 
@@ -28,7 +27,7 @@ export const GARAGE_FX: readonly GarageFx[] = Array.from({ length: 10 }, (_, i) 
 
 export const CLASSIC_EXHAUST = 1;
 
-/** Lo que lleva el jugador. `car: null` = el vehículo de serie de la estética. */
+/** Lo que lleva el jugador. `car: null` = el deportivo de serie. */
 export interface GarageChoice {
   readonly car: number | null;
   readonly fx: number;
@@ -58,11 +57,6 @@ export function usableGarage(stored: unknown, debug: boolean): GarageChoice {
   const car = typeof raw.car === 'number' && isCarUnlocked(raw.car, debug) ? raw.car : null;
   const fx = typeof raw.fx === 'number' && isFxUnlocked(raw.fx, debug) ? raw.fx : CLASSIC_EXHAUST;
   return { car, fx };
-}
-
-/** ¿Lleva coche del garaje en esta estética? (en clásico, nunca). */
-export function garageCarFor(choice: GarageChoice, aesthetic: string): number | null {
-  return aesthetic === 'classic' ? null : choice.car;
 }
 
 /** Toques seguidos en la versión (en Ajustes) que activan el modo debug. */

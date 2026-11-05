@@ -11,7 +11,11 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { flagEmoji } from '../../../core/domain/profile/country';
-import { BillboardContent, BillboardEntry, billboardLegs } from '../../../core/domain/track/billboards';
+import {
+  BillboardContent,
+  BillboardEntry,
+  billboardLegs,
+} from '../../../core/domain/track/billboards';
 import { Junction, Track } from '../../../core/domain/track/track';
 
 /** Aspecto de los carteles en cada estética (los textos y datos son los mismos). */
@@ -30,20 +34,6 @@ export interface BillboardStyle {
   readonly glow: boolean;
   readonly italic: boolean;
 }
-
-export const CLASSIC_BILLBOARD: BillboardStyle = {
-  background: '#171b21',
-  ink: '#ffffff',
-  muted: '#9aa3ad',
-  gold: '#f3c13a',
-  silver: '#9aa3ad',
-  titleFont: "700 {px}px 'Saira Condensed', 'Arial Narrow', sans-serif",
-  nameFont: "800 {px}px 'Saira Condensed', 'Arial Narrow', sans-serif",
-  valueFont: "500 {px}px 'IBM Plex Sans', system-ui, sans-serif",
-  post: 0x5c6672,
-  glow: false,
-  italic: false,
-};
 
 export const SYNTH_BILLBOARD: BillboardStyle = {
   background: '#14072e',
