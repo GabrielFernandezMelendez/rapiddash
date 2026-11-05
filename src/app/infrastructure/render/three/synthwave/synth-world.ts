@@ -184,6 +184,7 @@ export function buildSynthScenery(track: Track, p: SynthPalette): Group {
   for (const m of [ground, lines]) {
     m.rotation.x = -Math.PI / 2;
     m.position.set((minX + maxX) / 2, m === ground ? -0.06 : -0.04, (minZ + maxZ) / 2);
+    m.userData['terrain'] = 'ground';
     group.add(m);
   }
 

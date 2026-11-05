@@ -372,5 +372,8 @@
   "garage.fx.9": "Pixels",
   "garage.fxDesc.9": "8-bit cubes that fall and fade",
   "garage.fx.10": "Lightning",
-  "garage.fxDesc.10": "Electric arcs between the exhausts and the ground"
+  "garage.fxDesc.10": "Electric arcs between the exhausts and the ground",
+  "maps.canyonRingHills": "Canyon Ring · Hills",
+  "maps.summitGpHills": "Summit Grand Prix · Hills",
+  "maps.lighthouseOvalHills": "Lighthouse Oval · Hills"
 }

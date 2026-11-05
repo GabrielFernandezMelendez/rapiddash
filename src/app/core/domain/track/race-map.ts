@@ -1,3 +1,4 @@
+import { TerrainSpec } from './terrain';
 import {
   arc,
   left,
@@ -27,7 +28,10 @@ export type MapId =
   | 'glacier-loop'
   | 'neon-snake'
   | 'canyon-maze'
-  | 'summit-stairs';
+  | 'summit-stairs'
+  | 'canyon-ring-hills'
+  | 'summit-gp-hills'
+  | 'lighthouse-oval-hills';
 export type MapTheme = 'bay' | 'canyon' | 'summit';
 
 /**
@@ -46,6 +50,10 @@ export interface RaceMap {
   readonly difficulty: 1 | 2 | 3;
   readonly theme: MapTheme;
   readonly segments: readonly TrackSegment[];
+  /** Relieve (solo visual): la carretera sube y baja entre colinas. Sin él, todo es llano. */
+  readonly terrain?: TerrainSpec;
+  /** Día (AAAA-MM-DD) desde el que puede salir como mapa del día (así no cambia el de hoy). */
+  readonly dailyFrom?: string;
 }
 
 // Los mapas avanzan en "escalera" (norte, este u oeste, nunca hacia atrás) para que la pista
@@ -404,7 +412,7 @@ export const ZIGZAG_MAPS: readonly RaceMap[] = [
 // acaba en una recta que vuelve a la salida. Se dan CIRCUIT_LAPS vueltas. Las longitudes salen de
 // cerrar cada trazado con el código real (race-map.spec.ts comprueba que cierran y no se pisan).
 // Son experimentos para los testers: se ajustarán con lo que digan.
-export const CIRCUIT_MAPS: readonly RaceMap[] = [
+const CIRCUIT_BASE: readonly RaceMap[] = [
   {
     id: 'port-loop',
     layout: 'laps',
@@ -537,6 +545,27 @@ export const CIRCUIT_MAPS: readonly RaceMap[] = [
     ],
   },
 ];
+
+/**
+ * Tres circuitos con colinas: el mismo trazado (y la misma física) que el original, con la
+ * carretera subiendo y bajando. Ranking propio. Entran en el mapa del día desde el día siguiente
+ * a añadirlos y en los torneos nuevos.
+ */
+function withHills(id: MapId, nameKey: string, baseId: MapId, spec: TerrainSpec): RaceMap {
+  const base = CIRCUIT_BASE.find((m) => m.id === baseId)!;
+  return { ...base, id, nameKey, terrain: spec, dailyFrom: '2026-11-06' };
+}
+
+const HILL_MAPS: readonly RaceMap[] = [
+  withHills('canyon-ring-hills', 'maps.canyonRingHills', 'canyon-ring', { amplitude: 7, seed: 1 }),
+  withHills('summit-gp-hills', 'maps.summitGpHills', 'summit-gp', { amplitude: 8, seed: 2 }),
+  withHills('lighthouse-oval-hills', 'maps.lighthouseOvalHills', 'lighthouse-oval', {
+    amplitude: 6,
+    seed: 3,
+  }),
+];
+
+export const CIRCUIT_MAPS: readonly RaceMap[] = [...CIRCUIT_BASE, ...HILL_MAPS];
 
 export const ALL_MAPS: readonly RaceMap[] = [...RACE_MAPS, ...ZIGZAG_MAPS, ...CIRCUIT_MAPS];
 

@@ -1,3 +1,4 @@
+import { TerrainSpec } from '../../../domain/track/terrain';
 import { GarageChoice } from '../../../domain/garage/garage';
 import { CarPose } from '../../../domain/race/ghost';
 import { Aesthetic } from '../../../domain/settings/aesthetic';
@@ -26,7 +27,8 @@ export interface RenderFrame {
 export abstract class RendererPort {
   /**
    * `theme` es el ambiente del mapa; `aesthetic`, la estética elegida en Ajustes; `garage`, el
-   * coche (solo en retro y futurista) y el efecto al acelerar elegidos en el garaje.
+   * coche (solo en retro y futurista) y el efecto al acelerar elegidos en el garaje; `terrain`,
+   * el relieve de los circuitos con colinas (solo visual).
    */
   abstract attach(
     host: HTMLElement,
@@ -34,6 +36,7 @@ export abstract class RendererPort {
     theme: MapTheme,
     aesthetic: Aesthetic,
     garage?: GarageChoice,
+    terrain?: TerrainSpec,
   ): void;
   abstract render(frame: RenderFrame, dt: number): void;
   /** Sacude la cámara (choques). */

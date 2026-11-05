@@ -57,7 +57,11 @@ export class PhotoGantry {
     place: DistantPhotoSpot,
     private readonly style: BillboardStyle,
     ledBorder: boolean,
+    /** En los circuitos con colinas: más grande y más alto, por encima de las lomas. */
+    size: { readonly scale?: number; readonly lift?: number } = {},
   ) {
+    const scale = size.scale ?? SCALE;
+    const bottom = BOTTOM + (size.lift ?? 0);
     this.canvas.width = PX;
     this.canvas.height = PH;
     this.texture.colorSpace = SRGBColorSpace;
@@ -68,9 +72,15 @@ export class PhotoGantry {
     this.group.visible = false;
 
     // Sin niebla: se ve nítido desde el principio de la recta
-    const face = new Mesh(this.panel(W, H), new MeshBasicMaterial({ map: this.texture, fog: false }));
+    const face = new Mesh(
+      this.panel(W, H),
+      new MeshBasicMaterial({ map: this.texture, fog: false }),
+    );
     // Trasera: la misma forma vista por detrás (sin girarla, para que siga la misma curva)
-    const back = new Mesh(this.panel(W, H), new MeshBasicMaterial({ color: style.post, side: BackSide }));
+    const back = new Mesh(
+      this.panel(W, H),
+      new MeshBasicMaterial({ color: style.post, side: BackSide }),
+    );
     back.position.z = -0.05;
     this.board.add(face, back);
     this.group.add(this.board);
@@ -91,13 +101,13 @@ export class PhotoGantry {
     if (ledBorder) this.buildLeds();
 
     // Escalado, curvado y sobre dos postes
-    this.board.scale.setScalar(SCALE);
-    this.board.position.y = BOTTOM + (H * SCALE) / 2;
+    this.board.scale.setScalar(scale);
+    this.board.position.y = bottom + (H * scale) / 2;
     const postMat = new MeshBasicMaterial({ color: style.post });
-    const top = BOTTOM + H * SCALE * 0.5;
+    const top = bottom + H * scale * 0.5;
     for (const side of [-1, 1]) {
       const post = new Mesh(new BoxGeometry(2, top, 2), postMat);
-      post.position.set(side * W * SCALE * 0.3, top / 2, -0.6);
+      post.position.set(side * W * scale * 0.3, top / 2, -0.6);
       this.group.add(post);
     }
 

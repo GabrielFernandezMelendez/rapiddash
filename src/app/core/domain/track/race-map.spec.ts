@@ -3,10 +3,10 @@ import { SAMPLE_STEP, TRACK_HALF_WIDTH } from './track-constants';
 import { Track } from './track';
 
 describe('ALL_MAPS', () => {
-  it('hay 15 mapas (3 clásicos, 3 zigzag y 9 circuitos) con identificador único', () => {
-    expect(ALL_MAPS.length).toBe(15);
-    expect(CIRCUIT_MAPS.length).toBe(9);
-    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(15);
+  it('hay 18 mapas (3 clásicos, 3 zigzag y 12 circuitos, 3 de ellos con colinas) con identificador único', () => {
+    expect(ALL_MAPS.length).toBe(18);
+    expect(CIRCUIT_MAPS.length).toBe(12);
+    expect(new Set(ALL_MAPS.map((m) => m.id)).size).toBe(18);
   });
 
   for (const map of CIRCUIT_MAPS) {
