@@ -89,6 +89,8 @@ export class RaceSession {
   private result: RaceResult | null = null;
   private lastCrashAt = -Infinity;
   private listener: (state: RaceViewState) => void = () => {};
+  /** Quien decide si el reinicio pedido en carrera se hace (el mapa del día gasta un intento). */
+  private onRestartRequest: () => void = () => {};
   /** Cubo azul del mapa del día: se coge una vez (ya no vuelve al repetir). */
   private cube: { readonly cube: DailyCube; readonly onCollect: () => void } | null = null;
 
@@ -100,8 +102,12 @@ export class RaceSession {
     private readonly boardId: string = map.id,
   ) {}
 
-  async start(listener: (state: RaceViewState) => void): Promise<void> {
+  async start(
+    listener: (state: RaceViewState) => void,
+    onRestartRequest: () => void = () => {},
+  ): Promise<void> {
     this.listener = listener;
+    this.onRestartRequest = onRestartRequest;
     this.best = await this.ports.bestRuns.get(this.boardId);
     this.reset();
     this.ports.audio.start();
@@ -141,6 +147,9 @@ export class RaceSession {
 
   private tick(dt: number): void {
     const input = this.ports.input.read();
+    // Solo con la carrera en marcha: en el semáforo no hay nada que reiniciar y en la meta está
+    // el botón «Repetir». Si no se reinicia (sin intentos), la carrera sigue en este fotograma.
+    if (input.restart && this.race.phase === 'racing') this.onRestartRequest();
     const { race, events } = stepRace(this.race, input, this.track, dt);
     this.race = race;
     const car = race.car;

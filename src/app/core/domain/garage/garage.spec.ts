@@ -6,7 +6,11 @@ import {
   isCarUnlocked,
   isFxUnlocked,
   lockedCars,
+  lockedFx,
+  lockedPrizes,
+  parsePrize,
   pickPrize,
+  prizeKey,
   usableGarage,
 } from './garage';
 
@@ -47,24 +51,44 @@ describe('garaje', () => {
   });
 });
 
-describe('coches ganados con el cubo del día', () => {
+describe('premios del cubo del día', () => {
   it('un coche ganado queda abierto sin debug y se puede llevar', () => {
     expect(isCarUnlocked(14, false, [14])).toBe(true);
     expect(isCarUnlocked(15, false, [14])).toBe(false);
     expect(usableGarage({ car: 14, fx: 1 }, false, [14])).toEqual({ car: 14, fx: 1 });
   });
 
-  it('el premio es uno de los cerrados, al azar, y nunca repite', () => {
-    expect(lockedCars([])).toHaveLength(19);
-    expect(lockedCars([2, 3])).not.toContain(2);
-    expect(pickPrize([], () => 0)).toBe(2);
-    expect(pickPrize([], () => 0.999)).toBe(20);
-    expect(pickPrize([2], () => 0)).toBe(3);
+  it('un efecto ganado queda abierto sin debug y se puede llevar', () => {
+    expect(isFxUnlocked(3, false, [3])).toBe(true);
+    expect(isFxUnlocked(4, false, [3])).toBe(false);
+    expect(usableGarage({ car: null, fx: 3 }, false, [], [3])).toEqual({ car: null, fx: 3 });
+    expect(usableGarage({ car: null, fx: 4 }, false, [], [3])).toEqual(DEFAULT_GARAGE);
   });
 
-  it('con todos ganados no hay premio', () => {
-    const all = Array.from({ length: 19 }, (_, i) => i + 2);
-    expect(lockedCars(all)).toEqual([]);
-    expect(pickPrize(all)).toBeNull();
+  it('el premio es un coche o un efecto de los cerrados, al azar, y nunca repite', () => {
+    expect(lockedCars([])).toHaveLength(19);
+    expect(lockedFx([])).toHaveLength(9);
+    expect(lockedPrizes([], [])).toHaveLength(28);
+    expect(lockedCars([2, 3])).not.toContain(2);
+    expect(pickPrize([], [], () => 0)).toEqual({ kind: 'car', id: 2 });
+    expect(pickPrize([], [], () => 0.999)).toEqual({ kind: 'fx', id: 10 });
+    expect(pickPrize([2], [], () => 0)).toEqual({ kind: 'car', id: 3 });
+    expect(pickPrize([], [2, 3], () => 0.999)).toEqual({ kind: 'fx', id: 10 });
+  });
+
+  it('con coches y efectos ganados no hay premio; con solo los coches, sí', () => {
+    const cars = Array.from({ length: 19 }, (_, i) => i + 2);
+    const fx = Array.from({ length: 9 }, (_, i) => i + 2);
+    expect(pickPrize(cars, [], () => 0)).toEqual({ kind: 'fx', id: 2 });
+    expect(lockedPrizes(cars, fx)).toEqual([]);
+    expect(pickPrize(cars, fx)).toBeNull();
+  });
+
+  it('el premio viaja por la URL y lo que no existe se descarta', () => {
+    expect(parsePrize(prizeKey({ kind: 'car', id: 14 }))).toEqual({ kind: 'car', id: 14 });
+    expect(parsePrize('fx-3')).toEqual({ kind: 'fx', id: 3 });
+    for (const bad of ['car-21', 'fx-0', 'fx-11', 'moto-3', 'car-', '', null, undefined]) {
+      expect(parsePrize(bad)).toBeNull();
+    }
   });
 });

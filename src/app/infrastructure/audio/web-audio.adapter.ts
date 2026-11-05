@@ -27,6 +27,9 @@ const SONG_FADE = 0.5;
 /** Duración del ejemplo de Ajustes (s). */
 const PREVIEW_LENGTH = 1.6;
 
+/** Notas (Hz) de la fanfarria al revelar el premio del cubo azul. */
+const PRIZE_FANFARE = [523, 659, 784, 1047];
+
 /** Gestos que cuentan para desbloquear el audio (iOS solo acepta algunos). */
 const UNLOCK_EVENTS = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
 
@@ -117,6 +120,14 @@ export class WebAudioAdapter extends AudioPort {
     if (this.ctx) this.fadeOutSong(this.ctx.currentTime);
   }
 
+  prizeTick(): void {
+    this.beep(760, 0.03, 0.5, 'square');
+  }
+
+  prizeReveal(): void {
+    PRIZE_FANFARE.forEach((freq, i) => this.beep(freq, 0.26, 0.7, 'triangle', i * 0.09));
+  }
+
   nextSong(): void {
     const track = pickTrack(this.tracks, lastTrack);
     if (!track || !this.ctx) return;
@@ -186,6 +197,24 @@ export class WebAudioAdapter extends AudioPort {
       this.ctx.currentTime,
       0.2,
     );
+  }
+
+  /** Nota sintetizada en el canal de efectos (no depende de ningún archivo). */
+  private beep(freq: number, length: number, level: number, type: OscillatorType, delay = 0): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.engineGain) return;
+    const at = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(level, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    osc.connect(gain);
+    gain.connect(this.engineGain);
+    osc.start(at);
+    osc.stop(at + length);
+    osc.onended = () => gain.disconnect();
   }
 
   private readonly unlock = () => {

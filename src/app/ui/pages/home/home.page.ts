@@ -14,7 +14,9 @@ import { BestRunRepository } from '../../../core/application/ports/out/best-run.
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
 import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
+import { APP_VERSION } from '../../../core/domain/settings/app-version';
 import { Language } from '../../../core/domain/settings/language';
+import { showPatchNotes } from '../../../core/domain/settings/patch-notes';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { ALL_MAPS } from '../../../core/domain/track/race-map';
 import { DailyService, DailyStanding } from '../../../shared/account/daily.service';
@@ -32,6 +34,7 @@ import { ModeButton } from '../../molecules/mode-button/mode-button';
 import { Trophy } from '../../atoms/trophy/trophy';
 import { formatClock } from '../../organisms/more-attempts/more-attempts';
 import { LinkReminder } from '../../organisms/link-reminder/link-reminder';
+import { PatchNotes } from '../../organisms/patch-notes/patch-notes';
 import { SettingsDialog } from '../../organisms/settings-dialog/settings-dialog';
 import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
@@ -41,7 +44,7 @@ import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
   selector: 'rd-home-page',
-  imports: [MenuLayout, Button, Logo, PilotChip, ModeButton, Trophy, LinkReminder, SettingsDialog, Tutorial, TranslatePipe],
+  imports: [MenuLayout, Button, Logo, PilotChip, ModeButton, Trophy, LinkReminder, PatchNotes, SettingsDialog, Tutorial, TranslatePipe],
   providers: [provideMenuAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.page.html',
@@ -73,6 +76,9 @@ export class HomePage implements OnInit {
   protected readonly reminderBusy = signal(false);
   protected readonly reminderError = signal<string | null>(null);
   protected readonly reminderNotice = signal<string | null>(null);
+  protected readonly version = APP_VERSION;
+  /** Novedades del parche: salen solas una vez por versión y desde el botón bajo Ajustes. */
+  protected readonly patchOpen = signal(false);
   private readonly backdropHost = viewChild.required<ElementRef<HTMLElement>>('backdrop');
 
   constructor() {
@@ -82,7 +88,9 @@ export class HomePage implements OnInit {
   }
 
   ngOnInit(): void {
+    // Una sola ventana a la vez: con el aviso de vincular, las novedades salen en la próxima visita
     if (this.account.needsLinkReminder()) void this.openReminder();
+    else if (showPatchNotes(this.settings.getPatchSeen())) this.patchOpen.set(true);
     this.dailyLeft.set(hoursLeft(this.dailyToday.msLeft));
     void this.daily
       .load(this.dailyToday.boardId)
@@ -124,6 +132,11 @@ export class HomePage implements OnInit {
   protected closeTutorial(): void {
     this.tutorialOpen.set(false);
     this.settings.setTutorialSeen();
+  }
+
+  protected closePatchNotes(): void {
+    this.patchOpen.set(false);
+    this.settings.setPatchSeen(APP_VERSION);
   }
 
   protected openProfile(): void {

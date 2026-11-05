@@ -27,7 +27,13 @@ export abstract class SettingsRepository {
   /** Coches ganados con el cubo azul del mapa del día. */
   abstract getWonCars(): number[];
   abstract addWonCar(car: number): void;
+  /** Efectos ganados con el cubo azul del mapa del día. */
+  abstract getWonFx(): number[];
+  abstract addWonFx(fx: number): void;
   /** Último día (AAAA-MM-DD) en que se cogió el cubo: uno al día. */
   abstract getCubeDay(): string | null;
   abstract setCubeDay(key: string): void;
+  /** Última versión cuyas novedades se vieron (null: ninguna). */
+  abstract getPatchSeen(): string | null;
+  abstract setPatchSeen(version: string): void;
 }

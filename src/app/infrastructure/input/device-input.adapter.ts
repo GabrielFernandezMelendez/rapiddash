@@ -9,9 +9,10 @@ const KEY_SWIPES: Record<string, Swipe> = {
 
 /**
  * Controles del juego:
- * - Móvil: mantener el dedo acelera; deslizar a un lado cambia de carril (o gira en un cruce).
+ * - Móvil: mantener el dedo acelera; deslizar a un lado cambia de carril (o gira en un cruce);
+ *   un swipe largo hacia abajo reinicia la carrera.
  *   Se puede jugar con un dedo o con dos: uno quieto acelerando y el otro haciendo los swipes.
- * - Ordenador: espacio acelera, flechas ← → equivalen a los swipes.
+ * - Ordenador: espacio acelera, flechas ← → equivalen a los swipes y ↓ reinicia.
  *   Arrastrar con el ratón también funciona, porque se usan Pointer Events.
  */
 export class DeviceInputAdapter extends InputPort {
@@ -19,6 +20,7 @@ export class DeviceInputAdapter extends InputPort {
   private readonly fingers = new FingerTracker();
   private readonly queue: Swipe[] = [];
   private keyThrottle = false;
+  private restart = false;
 
   attach(surface: HTMLElement): void {
     this.dispose();
@@ -34,7 +36,9 @@ export class DeviceInputAdapter extends InputPort {
 
   read(): DriveInput {
     const swipes = this.queue.splice(0, this.queue.length);
-    return { throttle: this.fingers.pressing || this.keyThrottle, swipes };
+    const restart = this.restart;
+    this.restart = false;
+    return { throttle: this.fingers.pressing || this.keyThrottle, swipes, restart };
   }
 
   dispose(): void {
@@ -60,8 +64,9 @@ export class DeviceInputAdapter extends InputPort {
   };
 
   private readonly onPointerMove = (e: PointerEvent) => {
-    const swipe = this.fingers.move(e.pointerId, e.clientX, e.clientY, e.timeStamp);
-    if (swipe) this.queue.push(swipe);
+    const gesture = this.fingers.move(e.pointerId, e.clientX, e.clientY, e.timeStamp);
+    if (gesture === 'restart') this.restart = true;
+    else if (gesture) this.queue.push(gesture);
   };
 
   private readonly onPointerUp = (e: PointerEvent) => {
@@ -72,6 +77,11 @@ export class DeviceInputAdapter extends InputPort {
     if (e.code === 'Space') {
       e.preventDefault();
       this.keyThrottle = true;
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!e.repeat) this.restart = true;
       return;
     }
     const swipe = KEY_SWIPES[e.key];
