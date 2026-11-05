@@ -21,7 +21,34 @@ npm start
 
 Abrir <http://localhost:4200/mockup-garage>. Con las flechas `←` `→` se cambia de coche.
 
-Para generar capturas sin interfaz: `?car=N&shot=1&turn=0` (frontal) o `turn=3.1416` (trasera).
+Espacio (o el botón) acelera para ver el efecto elegido. Para generar capturas sin interfaz:
+`?car=N&shot=1&turn=0` (frontal) o `turn=3.1416` (trasera); efectos con
+`?car=1&shot=1&wide=1&turn=1.2&accel=1&fx=1..10`.
+
+## Detalles añadidos a todos los coches
+
+Llantas con banda de rodadura, disco y pinza de freno de color neón, cinco radios y buje con tuercas;
+retrovisores con espejo, reflejos en las lunas laterales, línea de puerta con tirador, matrículas «RD·88»
+delante y detrás, y halo suave en faros y pilotos.
+
+## 10 efectos al acelerar
+
+![10 efectos al acelerar](contact-efectos.jpg)
+
+| # | Efecto | Qué es |
+| --- | --- | --- |
+| 1 | Escape clásico | El resplandor y las brasas del juego de ahora |
+| 2 | Chispas | Chispas que saltan del bajo, caen y rebotan en el asfalto |
+| 3 | Cinta cian | Una tela de neón ancha que sale del techo y ondea detrás |
+| 4 | Cintas gemelas | Dos cintas finas, rosa y cian, que salen de los pilotos |
+| 5 | Bandera synthwave | Cinco franjas del atardecer ondeando juntas |
+| 6 | Muro de luz | Estela recta y sólida, como una moto de luz |
+| 7 | Caritas | Emoticonos felices que salen botando del escape |
+| 8 | Derrape | Humo de rueda quemada que se abre y se queda atrás |
+| 9 | Píxeles | Cubitos de 8 bits que caen y se apagan a saltos |
+| 10 | Rayos | Descargas eléctricas entre los escapes y el suelo |
+
+Las cintas crecen al acelerar y se recogen poco a poco al soltar; ondean más cuanto más lejos del coche.
 
 ## Recoloreados
 

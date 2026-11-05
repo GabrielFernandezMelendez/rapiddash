@@ -1,164 +1,657 @@
 import {
   AdditiveBlending,
+  Blending,
+  BoxGeometry,
+  BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
+  Color,
+  DoubleSide,
   Group,
+  Line,
+  LineBasicMaterial,
   Mesh,
   MeshBasicMaterial,
-  PlaneGeometry,
-  Scene,
+  NormalBlending,
+  Object3D,
   Sprite,
   SpriteMaterial,
   Texture,
   Vector3,
 } from 'three';
 
-function canvasTexture(size: number, draw: (g: CanvasRenderingContext2D) => void): Texture {
+/**
+ * Efectos al acelerar del showroom (solo mockup, fuera del juego).
+ *
+ * Todo vive en el espacio local del coche (el grupo del efecto es hijo del coche): +Z es hacia
+ * atrás. Como en el showroom el coche no avanza, se simula la marcha desplazando las partículas
+ * hacia atrás a la «velocidad» del coche, que sube al acelerar y baja al soltar. Así las estelas
+ * se ven igual que en carrera, también mientras el coche gira en la plataforma.
+ */
+
+export interface MockupFxInfo {
+  readonly id: number;
+  readonly name: string;
+  readonly tagline: string;
+}
+
+export const MOCKUP_FX: readonly MockupFxInfo[] = [
+  { id: 1, name: 'Escape clásico', tagline: 'El resplandor y las brasas del juego de ahora' },
+  { id: 2, name: 'Chispas', tagline: 'Chispas que saltan del bajo y rebotan en el asfalto' },
+  { id: 3, name: 'Cinta cian', tagline: 'Una tela de neón que ondea detrás del coche' },
+  { id: 4, name: 'Cintas gemelas', tagline: 'Dos cintas rosa y cian que salen de los pilotos' },
+  { id: 5, name: 'Bandera synthwave', tagline: 'Cinco franjas del atardecer ondeando juntas' },
+  { id: 6, name: 'Muro de luz', tagline: 'Estela recta y sólida, como una moto de luz' },
+  { id: 7, name: 'Caritas', tagline: 'Emoticonos felices que salen botando del escape' },
+  { id: 8, name: 'Derrape', tagline: 'Humo de rueda quemada que se abre y se queda atrás' },
+  { id: 9, name: 'Píxeles', tagline: 'Píxeles de 8 bits que caen y se apagan' },
+  { id: 10, name: 'Rayos', tagline: 'Descargas eléctricas entre los escapes y el suelo' },
+];
+
+/** Dónde salen los efectos: escapes, pilotos y techo, sacados del tamaño del coche. */
+export interface FxAnchors {
+  readonly rearZ: number;
+  readonly halfWidth: number;
+  readonly roofY: number;
+  readonly exhaustY: number;
+}
+
+interface Particle {
+  obj: Object3D;
+  life: number;
+  max: number;
+  velocity: Vector3;
+  /** Gravedad (m/s²); 0 si flota. */
+  gravity: number;
+  /** Cuánto le afecta la marcha: 1 se queda atrás con el suelo, 0 va con el coche. */
+  drag: number;
+  /** Rebote al tocar el suelo (0 = sin rebote). */
+  bounce: number;
+  spin: number;
+  grow: number;
+  baseScale: number;
+  fade: (k: number) => number;
+}
+
+const TOP_SPEED = 14;
+const RAMP = 10;
+
+/** Textura de canvas reutilizable. */
+function texture(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void): Texture {
   const c = document.createElement('canvas');
   c.width = c.height = size;
-  const g = c.getContext('2d')!;
-  draw(g);
-  return new Texture(c);
+  draw(c.getContext('2d')!, size);
+  const t = new CanvasTexture(c);
+  return t;
+}
+
+function radial(stops: readonly [number, string][]): Texture {
+  return texture(64, (g, s) => {
+    const grad = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    for (const [at, color] of stops) grad.addColorStop(at, color);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, s, s);
+  });
+}
+
+const EMOJIS = ['😄', '😎', '🤩', '😁', '🥳', '😜'];
+const EMOJI_FONT = "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+
+/**
+ * Cinta de neón: una tira de triángulos que sale de un punto del coche y se estira hacia atrás.
+ * Cada vértice ondea con el tiempo (más cuanto más lejos del coche) y se apaga hacia la punta,
+ * como una tela flotando. `twist` gira la tela sobre sí misma; con `rigid` no ondea (muro de luz).
+ */
+class Ribbon {
+  readonly mesh: Mesh;
+  private readonly segments = 48;
+  private readonly positions: Float32Array;
+  private readonly colors: Float32Array;
+  readonly color: Color;
+
+  constructor(
+    color: number,
+    private readonly origin: Vector3,
+    private readonly opts: {
+      width: number;
+      maxLength: number;
+      /** Ángulo de la tela: 0 = horizontal, π/2 = vertical. */
+      angle: number;
+      wave: number;
+      twist: number;
+      phase: number;
+      rigid?: boolean;
+    },
+  ) {
+    this.color = new Color(color);
+    const n = (this.segments + 1) * 2;
+    this.positions = new Float32Array(n * 3);
+    this.colors = new Float32Array(n * 3);
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new BufferAttribute(this.positions, 3));
+    geo.setAttribute('color', new BufferAttribute(this.colors, 3));
+    const index: number[] = [];
+    for (let i = 0; i < this.segments; i++) {
+      const a = i * 2;
+      index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+    geo.setIndex(index);
+    this.mesh = new Mesh(
+      geo,
+      new MeshBasicMaterial({
+        vertexColors: true,
+        blending: AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+        side: DoubleSide,
+        fog: false,
+      }),
+    );
+    this.mesh.frustumCulled = false;
+  }
+
+  /** `stretch` 0-1: cuánto de la cinta está fuera (crece al acelerar y se recoge al soltar). */
+  update(time: number, stretch: number): void {
+    const { width, maxLength, angle, wave, twist, phase, rigid } = this.opts;
+    const length = Math.max(0.01, maxLength * stretch);
+    for (let i = 0; i <= this.segments; i++) {
+      const t = i / this.segments;
+      const z = this.origin.z + t * length;
+      // Ondas que viajan hacia atrás, más amplias lejos del coche
+      const amp = rigid ? 0 : wave * t * (0.4 + 0.6 * stretch);
+      const s1 = Math.sin(time * 5.2 - t * 7 + phase);
+      const s2 = Math.sin(time * 3.1 - t * 4.3 + phase * 1.7);
+      const x = this.origin.x + amp * s2 * 0.8;
+      const y = this.origin.y + amp * s1 * 0.6 + (rigid ? 0 : t * 0.25);
+      const theta = angle + (rigid ? 0 : twist * t * Math.sin(time * 2.4 - t * 5 + phase));
+      const w = (width * (1 - 0.55 * t)) / 2;
+      const dx = Math.cos(theta) * w;
+      const dy = Math.sin(theta) * w;
+      const a = i * 6;
+      this.positions.set([x - dx, y - dy, z, x + dx, y + dy, z], a);
+      // Más brillo junto al coche; se apaga hacia la punta (con aditivo, oscuro = transparente)
+      const k = Math.pow(1 - t, 1.4) * (0.35 + 0.65 * stretch);
+      const r = this.color.r * k;
+      const gC = this.color.g * k;
+      const b = this.color.b * k;
+      this.colors.set([r, gC, b, r, gC, b], a);
+    }
+    const geo = this.mesh.geometry;
+    geo.attributes['position'].needsUpdate = true;
+    geo.attributes['color'].needsUpdate = true;
+    this.mesh.visible = stretch > 0.01;
+  }
+}
+
+/** Rayo: una línea en zigzag que se rehace cada pocos fotogramas. */
+class Bolt {
+  readonly line: Line;
+  private timer = 0;
+
+  constructor(
+    private readonly from: Vector3,
+    color: number,
+  ) {
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new BufferAttribute(new Float32Array(10 * 3), 3));
+    this.line = new Line(
+      geo,
+      new LineBasicMaterial({ color, blending: AdditiveBlending, transparent: true, fog: false }),
+    );
+    this.line.frustumCulled = false;
+  }
+
+  update(dt: number, strength: number): void {
+    this.line.visible = strength > 0.05 && Math.random() < 0.85;
+    this.timer -= dt;
+    if (this.timer > 0) return;
+    this.timer = 0.04 + Math.random() * 0.05;
+    const pos = this.line.geometry.attributes['position'] as BufferAttribute;
+    const length = 1.2 + Math.random() * 2.6 * strength;
+    // Baja hasta el suelo mientras se aleja hacia atrás
+    for (let i = 0; i < 10; i++) {
+      const t = i / 9;
+      const jitter = i === 0 ? 0 : 0.32;
+      pos.setXYZ(
+        i,
+        this.from.x + (Math.random() - 0.5) * jitter * 2,
+        Math.max(0.02, this.from.y * (1 - t) + (Math.random() - 0.5) * jitter),
+        this.from.z + t * length,
+      );
+    }
+    pos.needsUpdate = true;
+  }
 }
 
 export class MockupExhaustFx {
-  private particles: { obj: any; life: number; velocity: Vector3; type: number }[] = [];
-  private textureCache: Record<string, Texture> = {};
+  readonly group = new Group();
+  private particles: Particle[] = [];
+  private ribbons: Ribbon[] = [];
+  private bolts: Bolt[] = [];
+  private glows: Sprite[] = [];
+  private type = 0;
+  private speed = 0;
+  private stretch = 0;
+  private time = 0;
+  private pending = 0;
+  private readonly textures = new Map<string, Texture>();
 
   constructor(
-    private scene: Scene,
-    private car: Group,
-  ) {}
+    car: Group,
+    private readonly anchors: FxAnchors,
+  ) {
+    car.add(this.group);
+  }
 
-  /** Quita las partículas vivas al cambiar de coche. */
+  /** Quita todo al cambiar de coche o de efecto. */
   dispose(): void {
-    for (const p of this.particles) this.scene.remove(p.obj);
-    this.particles = [];
+    this.clear();
+    this.group.removeFromParent();
   }
 
   update(dt: number, accelerating: boolean, type: number): void {
-    if (accelerating && Math.random() < 0.3) {
-      this.emit(type);
+    if (type !== this.type) this.setType(type);
+    this.time += dt;
+    // La marcha simulada: sube al acelerar y cae poco a poco al soltar, como en el juego
+    const target = accelerating ? TOP_SPEED : 0;
+    this.speed += (target - this.speed) * Math.min(1, dt * (accelerating ? 2.2 : 1.1));
+    this.stretch +=
+      ((accelerating ? 1 : 0) - this.stretch) * Math.min(1, dt * (accelerating ? 2.5 : 1.6));
+    const power = this.speed / TOP_SPEED;
+
+    for (const r of this.ribbons) r.update(this.time, this.stretch);
+    for (const b of this.bolts) b.update(dt, accelerating ? power : 0);
+    this.updateGlows(accelerating, power);
+
+    if (accelerating) {
+      this.pending += dt * RAMP * this.rate();
+      while (this.pending > 1) {
+        this.pending--;
+        this.emit();
+      }
     }
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
       if (p.life <= 0) {
-        this.scene.remove(p.obj);
+        this.group.remove(p.obj);
         this.particles.splice(i, 1);
         continue;
       }
-
+      const k = p.life / p.max;
+      p.velocity.y -= p.gravity * dt;
       p.obj.position.addScaledVector(p.velocity, dt);
+      // El suelo se va hacia atrás con la marcha
+      p.obj.position.z += this.speed * p.drag * dt;
+      if (p.bounce > 0 && p.obj.position.y < 0.03) {
+        p.obj.position.y = 0.03;
+        p.velocity.y = Math.abs(p.velocity.y) * p.bounce;
+        p.velocity.x *= 0.7;
+      }
+      const scale = p.baseScale * (1 + p.grow * (1 - k));
+      p.obj.scale.set(scale, scale, scale);
+      p.obj.rotation.z += p.spin * dt;
+      const material = (p.obj as Mesh | Sprite).material as MeshBasicMaterial | SpriteMaterial;
+      material.opacity = p.fade(k);
+    }
+  }
 
-      if (p.obj instanceof Sprite) {
-        (p.obj.material as SpriteMaterial).opacity = p.life * 2;
-      } else {
-        (p.obj.material as MeshBasicMaterial).opacity = p.life * 2;
+  // ---------------------------------------------------------------------------
+
+  private setType(type: number): void {
+    this.clear();
+    this.type = type;
+    const { rearZ, halfWidth, roofY, exhaustY } = this.anchors;
+    const tailX = halfWidth * 0.72;
+    switch (type) {
+      case 1:
+        this.exhaustGlows(['rgba(255,255,230,1)', 'rgba(255,190,80,0.9)', 'rgba(255,110,40,0.35)']);
+        break;
+      case 3:
+        this.ribbons.push(
+          new Ribbon(0x2de2e6, new Vector3(0, roofY - 0.05, rearZ - 0.2), {
+            width: 0.9,
+            maxLength: 7,
+            angle: 0,
+            wave: 0.9,
+            twist: 1.1,
+            phase: 0,
+          }),
+        );
+        break;
+      case 4:
+        for (const [x, color, phase] of [
+          [-tailX, 0xff4fd8, 0],
+          [tailX, 0x2de2e6, 1.7],
+        ] as const) {
+          this.ribbons.push(
+            new Ribbon(color, new Vector3(x, exhaustY + 0.15, rearZ), {
+              width: 0.32,
+              maxLength: 6,
+              angle: Math.PI / 2,
+              wave: 0.55,
+              twist: 0.9,
+              phase,
+            }),
+          );
+        }
+        break;
+      case 5: {
+        // Franjas del sol synthwave, de arriba (amarillo) a abajo (morado)
+        const stripes = [0xffd319, 0xff901f, 0xff2975, 0xf222ff, 0x8c1eff];
+        stripes.forEach((color, i) => {
+          this.ribbons.push(
+            new Ribbon(color, new Vector3(0, roofY - 0.1 - i * 0.13, rearZ - 0.1), {
+              width: 0.13,
+              maxLength: 6.5,
+              angle: Math.PI / 2,
+              wave: 0.75,
+              twist: 0.15,
+              // Casi la misma fase: ondean juntas como una bandera
+              phase: i * 0.25,
+            }),
+          );
+        });
+        break;
+      }
+      case 6:
+        this.ribbons.push(
+          new Ribbon(0xff2975, new Vector3(0, 0.35, rearZ), {
+            width: 0.7,
+            maxLength: 9,
+            angle: Math.PI / 2,
+            wave: 0,
+            twist: 0,
+            phase: 0,
+            rigid: true,
+          }),
+        );
+        break;
+      case 10:
+        this.exhaustGlows(['rgba(235,245,255,1)', 'rgba(140,170,255,0.9)', 'rgba(90,60,255,0.35)']);
+        for (const x of [-tailX * 0.6, tailX * 0.6]) {
+          for (let i = 0; i < 3; i++) {
+            this.bolts.push(new Bolt(new Vector3(x, exhaustY, rearZ), i ? 0xffffff : 0x8fa8ff));
+          }
+        }
+        break;
+    }
+    for (const r of this.ribbons) this.group.add(r.mesh);
+    for (const b of this.bolts) this.group.add(b.line);
+  }
+
+  private clear(): void {
+    for (const p of this.particles) this.group.remove(p.obj);
+    for (const r of this.ribbons) this.group.remove(r.mesh);
+    for (const b of this.bolts) this.group.remove(b.line);
+    for (const s of this.glows) this.group.remove(s);
+    this.particles = [];
+    this.ribbons = [];
+    this.bolts = [];
+    this.glows = [];
+    this.pending = 0;
+  }
+
+  /** Partículas por segundo (×RAMP) de cada efecto. */
+  private rate(): number {
+    return [0, 5.5, 7, 1.2, 0.8, 0, 0, 0.6, 2.4, 3.5, 1][this.type] ?? 0;
+  }
+
+  private exhaustGlows(stops: readonly string[]): void {
+    const map = this.texture(`glow-${stops[1]}`, () =>
+      radial([
+        [0, stops[0]],
+        [0.3, stops[1]],
+        [0.65, stops[2]],
+        [1, 'rgba(0,0,0,0)'],
+      ]),
+    );
+    const { rearZ, halfWidth, exhaustY } = this.anchors;
+    for (const x of [-halfWidth * 0.42, halfWidth * 0.42]) {
+      const s = new Sprite(
+        new SpriteMaterial({
+          map,
+          blending: AdditiveBlending,
+          depthWrite: false,
+          transparent: true,
+        }),
+      );
+      s.position.set(x, exhaustY, rearZ + 0.05);
+      this.group.add(s);
+      this.glows.push(s);
+    }
+  }
+
+  private updateGlows(accelerating: boolean, power: number): void {
+    const flicker = 0.85 + Math.random() * 0.3;
+    for (const g of this.glows) {
+      const k = accelerating ? (0.6 + 0.6 * power) * flicker : 0.28;
+      g.scale.set(k, k, 1);
+      (g.material as SpriteMaterial).opacity = accelerating ? 0.95 : 0.35;
+    }
+  }
+
+  private emit(): void {
+    const { rearZ, halfWidth, exhaustY } = this.anchors;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const exhaust = new Vector3(side * halfWidth * 0.42, exhaustY, rearZ + 0.08);
+    const r = Math.random;
+    switch (this.type) {
+      case 1: {
+        // Brasas del escape, como en el juego
+        const s = this.sprite('ember', () =>
+          radial([
+            [0, 'rgba(255,255,230,1)'],
+            [0.3, 'rgba(255,190,80,0.9)'],
+            [0.65, 'rgba(255,110,40,0.35)'],
+            [1, 'rgba(255,80,20,0)'],
+          ]),
+        );
+        this.spawn(s, exhaust, new Vector3((r() - 0.5) * 1.2, 0.4 + r() * 1.2, 3 + r() * 3), {
+          life: 0.35 + r() * 0.25,
+          scale: 0.25,
+          grow: 2.8,
+          drag: 0.4,
+          fade: (k) => k * 0.9,
+        });
+        break;
+      }
+      case 2: {
+        // Chispa: punto muy brillante que salta, cae y rebota
+        const s = this.sprite('spark', () =>
+          radial([
+            [0, 'rgba(255,255,255,1)'],
+            [0.25, 'rgba(255,230,120,1)'],
+            [0.6, 'rgba(255,140,20,0.5)'],
+            [1, 'rgba(255,90,0,0)'],
+          ]),
+        );
+        const from = new Vector3((r() - 0.5) * halfWidth * 1.6, 0.08, rearZ - 0.2);
+        this.spawn(s, from, new Vector3((r() - 0.5) * 4, 1.5 + r() * 2.5, 1 + r() * 3), {
+          life: 0.5 + r() * 0.4,
+          scale: 0.12 + r() * 0.08,
+          gravity: 14,
+          bounce: 0.45,
+          drag: 0.8,
+          fade: (k) => Math.min(1, k * 1.6),
+        });
+        break;
+      }
+      case 3:
+      case 4:
+      case 5: {
+        // Polvo de brillo que se desprende de las cintas
+        const ribbon = this.ribbons[Math.floor(r() * this.ribbons.length)];
+        if (!ribbon) return;
+        const s = this.sprite('glitter', () =>
+          radial([
+            [0, 'rgba(255,255,255,1)'],
+            [0.4, 'rgba(255,255,255,0.4)'],
+            [1, 'rgba(255,255,255,0)'],
+          ]),
+        );
+        (s.material as SpriteMaterial).color.copy(ribbon.color);
+        const pos = new Vector3(
+          (r() - 0.5) * 0.6,
+          this.anchors.roofY - r() * 0.6,
+          rearZ + 0.4 + r() * 2,
+        );
+        this.spawn(s, pos, new Vector3((r() - 0.5) * 0.4, 0.3 + r() * 0.4, 0), {
+          life: 0.7 + r() * 0.6,
+          scale: 0.08,
+          drag: 0.6,
+          fade: (k) => k,
+        });
+        break;
+      }
+      case 7: {
+        // Carita que sale del escape, bota hacia arriba y se queda atrás girando un poco
+        const emoji = EMOJIS[Math.floor(r() * EMOJIS.length)];
+        const s = this.sprite(
+          `emoji-${emoji}`,
+          () =>
+            texture(96, (g, size) => {
+              g.font = `78px ${EMOJI_FONT}`;
+              g.textAlign = 'center';
+              g.textBaseline = 'middle';
+              g.fillText(emoji, size / 2, size / 2 + 4);
+            }),
+          NormalBlending,
+        );
+        this.spawn(s, exhaust, new Vector3((r() - 0.5) * 1.4, 2.2 + r() * 1.2, 1.2 + r()), {
+          life: 1.3 + r() * 0.5,
+          scale: 0.55,
+          gravity: 2.2,
+          grow: 0.4,
+          drag: 0.55,
+          spin: (r() - 0.5) * 3,
+          fade: (k) => Math.min(1, k * 3),
+        });
+        break;
+      }
+      case 8: {
+        // Humo de derrape: bocanadas grises desde las ruedas traseras que crecen
+        const s = this.sprite(
+          'smoke',
+          () =>
+            radial([
+              [0, 'rgba(230,225,240,0.85)'],
+              [0.5, 'rgba(170,165,190,0.45)'],
+              [1, 'rgba(120,115,140,0)'],
+            ]),
+          NormalBlending,
+        );
+        const from = new Vector3(side * halfWidth * 0.95, 0.25, rearZ - 0.55);
+        this.spawn(s, from, new Vector3(side * (0.3 + r() * 0.6), 0.5 + r() * 0.5, 0.5), {
+          life: 1.2 + r() * 0.6,
+          scale: 0.6,
+          grow: 3.5,
+          drag: 0.75,
+          spin: (r() - 0.5) * 1.2,
+          fade: (k) => k * 0.7,
+        });
+        break;
+      }
+      case 9: {
+        // Píxel de 8 bits: cubito que sale, cae y se apaga
+        const palette = [0xff2975, 0x2de2e6, 0xffd319, 0xf222ff, 0x8c1eff];
+        const m = new Mesh(
+          this.pixelGeometry(),
+          new MeshBasicMaterial({
+            color: palette[Math.floor(r() * palette.length)],
+            transparent: true,
+          }),
+        );
+        const from = new Vector3((r() - 0.5) * halfWidth * 1.4, exhaustY + r() * 0.3, rearZ + 0.1);
+        this.spawn(m, from, new Vector3((r() - 0.5) * 1.5, 1 + r() * 1.5, 1 + r() * 1.5), {
+          life: 0.8 + r() * 0.5,
+          scale: 1,
+          gravity: 6,
+          bounce: 0.2,
+          drag: 0.9,
+          spin: (r() - 0.5) * 8,
+          // Se apaga a saltos, como un sprite de 8 bits
+          fade: (k) => Math.ceil(k * 4) / 4,
+        });
+        break;
+      }
+      case 10: {
+        // Chispazos azules en la punta de los rayos
+        const s = this.sprite('zap', () =>
+          radial([
+            [0, 'rgba(255,255,255,1)'],
+            [0.3, 'rgba(150,170,255,0.9)'],
+            [1, 'rgba(80,60,255,0)'],
+          ]),
+        );
+        const from = new Vector3(side * halfWidth * 0.3, 0.05, rearZ + 0.6 + r() * 1.5);
+        this.spawn(s, from, new Vector3((r() - 0.5) * 2, 0.8 + r(), 0), {
+          life: 0.15 + r() * 0.15,
+          scale: 0.3 + r() * 0.3,
+          drag: 1,
+          fade: (k) => k,
+        });
+        break;
       }
     }
   }
 
-  private emit(type: number): void {
-    let obj: any;
-    let life = 0.5;
-    let velocity = new Vector3((Math.random() - 0.5) * 2, Math.random() * 2, 5 + Math.random() * 5);
-
-    // Transform velocity to world space based on car direction (backwards)
-    const back = new Vector3();
-    this.car.getWorldDirection(back);
-    velocity.applyQuaternion(this.car.quaternion);
-
-    switch (type) {
-      case 1: // Classic Sparks
-        obj = this.createSprite(0xffaa00, 0.3);
-        break;
-      case 2: // Neon Streak
-        obj = new Mesh(
-          new PlaneGeometry(0.1, 1),
-          new MeshBasicMaterial({ color: 0x00ffff, blending: AdditiveBlending, transparent: true }),
-        );
-        obj.rotation.copy(this.car.rotation);
-        life = 0.3;
-        break;
-      case 3: // Plasma Burn
-        obj = this.createSprite(0x00ff44, 0.6);
-        life = 0.4;
-        break;
-      case 4: // Ghost Echo
-        // Simplificado: un cubo que se queda quieto
-        obj = new Mesh(
-          new PlaneGeometry(1.4, 0.5),
-          new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 }),
-        );
-        velocity.set(0, 0, 0);
-        life = 0.2;
-        break;
-      case 5: // Digital Pixels
-        obj = new Mesh(
-          new PlaneGeometry(0.15, 0.15),
-          new MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff00ff : 0x00ffff }),
-        );
-        break;
-      case 6: // Dark Void
-        obj = this.createSprite(0x111111, 0.8);
-        break;
-      case 7: // Rainbow Flow
-        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
-        obj = this.createSprite(colors[Math.floor(Math.random() * colors.length)], 0.4);
-        break;
-      case 8: // Gold Dust
-        obj = this.createSprite(0xffd700, 0.15);
-        life = 0.8;
-        velocity.multiplyScalar(0.4);
-        break;
-      case 9: // Lightning Arcs
-        obj = new Mesh(
-          new PlaneGeometry(0.05, 0.8),
-          new MeshBasicMaterial({ color: 0x8888ff, blending: AdditiveBlending, transparent: true }),
-        );
-        obj.rotation.z = Math.random() * Math.PI;
-        life = 0.1;
-        break;
-      case 10: // Fireball
-        obj = this.createSprite(0xff4400, 1.0);
-        velocity.y += 2;
-        break;
-      default:
-        obj = this.createSprite(0xffffff, 0.2);
-    }
-
-    const pos = new Vector3((Math.random() - 0.5) * 1, 0.4, 1.3);
-    pos.applyQuaternion(this.car.quaternion);
-    pos.add(this.car.position);
-
-    obj.position.copy(pos);
-    this.scene.add(obj);
-    this.particles.push({ obj, life, velocity, type });
+  private spawn(
+    obj: Object3D,
+    at: Vector3,
+    velocity: Vector3,
+    o: {
+      life: number;
+      scale: number;
+      gravity?: number;
+      bounce?: number;
+      drag?: number;
+      spin?: number;
+      grow?: number;
+      fade: (k: number) => number;
+    },
+  ): void {
+    obj.position.copy(at);
+    obj.scale.setScalar(o.scale);
+    this.group.add(obj);
+    this.particles.push({
+      obj,
+      life: o.life,
+      max: o.life,
+      velocity,
+      gravity: o.gravity ?? 0,
+      drag: o.drag ?? 1,
+      bounce: o.bounce ?? 0,
+      spin: o.spin ?? 0,
+      grow: o.grow ?? 0,
+      baseScale: o.scale,
+      fade: o.fade,
+    });
   }
 
-  private createSprite(color: number, size: number): Sprite {
-    const key = `${color}`;
-    if (!this.textureCache[key]) {
-      this.textureCache[key] = canvasTexture(32, (g) => {
-        const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
-        const c = '#' + color.toString(16).padStart(6, '0');
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.4, c);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = grad;
-        g.fillRect(0, 0, 32, 32);
-      });
-    }
-    const s = new Sprite(
+  private sprite(key: string, make: () => Texture, blending: Blending = AdditiveBlending): Sprite {
+    return new Sprite(
       new SpriteMaterial({
-        map: this.textureCache[key],
-        blending: AdditiveBlending,
-        transparent: true,
+        map: this.texture(key, make),
+        blending,
         depthWrite: false,
+        transparent: true,
       }),
     );
-    s.scale.set(size, size, 1);
-    return s;
+  }
+
+  private pixel: BoxGeometry | null = null;
+  private pixelGeometry(): BoxGeometry {
+    return (this.pixel ??= new BoxGeometry(0.12, 0.12, 0.12));
+  }
+
+  private texture(key: string, make: () => Texture): Texture {
+    let t = this.textures.get(key);
+    if (!t) {
+      t = make();
+      this.textures.set(key, t);
+    }
+    return t;
   }
 }

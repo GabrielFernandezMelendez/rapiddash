@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import {
   AmbientLight,
+  Box3,
   BoxGeometry,
   Clock,
   Color,
@@ -25,7 +26,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { buildMockupCar } from '../../../infrastructure/render/three/mockup-vehicles';
-import { MockupExhaustFx } from '../../../infrastructure/render/three/mockup-fx';
+import { MOCKUP_FX, MockupExhaustFx } from '../../../infrastructure/render/three/mockup-fx';
 
 declare global {
   interface Window {
@@ -42,6 +43,11 @@ interface ShowroomCar {
   tagline: string;
   group: CarGroup;
 }
+
+const parseFxId = (raw: string | null): number => {
+  const id = Number(raw);
+  return Number.isInteger(id) && id >= 1 && id <= 10 ? id : 1;
+};
 
 const parseCarId = (raw: string | null): number => {
   const id = Number(raw);
@@ -74,8 +80,11 @@ export class MockupGaragePage implements OnInit, OnDestroy {
   private readonly photoTurn = Number(this.params.get('turn') ?? 0);
 
   protected currentCarId = parseCarId(this.params.get('car'));
-  protected currentFxId = 1;
-  protected accelerating = false;
+  // En las capturas de coches (sin `fx`) no hay efecto, ni el resplandor tenue del escape
+  protected currentFxId =
+    this.photoMode && !this.params.get('fx') ? 0 : parseFxId(this.params.get('fx'));
+  /** En modo captura, `accel=1` deja el coche acelerando para fotografiar el efecto. */
+  protected accelerating = this.params.get('accel') === '1';
 
   protected readonly cars: readonly ShowroomCar[] = [
     // 01-10: el deportivo retro del juego, solo con otra pintura.
@@ -145,18 +154,7 @@ export class MockupGaragePage implements OnInit, OnDestroy {
   protected readonly retroCars = this.cars.filter((car) => car.group === 'retro');
   protected readonly newCars = this.cars.filter((car) => car.group === 'nuevo');
 
-  protected readonly fxs = [
-    { id: 1, name: 'Classic Sparks' },
-    { id: 2, name: 'Neon Streak' },
-    { id: 3, name: 'Plasma Burn' },
-    { id: 4, name: 'Ghost Echo' },
-    { id: 5, name: 'Digital Pixels' },
-    { id: 6, name: 'Dark Void' },
-    { id: 7, name: 'Rainbow Flow' },
-    { id: 8, name: 'Gold Dust' },
-    { id: 9, name: 'Lightning Arcs' },
-    { id: 10, name: 'Fireball' },
-  ];
+  protected readonly fxs = MOCKUP_FX;
 
   protected get currentCar(): ShowroomCar {
     return this.cars.find((car) => car.id === this.currentCarId) ?? this.cars[0];
@@ -168,12 +166,19 @@ export class MockupGaragePage implements OnInit, OnDestroy {
     this.animate();
     window.addEventListener('resize', this.onResize);
     window.addEventListener('keydown', this.onKeydown);
+    window.addEventListener('keyup', this.onKeyup);
   }
+
+  /** Espacio acelera, como en el juego. */
+  private readonly onKeyup = (event: KeyboardEvent): void => {
+    if (event.code === 'Space') this.accelerating = false;
+  };
 
   ngOnDestroy(): void {
     cancelAnimationFrame(this.animationId);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKeydown);
+    window.removeEventListener('keyup', this.onKeyup);
     this.fx?.dispose();
     this.renderer?.dispose();
   }
@@ -187,7 +192,13 @@ export class MockupGaragePage implements OnInit, OnDestroy {
     const height = this.host().nativeElement.clientHeight || window.innerHeight;
 
     this.camera = new PerspectiveCamera(32, width / height, 0.1, 200);
-    if (this.photoMode) {
+    if (this.photoMode && this.params.get('wide') === '1') {
+      // Captura de efectos: más abierta para que quepa la estela entera detrás del coche.
+      this.camera.fov = 40;
+      this.camera.position.set(4.6, 2.9, -5.8);
+      this.camera.lookAt(1.7, 0.6, 0.7);
+      this.camera.updateProjectionMatrix();
+    } else if (this.photoMode) {
       // Modo captura: plano cercano y limpio, sin interfaz.
       this.camera.position.set(3.0, 1.9, -4.2);
       this.camera.lookAt(0, 0.55, 0);
@@ -269,7 +280,10 @@ export class MockupGaragePage implements OnInit, OnDestroy {
   };
 
   private readonly onKeydown = (event: KeyboardEvent): void => {
-    if (event.key === 'ArrowLeft') {
+    if (event.code === 'Space') {
+      event.preventDefault();
+      this.accelerating = true;
+    } else if (event.key === 'ArrowLeft') {
       this.selectCar(this.currentCarId === 1 ? 20 : this.currentCarId - 1);
     } else if (event.key === 'ArrowRight') {
       this.selectCar(this.currentCarId === 20 ? 1 : this.currentCarId + 1);
@@ -280,9 +294,16 @@ export class MockupGaragePage implements OnInit, OnDestroy {
     this.fx?.dispose();
     this.currentCarGroup.clear();
     const car = buildMockupCar(this.currentCarId);
+    // Puntos de salida de los efectos según el tamaño del coche (antes de girarlo)
+    const size = new Box3().setFromObject(car);
+    this.fx = new MockupExhaustFx(car, {
+      rearZ: size.max.z,
+      halfWidth: Math.min(size.max.x, 0.85),
+      roofY: size.max.y,
+      exhaustY: 0.32,
+    });
     this.currentCarGroup.add(car);
     this.currentCarGroup.rotation.y = this.photoMode ? this.photoTurn : 0;
-    this.fx = new MockupExhaustFx(this.scene, car);
   }
 
   protected selectCar(id: number): void {

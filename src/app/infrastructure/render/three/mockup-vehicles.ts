@@ -1,6 +1,7 @@
 import {
   AdditiveBlending,
   BackSide,
+  Box3,
   BoxGeometry,
   BufferGeometry,
   CanvasTexture,
@@ -14,6 +15,9 @@ import {
   MeshBasicMaterial,
   PlaneGeometry,
   Shape,
+  SRGBColorSpace,
+  Sprite,
+  SpriteMaterial,
   TorusGeometry,
 } from 'three';
 
@@ -124,6 +128,10 @@ function addOutline(g: Group, mesh: Mesh, color: number, threshold = 25): LineSe
 function body(g: Group, profile: Profile, paint: Paint, depth = 1.46, bevel = 0.05): void {
   const geo = extruded(profile, depth, bevel);
   const mesh = add(g, new Mesh(geo, flat(paint.body)));
+  // Para los detalles comunes (retrovisores, reflejos, matrículas) que se añaden al final
+  g.userData['paint'] = paint;
+  g.userData['body'] ??= mesh;
+  g.userData['bodyDepth'] = depth;
   // Coraza de neón: una copia algo mayor con las caras interiores.
   // Deja un borde luminoso grueso alrededor de la silueta, no una línea de 1 px.
   const shell = new Mesh(
@@ -141,6 +149,7 @@ function canopy(g: Group, profile: Profile, depth: number, paint: Paint, y = 0):
   const glassDepth = depth + 0.04;
   const geo = extruded(profile, glassDepth, 0);
   const glass = add(g, new Mesh(geo, flat(paint.glass)), 0, y + 0.09, 0);
+  g.userData['glass'] = glass;
   const shell = new Mesh(
     geo.clone(),
     new MeshBasicMaterial({ color: paint.accent, side: BackSide }),
@@ -181,6 +190,63 @@ function wheels(
   ]) {
     add(g, new Mesh(tyreGeo, flat(opts.tyre ?? 0x0b0614)), wx, y, wz);
     add(g, new Mesh(rimGeo, flat(paint.rim)), wx * 1.17, y, wz);
+    wheelFace(g, paint, radius, wx, y, wz, width);
+  }
+}
+
+/**
+ * Detalle de la cara de la rueda: banda de rodadura, disco de freno con pinza, cinco radios y
+ * buje con tuercas. Va en la cara exterior, por dentro del aro de neón.
+ */
+function wheelFace(
+  g: Group,
+  paint: Paint,
+  radius: number,
+  wx: number,
+  y: number,
+  wz: number,
+  width: number,
+): void {
+  const out = Math.sign(wx);
+  const faceX = wx + out * (width / 2 + 0.004);
+  // Banda de rodadura: un aro algo más oscuro que asoma por el borde
+  const tread = new TorusGeometry(radius * 0.97, radius * 0.06, 4, 24);
+  tread.rotateY(Math.PI / 2);
+  add(g, new Mesh(tread, flat(0x1d1428)), faceX, y, wz);
+  // Disco de freno y pinza (de color del neón, como los de competición)
+  cyl(g, radius * 0.5, 0.01, 0x3a3346, faceX - out * 0.012, y, wz, 'x');
+  box(
+    g,
+    0.02,
+    radius * 0.32,
+    radius * 0.18,
+    paint.accent,
+    faceX - out * 0.006,
+    y + radius * 0.34,
+    wz - radius * 0.2,
+  );
+  // Cinco radios
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const spoke = box(g, 0.012, radius * 0.5, radius * 0.1, 0xcfd2dc, faceX, y, wz);
+    spoke.rotation.x = a;
+    spoke.position.y = y + Math.cos(a) * radius * 0.27;
+    spoke.position.z = wz + Math.sin(a) * radius * 0.27;
+  }
+  // Buje con tuercas
+  cyl(g, radius * 0.14, 0.02, paint.rim, faceX + out * 0.004, y, wz, 'x');
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.6;
+    cyl(
+      g,
+      radius * 0.03,
+      0.025,
+      0x111111,
+      faceX + out * 0.008,
+      y + Math.cos(a) * radius * 0.08,
+      wz + Math.sin(a) * radius * 0.08,
+      'x',
+    );
   }
 }
 
@@ -1121,10 +1187,220 @@ function solarisX(): Group {
 }
 
 // ---------------------------------------------------------------------------
+// Detalles comunes a todos los coches
+// ---------------------------------------------------------------------------
+
+let haloTexture: CanvasTexture | undefined;
+
+/** Halo suave para que faros y pilotos brillen un poco más allá de su caja. */
+function lightHalo(): CanvasTexture {
+  if (haloTexture) return haloTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 64, 64);
+  haloTexture = new CanvasTexture(canvas);
+  return haloTexture;
+}
+
+let plateTexture: CanvasTexture | undefined;
+
+/** Matrícula de los 80: fondo claro, borde y «RD·88». */
+function plate(): CanvasTexture {
+  if (plateTexture) return plateTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#f2eee4';
+  ctx.fillRect(0, 0, 128, 32);
+  ctx.strokeStyle = '#1a1230';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 28);
+  ctx.fillStyle = '#1a1230';
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('RD·88', 64, 17);
+  plateTexture = new CanvasTexture(canvas);
+  return plateTexture;
+}
+
+/** ¿Es un faro (claro y en el morro) o un piloto (rojo/rosa y atrás)? */
+function lightKind(mesh: Mesh, minZ: number, maxZ: number): 'head' | 'tail' | null {
+  const material = mesh.material as MeshBasicMaterial;
+  if (!material.color || material.transparent) return null;
+  const hsl = { h: 0, s: 0, l: 0 };
+  // En sRGB (lo que se ve), no en el espacio lineal de trabajo de Three
+  material.color.getHSL(hsl, SRGBColorSpace);
+  const z = mesh.position.z;
+  const small = mesh.geometry instanceof BoxGeometry || mesh.geometry instanceof CylinderGeometry;
+  if (!small) return null;
+  if (z < minZ + 0.45 && hsl.l > 0.82) return 'head';
+  // Pilotos: rojos o rosas, atrás y a la altura del maletero (no las líneas finas de las aletas
+  // ni los alerones)
+  const b = new Box3().setFromObject(mesh);
+  const tall = b.max.y - b.min.y > 0.04 && mesh.position.y < 0.8;
+  if (z > maxZ - 0.35 && tall && hsl.s > 0.6 && (hsl.h > 0.9 || hsl.h < 0.03) && hsl.l > 0.35)
+    return 'tail';
+  return null;
+}
+
+/**
+ * Detalles que suben el nivel de todos: halos en faros y pilotos, retrovisores, reflejo en el
+ * parabrisas, línea de puerta y matrículas. Van al final para no tocar el diseño de cada coche.
+ */
+function details(g: Group, id: number): void {
+  const paint = g.userData['paint'] as Paint | undefined;
+  const glass = g.userData['glass'] as Mesh | undefined;
+  if (!paint) return;
+  // Tamaño del coche sin la sombra ni la luz de bajos (son planos más largos que él)
+  const box3 = new Box3();
+  g.updateMatrixWorld(true);
+  g.traverse((o) => {
+    if (o instanceof Mesh && !(o.material as MeshBasicMaterial).transparent) box3.expandByObject(o);
+  });
+  const minZ = box3.min.z;
+  const maxZ = box3.max.z;
+  const half = ((g.userData['bodyDepth'] as number) ?? 1.46) / 2 + 0.05;
+
+  // Halos de faros y pilotos
+  const lights: { mesh: Mesh; kind: 'head' | 'tail' }[] = [];
+  g.traverse((o) => {
+    if (o instanceof Mesh) {
+      const kind = lightKind(o, minZ, maxZ);
+      if (kind) lights.push({ mesh: o, kind });
+    }
+  });
+  for (const { mesh, kind } of lights) {
+    const b = new Box3().setFromObject(mesh);
+    const size = Math.max(b.max.x - b.min.x, b.max.y - b.min.y) * 1.6 + 0.25;
+    const halo = new Sprite(
+      new SpriteMaterial({
+        map: lightHalo(),
+        color: (mesh.material as MeshBasicMaterial).color,
+        blending: AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+        opacity: kind === 'head' ? 0.55 : 0.7,
+      }),
+    );
+    halo.scale.set(Math.min(size, 1.2), Math.min(size, 1.2) * 0.6, 1);
+    halo.position.set(
+      (b.min.x + b.max.x) / 2,
+      (b.min.y + b.max.y) / 2,
+      kind === 'head' ? b.min.z - 0.04 : b.max.z + 0.04,
+    );
+    g.add(halo);
+  }
+
+  if (glass) {
+    const gb = new Box3().setFromObject(glass);
+    // Retrovisores en la base del parabrisas, del color de la carrocería con borde de neón
+    for (const side of [-1, 1]) {
+      const mirror = box(
+        g,
+        0.1,
+        0.09,
+        0.16,
+        paint.body,
+        side * (half + 0.06),
+        gb.min.y + 0.06,
+        gb.min.z + 0.14,
+      );
+      addOutline(g, mirror, paint.accent, 20);
+      box(g, 0.012, 0.06, 0.12, 0x9fd8ff, side * (half + 0.112), gb.min.y + 0.06, gb.min.z + 0.14);
+      // Brazo hasta la puerta
+      box(g, 0.08, 0.025, 0.04, 0x111111, side * (half + 0.01), gb.min.y + 0.04, gb.min.z + 0.14);
+    }
+    // Reflejo diagonal en el parabrisas y en las lunas laterales
+    const shine = new MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.22,
+      blending: AdditiveBlending,
+      depthWrite: false,
+    });
+    for (const side of [-1, 1]) {
+      for (const [offset, width] of [
+        [0.18, 0.07],
+        [0.34, 0.035],
+      ] as const) {
+        const strip = add(
+          g,
+          new Mesh(new PlaneGeometry(width, (gb.max.y - gb.min.y) * 0.9), shine),
+          side * ((gb.max.x - gb.min.x) / 2 + 0.003),
+          (gb.min.y + gb.max.y) / 2,
+          gb.min.z + (gb.max.z - gb.min.z) * offset,
+        );
+        strip.rotation.set(0, side * (Math.PI / 2), -0.5 * side);
+      }
+    }
+    // Línea de puerta: una ranura fina detrás del parabrisas
+    for (const side of [-1, 1]) {
+      box(
+        g,
+        0.012,
+        0.36,
+        0.012,
+        0x07040d,
+        side * (half - 0.025),
+        gb.min.y - 0.22,
+        (gb.min.z + gb.max.z) / 2 + 0.05,
+      );
+      // Tirador
+      box(
+        g,
+        0.015,
+        0.025,
+        0.12,
+        0x222033,
+        side * (half - 0.02),
+        gb.min.y - 0.08,
+        (gb.min.z + gb.max.z) / 2 + 0.2,
+      );
+    }
+  }
+
+  // Matrículas delantera y trasera, pegadas a la carrocería (no a escapes ni alerones); la
+  // furgoneta y la pickup las llevan más altas
+  const bodyBox = new Box3().setFromObject(g.userData['body'] as Mesh);
+  const plateY = id === 15 || id === 16 ? 0.42 : 0.27;
+  const plateMaterial = new MeshBasicMaterial({ map: plate() });
+  const rear = add(
+    g,
+    new Mesh(new PlaneGeometry(0.42, 0.105), plateMaterial),
+    0,
+    plateY,
+    bodyBox.max.z + 0.012,
+  );
+  rear.rotation.y = 0;
+  const front = add(
+    g,
+    new Mesh(new PlaneGeometry(0.42, 0.105), plateMaterial),
+    0,
+    plateY - 0.05,
+    bodyBox.min.z - 0.012,
+  );
+  front.rotation.y = Math.PI;
+}
+
+// ---------------------------------------------------------------------------
 // Catálogo
 // ---------------------------------------------------------------------------
 
 export function buildMockupCar(id: number): Group {
+  const car = baseCar(id);
+  details(car, id);
+  return car;
+}
+
+function baseCar(id: number): Group {
   if (id >= 1 && id <= 10) return retroVariant(RETRO_BODY_COLORS[id] ?? RETRO_BODY_COLORS[1]);
 
   switch (id) {
