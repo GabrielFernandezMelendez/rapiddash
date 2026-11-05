@@ -1,0 +1,51 @@
+<div class="screen">
+  <header class="top">
+    <button rdButton variant="ghost" type="button" (click)="back()">← {{ 'garage.back' | t }}</button>
+    <h1>{{ 'medals.title' | t }}</h1>
+  </header>
+
+  <!-- Resumen: cuántas de cada (tener oro cuenta también como plata y bronce) -->
+  <section class="summary">
+    @for (m of medals; track m; let i = $index) {
+      <div class="count" [style.--d]="i * 0.08 + 's'">
+        <rd-medal-coin [medal]="m" [size]="40" />
+        <b>{{ counts()[m] }}<small>/{{ total() }}</small></b>
+        <span>{{ 'medal.' + m | t }}</span>
+      </div>
+    }
+    <div class="progress" [style.--p]="golds() / (total() || 1)">
+      <span class="progress-bar"><i></i></span>
+      <span class="progress-text">{{ golds() }} {{ 'medals.goldsOf' | t }} {{ total() }}</span>
+    </div>
+  </section>
+
+  <ul class="list">
+    @for (row of rows(); track row.map.id; let i = $index) {
+      <li [style.--d]="0.25 + i * 0.05 + 's'">
+        <button type="button" class="row" [attr.data-medal]="row.medal ?? 'none'" (click)="play(row)">
+          <rd-medal-coin [medal]="row.medal" [size]="38" />
+          <span class="info">
+            <b class="name">{{ row.map.nameKey | t }}</b>
+            <span class="best">{{ 'medals.best' | t }} <em>{{ time(row.best) }}</em></span>
+            <span class="tiers">
+              @for (m of medals; track m) {
+                <span class="tier" [attr.data-medal]="m" [class.got]="has(row, m)">
+                  <i></i>{{ time(row.targets[m]) }}
+                </span>
+              }
+            </span>
+          </span>
+          <span class="goal">
+            @if (row.next; as n) {
+              <span class="goal-name" [attr.data-medal]="n">{{ 'medal.' + n | t }}</span>
+              <span class="goal-gap">{{ row.gap ?? time(row.targets[n]) }}</span>
+            } @else {
+              <span class="goal-name done">{{ 'medals.all' | t }}</span>
+            }
+            <span class="play">▶</span>
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+</div>

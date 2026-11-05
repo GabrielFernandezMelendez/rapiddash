@@ -211,6 +211,10 @@ export class HomePage implements OnInit {
     }
   }
 
+  protected openMedals(): void {
+    void this.router.navigate(['/medals']);
+  }
+
   protected openGarage(): void {
     void this.router.navigate(['/garage']);
   }

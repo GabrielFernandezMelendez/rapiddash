@@ -9,6 +9,8 @@ import {
 import { formatTime, NO_TIME } from '../../../shared/format-time';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Flag } from '../../atoms/flag/flag';
+import { Medal, medalFor, MedalTargets } from '../../../core/domain/medals/medals';
+import { MedalLeague } from '../medal-league/medal-league';
 
 interface Row {
   readonly key: string;
@@ -19,6 +21,8 @@ interface Row {
   readonly empty: boolean;
   readonly me: boolean;
   readonly rival: boolean;
+  /** Liga del piloto según su tiempo: colorea su apodo y su marca. */
+  readonly medal: Medal | null;
 }
 
 /**
@@ -28,13 +32,17 @@ interface Row {
  */
 @Component({
   selector: 'rd-leaderboard',
-  imports: [Flag, TranslatePipe],
+  imports: [Flag, MedalLeague, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h3>{{ title() | t }}</h3>
+    @if (targets(); as t) {
+      <!-- Mi liga en este mapa y la siguiente medalla con su tiempo objetivo -->
+      <rd-medal-league [targets]="t" [best]="view().me?.record?.time ?? null" />
+    }
     <ol [class.loading]="loading()">
       @for (row of rows(); track row.key) {
-        <li [class.empty]="row.empty" [class.me]="row.me" [class.rival]="row.rival">
+        <li [class.empty]="row.empty" [class.me]="row.me" [class.rival]="row.rival" [attr.data-medal]="row.medal">
           <span class="pos">{{ row.rank }}</span>
           @if (!row.empty) {
             <rd-flag [country]="row.country" />
@@ -51,7 +59,7 @@ interface Row {
       <div class="gap" aria-hidden="true">· · ·</div>
       <ol>
         @for (row of near(); track row.key) {
-          <li [class.me]="row.me" [class.rival]="row.rival">
+          <li [class.me]="row.me" [class.rival]="row.rival" [attr.data-medal]="row.medal">
             <span class="pos">{{ row.rank }}</span>
             <rd-flag [country]="row.country" />
             <span class="name">{{ row.name }}{{ row.me ? ' ' + ('leaderboard.you' | t) : '' }}</span>
@@ -78,6 +86,8 @@ export class Leaderboard {
   readonly loading = input(false);
   /** No se pudo leer el ranking (sin red y sin caché). */
   readonly offline = input(false);
+  /** Tiempos objetivo del mapa: cada piloto se pinta con el color de su liga (null = sin medallas). */
+  readonly targets = input<MedalTargets | null>(null);
 
   protected readonly rows = computed<Row[]>(() =>
     Array.from({ length: LEADERBOARD_SIZE }, (_, i) => {
@@ -98,6 +108,7 @@ export class Leaderboard {
       empty: false,
       me: record.uid === this.myUid(),
       rival: record.uid === this.rivalUid(),
+      medal: this.targets() ? medalFor(record.time, this.targets()!) : null,
     };
   }
 }
@@ -112,5 +123,6 @@ function emptyRow(rank: number): Row {
     empty: true,
     me: false,
     rival: false,
+    medal: null,
   };
 }

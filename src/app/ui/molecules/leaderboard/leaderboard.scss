@@ -115,3 +115,43 @@ li:first-child .pos {
   font-size: 13px;
   color: var(--rd-muted);
 }
+
+// Liga de cada piloto (como en Race Time): apodo y marca en el color de su medalla, con una
+// marca de color a la izquierda; el platino, además, con un brillo que corre
+li[data-medal] {
+  --c: var(--rd-chalk);
+  .name,
+  .time {
+    color: var(--c);
+  }
+  .time {
+    text-shadow: 0 0 8px color-mix(in srgb, var(--c) 45%, transparent);
+  }
+}
+li[data-medal]::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 14px;
+  margin-right: -4px;
+  border-radius: 2px;
+  background: var(--c);
+  box-shadow: 0 0 6px var(--c);
+}
+li[data-medal='bronze'] { --c: var(--rd-medal-bronze); }
+li[data-medal='silver'] { --c: var(--rd-medal-silver); }
+li[data-medal='gold'] { --c: var(--rd-medal-gold); }
+li[data-medal='platinum'] { --c: var(--rd-medal-platinum); }
+li[data-medal='platinum'] .name {
+  background: linear-gradient(90deg, #b9fbff, #ff4fd8, #ffd319, #b9fbff) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: prism 3s linear infinite;
+}
+@keyframes prism {
+  to { background-position: 200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  li[data-medal='platinum'] .name { animation: none; }
+}

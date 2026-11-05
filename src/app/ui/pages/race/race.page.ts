@@ -47,6 +47,11 @@ import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
+import { HudJuice } from '../../organisms/hud-juice/hud-juice';
+import { MEDALS, medalFor } from '../../../core/domain/medals/medals';
+import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
+import { ResultMedal } from '../../organisms/results-panel/results-panel';
+import { autopilot } from '../../../core/domain/race/autopilot';
 import { PrizeRoulette } from '../../organisms/prize-roulette/prize-roulette';
 import { Prize, prizeKey } from '../../../core/domain/garage/garage';
 import { prizeReel } from '../../../core/domain/garage/prize-reel';
@@ -57,14 +62,26 @@ const FINISH_BANNER_MS = 1300;
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe, HudJuice],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-race-layout #surface>
       <div race-scene #scene class="scene"></div>
       @if (state(); as s) {
-        <rd-hud [state]="s" [mapName]="mapName()" [rivalName]="rivalName()" (exit)="exit()" />
+        @if (hud() !== 'v1') {
+          <rd-hud-juice
+            [state]="s"
+            [mapName]="mapName()"
+            [rivalName]="rivalName()"
+            [targets]="targets()"
+            [bestTime]="mockBest() ?? s.bestTime"
+            [demo]="!!demoMode()"
+            (exit)="exit()"
+          />
+        } @else {
+          <rd-hud [state]="s" [mapName]="mapName()" [rivalName]="rivalName()" (exit)="exit()" />
+        }
         <rd-countdown [phase]="s.phase" [light]="s.light" [showGo]="s.showGo" />
         @if (s.lapBanner; as b) {
           <rd-lap-banner
@@ -83,6 +100,7 @@ const FINISH_BANNER_MS = 1300;
             [result]="s.result!"
             [standing]="standing()"
             [passedLabel]="passedLabel()"
+            [medal]="resultMedal()"
             (retry)="retry()"
             (maps)="exit()"
           />
@@ -127,6 +145,29 @@ export class RacePage {
   readonly t = input<string | undefined>();
   /** ?duel=CODIGO: un intento de un 1 vs 1 (se gasta al salir; cuenta su mejor tiempo). */
   readonly duel = input<string | undefined>();
+  /** ?hud=v1: el HUD de antes (para comparar). Pruebas: ?auto=1 conduce el piloto automático, ?best=52.3 finge mi mejor tiempo y ?demo=1 un fantasma que va y viene con un objetivo corto. */
+  readonly hud = input<string | undefined>();
+  readonly auto = input<string | undefined>();
+  readonly best = input<string | undefined>();
+  readonly demoMode = input<string | undefined>(undefined, { alias: 'demo' });
+  /** Tiempos objetivo de las medallas del mapa (del piloto automático). */
+  protected readonly targets = computed(() => {
+    const map = this.map();
+    return map ? mapMedalTargets(map) : null;
+  });
+  /** Medalla tras la carrera: con el mejor tiempo (el nuevo si es récord); nueva si sube de liga. */
+  protected readonly resultMedal = computed<ResultMedal | null>(() => {
+    const targets = this.targets();
+    const result = this.state()?.result;
+    if (!targets || !result) return null;
+    const prev = result.previousBest;
+    const best = prev === null ? result.time : Math.min(prev, result.time);
+    const medal = medalFor(best, targets);
+    const before = medalFor(prev, targets);
+    const rank = (m: typeof medal) => (m === null ? -1 : MEDALS.indexOf(m));
+    return { medal, fresh: rank(medal) > rank(before), targets, best };
+  });
+  protected readonly mockBest = computed(() => (this.best() ? Number(this.best()) : null));
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
@@ -430,6 +471,7 @@ export class RacePage {
         if (prize) this.won.set({ prize, reel: prizeReel(prize, locked) });
       });
     }
+    if (this.auto()) this.session.driver = autopilot;
     await this.session.start(
       (s) => this.onState(s),
       () => this.quickRestart(),

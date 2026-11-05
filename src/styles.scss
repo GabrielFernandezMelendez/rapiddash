@@ -40,6 +40,11 @@
   --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff4fd8 0 10px, #2de2e6 10px 20px);
   --rd-neon-pink: #ff4fd8;
   --rd-neon-cyan: #2de2e6;
+  /** Colores de las medallas (y de la liga de cada piloto en los rankings). */
+  --rd-medal-bronze: #f0a066;
+  --rd-medal-silver: #e6edf7;
+  --rd-medal-gold: #ffd319;
+  --rd-medal-platinum: #b9fbff;
   color-scheme: dark;
 }
 

@@ -52,6 +52,8 @@ export interface RaceViewState {
   readonly lapTimes: readonly number[];
   /** Cartel de vuelta en el centro (solo un momento tras cruzar la línea). */
   readonly lapBanner: LapBanner | null;
+  /** MOCKUP: posición lateral del coche (para inclinar el HUD en los cambios de carril). */
+  readonly lateral: number;
 }
 
 /** Quien recibe cada récord nuevo para publicarlo (el ranking online). */
@@ -145,8 +147,12 @@ export class RaceSession {
     this.ports.input.read(); // descarta swipes pendientes
   }
 
+  /** MOCKUP: conductor automático para grabar vídeos (null = el jugador). */
+  driver: ((car: RaceState['car'], track: Track) => import('../../domain/car/car').DriveInput) | null = null;
+
   private tick(dt: number): void {
-    const input = this.ports.input.read();
+    const read = this.ports.input.read();
+    const input = this.driver ? this.driver(this.race.car, this.track) : read;
     // Solo con la carrera en marcha: en el semáforo no hay nada que reiniciar y en la meta está
     // el botón «Repetir». Si no se reinicia (sin intentos), la carrera sigue en este fotograma.
     if (input.restart && this.race.phase === 'racing') this.onRestartRequest();
@@ -263,6 +269,7 @@ export class RaceSession {
         this.banner && race.phase === 'racing' && race.raceTime - this.banner.at < LAP_BANNER_TIME
           ? this.banner
           : null,
+      lateral: race.car.lateral,
     };
   }
 }
