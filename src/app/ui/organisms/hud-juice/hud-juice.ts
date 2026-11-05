@@ -13,6 +13,7 @@ import { RaceViewState } from '../../../core/application/use-cases/race-session'
 import { Medal, MedalTargets, medalFor, nextMedal } from '../../../core/domain/medals/medals';
 import { formatDelta, formatTime, NO_TIME } from '../../../shared/format-time';
 import { Button } from '../../atoms/button/button';
+import { MedalCoin } from '../../molecules/medal-coin/medal-coin';
 
 /** MOCKUP del HUD «con juice»: mismos datos que el HUD actual, pero con vida. */
 const KMH_FACTOR = 9;
@@ -43,7 +44,7 @@ class Spring {
 
 @Component({
   selector: 'rd-hud-juice',
-  imports: [Button],
+  imports: [Button, MedalCoin],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hud-juice.html',
   styleUrl: './hud-juice.scss',
@@ -149,4 +150,5 @@ export class HudJuice {
     return target === null ? '' : formatTime(target);
   });
   protected readonly names = MEDAL_NAMES;
+  protected readonly sparks = Array.from({ length: 9 }, (_, i) => i);
 }

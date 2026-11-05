@@ -1,5 +1,6 @@
 import { CarState, DriveInput, Swipe } from '../car/car';
 import { Track } from '../track/track';
+import { createRace, stepRace } from './race';
 
 /**
  * Piloto automático sencillo: gira en los cruces a unos 2,5 m y corrige el magnetismo antes del
@@ -24,4 +25,13 @@ export function autopilot(car: CarState, track: Track): DriveInput {
     }
   }
   return { throttle: true, swipes };
+}
+
+/** Tiempo que hace el piloto automático en esa pista (referencia de las medallas). */
+export function autopilotTime(track: Track): number {
+  let race = createRace(track);
+  for (let i = 0; i < 60 * 180 && race.phase !== 'finished'; i++) {
+    race = stepRace(race, autopilot(race.car, track), track, 1 / 60).race;
+  }
+  return race.raceTime;
 }

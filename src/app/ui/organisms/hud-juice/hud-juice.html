@@ -26,13 +26,25 @@
         <div class="medals" [class.urgent]="progress() > 0.85 && !missed()" [class.missed]="missed()">
           <!-- Liga actual: la medalla que ya tienes en este mapa -->
           <div class="league" [attr.data-medal]="current() ?? 'none'">
+            <rd-medal-coin class="league-coin" [medal]="current()" [size]="26" />
             <span class="league-name">{{ current() ? names[current()!] : 'Sin medalla' }}</span>
             <span class="league-bar"><i></i></span>
           </div>
           <!-- Objetivo: la siguiente medalla, se va gastando con el tiempo de carrera -->
           @if (next(); as n) {
             <div class="goal" [attr.data-medal]="n">
-              <span class="goal-bar"><i [style.width.%]="progress() * 100"></i></span>
+              <span class="goal-bar">
+                <span class="goal-track"><i class="fill" [style.width.%]="progress() * 100"></i></span>
+                @if (!missed()) {
+                  <!-- Punta viva: un orbe que late y suelta chispas hacia atrás -->
+                  <span class="tip" [style.left.%]="progress() * 100">
+                    <i class="orb"></i>
+                    @for (p of sparks; track p) {
+                      <i class="spark" [style.--k]="p"></i>
+                    }
+                  </span>
+                }
+              </span>
               <span class="goal-text">
                 <b>{{ names[n] }}</b> {{ targetText() }}
                 <em>{{ missed() ? '✕' : margin() }}</em>

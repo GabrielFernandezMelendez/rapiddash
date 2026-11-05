@@ -7,10 +7,22 @@ import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { Flag } from '../../atoms/flag/flag';
 import { Modal } from '../../molecules/modal/modal';
+import { MedalCoin } from '../../molecules/medal-coin/medal-coin';
+import { Medal } from '../../../core/domain/medals/medals';
+
+/** MOCKUP: medalla del mapa tras la carrera. */
+export interface ResultMedal {
+  readonly medal: Medal | null;
+  /** Medalla nueva en esta carrera. */
+  readonly fresh: boolean;
+  readonly name: string;
+  readonly nextName: string | null;
+  readonly nextGap: string | null;
+}
 
 @Component({
   selector: 'rd-results-panel',
-  imports: [Modal, Button, Flag, TranslatePipe],
+  imports: [Modal, Button, Flag, MedalCoin, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-modal [label]="'results.title' | t" (dismiss)="maps.emit()">
@@ -38,6 +50,22 @@ import { Modal } from '../../molecules/modal/modal';
           </ol>
         </div>
       }
+      @if (medal() || standing()) {
+      <div class="place-row">
+      @if (medal(); as md) {
+        <div class="medal-box" [attr.data-medal]="md.medal ?? 'none'" [class.fresh]="md.fresh">
+          <rd-medal-coin [medal]="md.medal" [size]="44" [fresh]="md.fresh" />
+          <span class="medal-text">
+            @if (md.fresh) {
+              <span class="medal-new">¡Nueva medalla!</span>
+            }
+            <b>{{ md.name }}</b>
+            @if (md.nextName) {
+              <span class="medal-next">{{ md.nextName }} a <em>−{{ md.nextGap }}</em></span>
+            }
+          </span>
+        </div>
+      }
       @if (standing(); as st) {
         <div class="standing">
           <span class="label">{{ 'results.worldRank' | t }}</span>
@@ -51,6 +79,10 @@ import { Modal } from '../../molecules/modal/modal';
             <span class="of">{{ 'results.of' | t }} {{ st.total }} {{ 'leaderboard.drivers' | t }}</span>
           }
         </div>
+      }
+      </div>
+      }
+      @if (standing(); as st) {
         @if (st.next; as next) {
           <div class="next">
             @if (st.gained) {
@@ -210,6 +242,75 @@ import { Modal } from '../../molecules/modal/modal';
       color: var(--rd-chalk);
       font-variant-numeric: tabular-nums;
     }
+    .place-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .medal-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: var(--rd-radius);
+      background: var(--rd-asphalt);
+      box-shadow: inset 0 0 0 1px var(--rd-line);
+      --c: #5a4a80;
+    }
+    .medal-box[data-medal='bronze'] { --c: #f0a066; }
+    .medal-box[data-medal='silver'] { --c: #e6edf7; }
+    .medal-box[data-medal='gold'] { --c: #ffd319; }
+    .medal-box[data-medal='platinum'] { --c: #b9fbff; }
+    .medal-box.fresh {
+      box-shadow:
+        inset 0 0 0 1.5px var(--c),
+        0 0 18px color-mix(in srgb, var(--c) 45%, transparent);
+      animation: glow 1.4s ease-in-out infinite alternate;
+    }
+    .medal-text {
+      display: grid;
+      gap: 1px;
+      min-width: 0;
+    }
+    .medal-text b {
+      font-family: var(--rd-font-display);
+      font-style: var(--rd-display-style);
+      font-weight: 800;
+      font-size: 22px;
+      line-height: 1;
+      text-transform: uppercase;
+      color: var(--c);
+    }
+    .medal-new {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      text-transform: uppercase;
+      color: var(--rd-go);
+      animation: blink 0.6s steps(2) 3;
+    }
+    .medal-next {
+      display: grid;
+      font-size: 11px;
+      color: var(--rd-muted);
+    }
+    .medal-next em {
+      font-style: normal;
+      color: var(--rd-chalk);
+      font-variant-numeric: tabular-nums;
+    }
+    @keyframes glow {
+      to {
+        box-shadow:
+          inset 0 0 0 1.5px var(--c),
+          0 0 28px color-mix(in srgb, var(--c) 70%, transparent);
+      }
+    }
+    @keyframes blink {
+      50% { opacity: 0.2; }
+    }
     .previous {
       font-size: 14px;
       color: var(--rd-muted);
@@ -223,6 +324,8 @@ export class ResultsPanel {
   readonly standing = input<Standing | null>(null);
   /** Texto ya traducido de «Has adelantado a N pilotos». */
   readonly passedLabel = input('');
+  /** MOCKUP: medalla del mapa (null = mapa sin medallas). */
+  readonly medal = input<ResultMedal | null>(null);
   readonly retry = output<void>();
   readonly maps = output<void>();
 
