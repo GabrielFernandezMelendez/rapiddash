@@ -568,10 +568,10 @@ const MIRAGE_PROFILE: Profile = [
 ];
 
 const MIRAGE_GLASS: Profile = [
-  [-1.0, 0.82],
-  [-0.9, 1.04],
-  [-0.2, 1.04],
-  [0.3, 0.86],
+  [-1.0, 0.8],
+  [-0.9, 0.97],
+  [-0.2, 0.97],
+  [0.3, 0.84],
 ];
 
 function mirageTurbo(): Group {
@@ -589,10 +589,11 @@ function mirageTurbo(): Group {
   body(g, MIRAGE_PROFILE, paint, 1.5, 0.05);
   canopy(g, MIRAGE_GLASS, 1.54, paint, 0.02);
 
-  // Aletas anchas de rally.
-  for (const x of [-0.8, 0.8]) {
-    for (const z of [-0.85, 0.9]) {
-      box(g, 0.12, 0.3, 0.7, paint.body, x, 0.45, z);
+  // Aletas anchas de rally: un arco por encima de cada rueda, sin tapar la llanta.
+  for (const x of [-0.86, 0.86]) {
+    for (const z of [-0.82, 0.86]) {
+      const arch = box(g, 0.14, 0.1, 0.78, paint.body, x, 0.67, z);
+      addOutline(g, arch, paint.accent, 20);
     }
   }
 
@@ -608,9 +609,10 @@ function mirageTurbo(): Group {
   for (const x of [-0.5, 0.5]) {
     roundLight(g, 0.08, paint.head, x, 0.32, -1.48);
   }
-  for (const x of [-0.8, 0.8]) {
-    for (const z of [-0.55, 1.22]) {
-      box(g, 0.28, 0.25, 0.05, 0x111111, x, 0.12, z);
+  // Faldillas detrás de cada rueda, por fuera de la carrocería y sin tocar la goma.
+  for (const x of [-0.78, 0.78]) {
+    for (const z of [-0.46, 1.22]) {
+      box(g, 0.2, 0.22, 0.03, 0x111111, x, 0.14, z);
     }
   }
 
@@ -627,8 +629,9 @@ function mirageTurbo(): Group {
     box(g, 0.35, 0.12, 0.05, paint.tail, x, 0.5, 1.45);
   }
 
-  sideStripes(g, -0.79, 0.45, 0, 2.2, [0xff2244, paint.accent]);
-  sideStripes(g, 0.79, 0.45, 0, 2.2, [0xff2244, paint.accent]);
+  // Franjas por fuera del bisel de la carrocería (en 0,79 se mezclaban con el lateral).
+  sideStripes(g, -0.815, 0.4, 0, 1.0, [0xff2244, paint.accent]);
+  sideStripes(g, 0.815, 0.4, 0, 1.0, [0xff2244, paint.accent]);
   wheels(g, paint);
   underglow(g, paint.glow);
   return g;
@@ -726,9 +729,9 @@ const VAN_PROFILE: Profile = [
 
 const VAN_GLASS: Profile = [
   [-1.05, 0.74],
-  [-1.0, 1.06],
-  [-0.25, 1.06],
-  [0.15, 0.88],
+  [-1.0, 0.98],
+  [-0.25, 0.98],
+  [0.15, 0.86],
 ];
 
 function sunsetVan(): Group {
@@ -747,26 +750,26 @@ function sunsetVan(): Group {
   canopy(g, VAN_GLASS, 1.62, paint, 0.02);
 
   // Pilares que rompen la banda de lunas.
-  for (const x of [-0.81, 0.81]) {
+  for (const x of [-0.83, 0.83]) {
     for (const z of [0.35, 0.0, -0.35]) {
-      box(g, 0.04, 0.36, 0.08, paint.body, x, 0.9, z);
+      box(g, 0.04, 0.3, 0.08, paint.body, x, 0.88, z);
     }
   }
 
   // Franjas del atardecer en los costados.
-  for (const x of [-0.81, 0.81]) {
-    sideStripes(g, x, 0.52, 0.1, 2.2, [0xff8800, 0xff4fd8, 0x7a2cff]);
+  for (const x of [-0.835, 0.835]) {
+    sideStripes(g, x, 0.52, 0.1, 1.0, [0xff8800, 0xff4fd8, 0x7a2cff]);
   }
 
-  // Baca del techo con patas para que no parezca flotar.
+  // Baca del techo apoyada en el techo (que acaba en 1,17 m) con patas, sin atravesarlo.
   for (const x of [-0.55, 0.55]) {
-    box(g, 0.05, 0.05, 2.2, 0x111111, x, 1.2, 0.05);
-    for (const z of [-0.7, 0.7]) {
-      box(g, 0.04, 0.1, 0.04, 0x111111, x, 1.15, z);
+    box(g, 0.05, 0.05, 1.6, 0x111111, x, 1.27, 0.05);
+    for (const z of [-0.6, 0.7]) {
+      box(g, 0.04, 0.08, 0.04, 0x111111, x, 1.21, z);
     }
   }
-  for (const z of [-0.6, 0.6]) {
-    box(g, 1.2, 0.05, 0.05, 0x111111, 0, 1.2, z);
+  for (const z of [-0.55, 0.65]) {
+    box(g, 1.15, 0.05, 0.05, 0x111111, 0, 1.27, z);
   }
 
   // Parrilla, faros redondos y paragolpes pegados al morro inclinado.
@@ -988,18 +991,20 @@ function chromeDrift(): Group {
   body(g, DRIFT_PROFILE, paint, 1.58, 0.05);
   canopy(g, DRIFT_GLASS, 1.62, paint, 0.02);
 
-  // Capó negro y aletas anchas.
+  // Capó negro y aletas anchas: arcos por encima de cada rueda, sin tapar la llanta.
   box(g, 1.3, 0.04, 0.8, 0x111111, 0, 0.62, -0.75);
-  for (const x of [-0.82, 0.82]) {
-    for (const z of [-0.85, 0.9]) {
-      box(g, 0.14, 0.28, 0.8, paint.body, x, 0.42, z);
+  for (const x of [-0.87, 0.87]) {
+    for (const z of [-0.82, 0.86]) {
+      const arch = box(g, 0.14, 0.1, 0.82, paint.body, x, 0.66, z);
+      addOutline(g, arch, paint.accent, 20);
     }
   }
 
   // Alerón GT, faldones e intercooler.
   wing(g, paint, { width: 1.75, height: 0.45, z: 1.3, y: 1.1, depth: 0.42, uprights: 0.65 });
-  for (const x of [-0.8, 0.8]) {
-    box(g, 0.08, 0.08, 1.8, 0x111111, x, 0.18, 0);
+  // Faldones solo entre las ruedas (antes las atravesaban).
+  for (const x of [-0.84, 0.84]) {
+    box(g, 0.08, 0.08, 0.86, 0x111111, x, 0.2, 0.02);
   }
   // Morro: parrilla, intercooler y faros rectangulares.
   box(g, 1.3, 0.22, 0.07, 0x111111, 0, 0.36, -1.47);
@@ -1018,8 +1023,8 @@ function chromeDrift(): Group {
     roundLight(g, 0.11, paint.tail, x, 0.42, 1.49);
   }
   cyl(g, 0.1, 0.12, 0x333333, 0, 0.28, 1.49, 'z');
-  sideStripes(g, -0.8, 0.45, 0, 2.0, [paint.accent]);
-  sideStripes(g, 0.8, 0.45, 0, 2.0, [paint.accent]);
+  sideStripes(g, -0.84, 0.42, 0.02, 0.9, [paint.accent]);
+  sideStripes(g, 0.84, 0.42, 0.02, 0.9, [paint.accent]);
   wheels(g, paint);
   underglow(g, paint.glow);
   return g;
