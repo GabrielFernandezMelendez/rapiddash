@@ -24,3 +24,5 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RAPIDDASH_GABO }}
           projectId: rapiddash-gabo
+          # Las URLs de prueba se borran solas a los 2 días: así no se llena el cupo de canales
+          expires: 2d
