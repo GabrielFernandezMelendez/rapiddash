@@ -1,0 +1,437 @@
+// MOCKUP del HUD con «juice»: el HUD respira con el juego (muelles, brillos y reacciones)
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  color: #fff;
+  font-family: var(--rd-font-hud-text);
+  --bronze: #e08a4a;
+  --bronze-2: #8a4a1e;
+  --silver: #e6edf7;
+  --silver-2: #8a97ad;
+  --gold: #ffd319;
+  --gold-2: #ff901f;
+  --platinum: #b9fbff;
+  --platinum-2: #7a5cff;
+  --none: #5a4a80;
+  --none-2: #2a1a4a;
+}
+
+.shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 14px
+    calc(16px + env(safe-area-inset-bottom, 0px));
+  transform-origin: 50% 85%;
+  will-change: transform;
+}
+
+.shell.shake {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.top {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+.exit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.map {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(244 236 255 / 0.75);
+}
+
+.time {
+  font-family: var(--rd-font-hud-time);
+  font-size: 42px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 12px rgb(45 226 230 / 0.55),
+    0 2px 0 #1a0838;
+}
+
+// Al cruzar la línea el tiempo da un golpe y brilla
+.time.pulse {
+  animation: pulse 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(20 7 46 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(244 236 255 / 0.12);
+  font-family: var(--rd-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(4px);
+
+  b {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  small {
+    opacity: 0.6;
+  }
+}
+
+// El fantasma: verde por delante, rojo por detrás; al cambiar, la píldora estalla
+.ghost {
+  animation: pop 0.45s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+.ghost.ahead {
+  color: var(--rd-go);
+  box-shadow:
+    inset 0 0 0 1px rgb(93 255 154 / 0.5),
+    0 0 14px rgb(93 255 154 / 0.35);
+}
+.ghost.behind {
+  color: #ff6b8f;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 42 109 / 0.5),
+    0 0 14px rgb(255 42 109 / 0.3);
+}
+
+// ---------- Medallas: liga actual y objetivo ----------
+.medals {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 250px;
+  margin-top: 6px;
+}
+
+[data-medal='bronze'] {
+  --c: var(--bronze);
+  --c2: var(--bronze-2);
+}
+[data-medal='silver'] {
+  --c: var(--silver);
+  --c2: var(--silver-2);
+}
+[data-medal='gold'] {
+  --c: var(--gold);
+  --c2: var(--gold-2);
+}
+[data-medal='platinum'] {
+  --c: var(--platinum);
+  --c2: var(--platinum-2);
+}
+[data-medal='none'] {
+  --c: var(--none);
+  --c2: var(--none-2);
+}
+
+.league {
+  position: relative;
+  display: grid;
+  width: 100%;
+}
+
+.league-name {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  font-family: var(--rd-font-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #14072e;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.league-bar {
+  position: relative;
+  height: 19px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--c2), var(--c) 50%, var(--c2));
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--c) 60%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.5);
+  transform: skewX(-12deg);
+
+  // Brillo que recorre la barra
+  i {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.75) 48%, transparent 66%);
+    animation: shine 2.6s ease-in-out infinite;
+  }
+}
+
+.goal {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 78%;
+}
+
+.goal-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 3px;
+  background: rgb(20 7 46 / 0.6);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent);
+  overflow: hidden;
+  transform: skewX(-12deg);
+
+  i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--c2), var(--c));
+    box-shadow: 0 0 8px var(--c);
+  }
+}
+
+.goal-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.7);
+
+  b {
+    color: var(--c);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  em {
+    margin-left: 4px;
+    font-style: normal;
+    opacity: 0.85;
+  }
+}
+
+// Últimos segundos para la siguiente medalla: la barra late
+.medals.urgent .goal-bar {
+  animation: urgent 0.5s ease-in-out infinite alternate;
+}
+
+// Ya no llega: el objetivo se apaga
+.medals.missed .goal {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+  transition:
+    opacity 0.4s,
+    filter 0.4s;
+}
+
+// ---------- Avisos ----------
+.ahead-flash,
+.crash {
+  align-self: center;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: var(--rd-font-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: flash 1.1s cubic-bezier(0.2, 1.6, 0.4, 1) forwards;
+}
+.ahead-flash {
+  background: rgb(93 255 154 / 0.18);
+  color: var(--rd-go);
+  box-shadow: 0 0 18px rgb(93 255 154 / 0.45);
+}
+.crash {
+  background: var(--rd-kerb);
+  box-shadow: 0 0 22px rgb(255 42 109 / 0.6);
+  animation-duration: 0.7s;
+}
+
+// ---------- Velocidad ----------
+.speed {
+  display: grid;
+  gap: 6px;
+}
+
+.kmh {
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+
+  b {
+    font-family: var(--rd-font-hud-time);
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 10px rgb(255 79 216 / 0.6);
+  }
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  height: 12px;
+  transform: skewX(-18deg);
+
+  i {
+    border-radius: 2px;
+    background: rgb(20 7 46 / 0.55);
+    transition:
+      background 0.12s,
+      box-shadow 0.12s;
+  }
+  // Cada segmento con su color del amarillo al rosa
+  i.lit {
+    background: color-mix(in srgb, #ffd319, #ff2a6d calc(var(--i) * 4.2%));
+  }
+}
+
+.boost .segments i.lit {
+  box-shadow: 0 0 8px color-mix(in srgb, #ffd319, #ff2a6d calc(var(--i) * 4.2%));
+}
+
+// A tope: los segmentos laten en ola y el número tiembla un poco
+.top-speed .segments i.lit {
+  animation: wave 0.5s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.03s);
+}
+.top-speed .kmh b {
+  animation: jitter 0.08s steps(2) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell {
+    transform: none !important;
+  }
+  .shell.shake,
+  .league-bar i,
+  .top-speed .segments i.lit,
+  .top-speed .kmh b {
+    animation: none;
+  }
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    translate: -2px 0;
+  }
+  20%,
+  80% {
+    translate: 4px 1px;
+  }
+  30%,
+  50%,
+  70% {
+    translate: -6px -1px;
+  }
+  40%,
+  60% {
+    translate: 6px 1px;
+  }
+}
+@keyframes pulse {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.18;
+    text-shadow:
+      0 0 24px #2de2e6,
+      0 2px 0 #1a0838;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes pop {
+  0% {
+    scale: 0.6;
+  }
+  60% {
+    scale: 1.15;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes shine {
+  0% {
+    translate: -100% 0;
+  }
+  55%,
+  100% {
+    translate: 100% 0;
+  }
+}
+@keyframes urgent {
+  to {
+    box-shadow:
+      inset 0 0 0 1px var(--c),
+      0 0 14px var(--c);
+  }
+}
+@keyframes flash {
+  0% {
+    scale: 1.5;
+    opacity: 0;
+  }
+  18% {
+    scale: 1;
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -10px;
+  }
+}
+@keyframes wave {
+  to {
+    filter: brightness(1.4);
+  }
+}
+@keyframes jitter {
+  50% {
+    translate: 0.5px -0.5px;
+  }
+}

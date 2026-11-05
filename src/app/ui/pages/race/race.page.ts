@@ -47,6 +47,9 @@ import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
+import { HudJuice } from '../../organisms/hud-juice/hud-juice';
+import { medalTargets } from '../../../core/domain/medals/medals';
+import { autopilot } from '../../../core/domain/race/autopilot';
 import { PrizeRoulette } from '../../organisms/prize-roulette/prize-roulette';
 import { Prize, prizeKey } from '../../../core/domain/garage/garage';
 import { prizeReel } from '../../../core/domain/garage/prize-reel';
@@ -57,14 +60,26 @@ const FINISH_BANNER_MS = 1300;
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe, HudJuice],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-race-layout #surface>
       <div race-scene #scene class="scene"></div>
       @if (state(); as s) {
-        <rd-hud [state]="s" [mapName]="mapName()" [rivalName]="rivalName()" (exit)="exit()" />
+        @if (hud() === 'v2') {
+          <rd-hud-juice
+            [state]="s"
+            [mapName]="mapName()"
+            [rivalName]="rivalName()"
+            [targets]="mockTargets()"
+            [bestTime]="mockBest()"
+            [demo]="!!demoMode()"
+            (exit)="exit()"
+          />
+        } @else {
+          <rd-hud [state]="s" [mapName]="mapName()" [rivalName]="rivalName()" (exit)="exit()" />
+        }
         <rd-countdown [phase]="s.phase" [light]="s.light" [showGo]="s.showGo" />
         @if (s.lapBanner; as b) {
           <rd-lap-banner
@@ -127,6 +142,14 @@ export class RacePage {
   readonly t = input<string | undefined>();
   /** ?duel=CODIGO: un intento de un 1 vs 1 (se gasta al salir; cuenta su mejor tiempo). */
   readonly duel = input<string | undefined>();
+  /** MOCKUP: ?hud=v2 enseña el HUD con juice; ?auto=1 conduce el piloto automático; ?best=52.3 finge mi mejor tiempo. */
+  readonly hud = input<string | undefined>();
+  readonly auto = input<string | undefined>();
+  readonly best = input<string | undefined>();
+  readonly demoMode = input<string | undefined>(undefined, { alias: 'demo' });
+  /** MOCKUP: tiempos objetivo calculados con el piloto automático (Anillo del Cañón, 49,117 s). */
+  protected readonly mockTargets = computed(() => (this.mapId() === 'canyon-ring' ? medalTargets(49.117) : null));
+  protected readonly mockBest = computed(() => (this.best() ? Number(this.best()) : null));
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
@@ -430,6 +453,7 @@ export class RacePage {
         if (prize) this.won.set({ prize, reel: prizeReel(prize, locked) });
       });
     }
+    if (this.auto()) this.session.driver = autopilot;
     await this.session.start(
       (s) => this.onState(s),
       () => this.quickRestart(),

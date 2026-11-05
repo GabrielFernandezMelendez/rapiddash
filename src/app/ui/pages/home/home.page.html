@@ -72,14 +72,24 @@
       </svg>
     </rd-mode-button>
     <!-- Garaje: botón de media anchura (los mapas sueltos están en Ajustes → Debug) -->
+    <div class="half-row">
     <button rdButton variant="secondary" type="button" class="garage" (click)="openGarage()">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 16v-3l2-5h14l2 5v3"></path><path d="M3 16h18v2H3z"></path>
-        <circle cx="7.5" cy="18" r="1.6"></circle><circle cx="16.5" cy="18" r="1.6"></circle>
-      </svg>
-      {{ 'home.garage' | t }}
-    </button>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 16v-3l2-5h14l2 5v3"></path><path d="M3 16h18v2H3z"></path>
+          <circle cx="7.5" cy="18" r="1.6"></circle><circle cx="16.5" cy="18" r="1.6"></circle>
+        </svg>
+        {{ 'home.garage' | t }}
+      </button>
+      <button rdButton variant="secondary" type="button" class="garage medals-btn">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 2l2 5M16 2l-2 5"></path><circle cx="12" cy="14" r="6"></circle><path d="M12 11l1 2h2l-1.6 1.3.6 2.2-2-1.3-2 1.3.6-2.2L9 13h2z"></path>
+        </svg>
+        Medallas
+        <span class="medal-count">4/12</span>
+      </button>
+    </div>
     <p class="controls">{{ 'home.controls' | t }}</p>
   </div>
 </rd-menu-layout>

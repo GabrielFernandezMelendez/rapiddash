@@ -80,9 +80,28 @@
   gap: 12px;
 }
 
+.half-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+// MOCKUP: Medallas al lado del Garaje, con el contador de oros
+.medal-count {
+  margin-left: 2px;
+  padding: 1px 6px;
+  letter-spacing: 0;
+  border-radius: 999px;
+  background: linear-gradient(#ffd319, #ff901f);
+  color: #1a0420;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .garage {
-  justify-self: center;
-  width: 50%;
+  justify-self: stretch;
+  width: 100%;
   min-height: 48px;
   gap: 8px;
 }

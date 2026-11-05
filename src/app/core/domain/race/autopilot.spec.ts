@@ -1,30 +1,6 @@
-import { CarState, DriveInput, Swipe } from '../car/car';
+import { autopilot } from './autopilot';
 import { ALL_MAPS, trackOf } from '../track/race-map';
-import { Track } from '../track/track';
 import { createRace, RaceState, stepRace } from './race';
-
-/** Piloto automático sencillo: demuestra que cada mapa se puede terminar sin chocar. */
-function autopilot(car: CarState, track: Track): DriveInput {
-  const swipes: Swipe[] = [];
-  const leg = track.legs[car.leg];
-  const inJunction = !!leg.junction && car.distance > leg.length;
-  if (car.mode === 'driving') {
-    if (inJunction && car.yawTarget === 0 && car.distance > leg.length + 2.5) {
-      // Gira en el cruce a unos 2,5 m: sale por un carril central
-      swipes.push(leg.junction!.direction > 0 ? 'right' : 'left');
-    } else if (
-      !inJunction &&
-      car.yawTarget === 0 &&
-      car.laneTarget === null &&
-      Math.abs(car.lateral) > 3.3 &&
-      car.distance < leg.length - 3
-    ) {
-      // Corrige el magnetismo antes de llegar al muro: un carril hacia el centro
-      swipes.push(car.lateral > 0 ? 'left' : 'right');
-    }
-  }
-  return { throttle: true, swipes };
-}
 
 describe('Mapas jugables', () => {
   for (const map of ALL_MAPS) {
