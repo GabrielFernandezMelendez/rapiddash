@@ -85,6 +85,8 @@ const OPEN_AT = REVEAL / 2;
     }
     button.card {
       display: grid;
+      // Sin esto un nombre largo ensancha la tarjeta en vez de cortarse con puntos suspensivos
+      grid-template-columns: minmax(0, 1fr);
       gap: 6px;
       width: 100%;
       padding: 12px 14px;

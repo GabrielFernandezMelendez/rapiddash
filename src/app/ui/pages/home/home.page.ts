@@ -105,6 +105,10 @@ export class HomePage implements OnInit {
     void this.router.navigate(['/tournaments']);
   }
 
+  protected openDuels(): void {
+    void this.router.navigate(['/duels']);
+  }
+
   protected openSettings(): void {
     this.settingsOpen.set(true);
   }

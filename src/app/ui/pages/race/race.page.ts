@@ -39,6 +39,9 @@ import { dayBoardId, dayIndex, isMember, statusAt, Tournament } from '../../../c
 import { rankingBillboards, tournamentBillboards } from './billboard-content';
 import { leaderOf } from '../../../core/domain/tournament/leader-photo';
 import { TournamentService } from '../../../shared/account/tournament.service';
+import { DuelService } from '../../../shared/account/duel.service';
+import { canRaceDuel, duelBoardId, rivalOf } from '../../../core/domain/duel/duel';
+import { flagEmoji } from '../../../core/domain/profile/country';
 import { Hud } from '../../organisms/hud/hud';
 import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -122,6 +125,8 @@ export class RacePage {
   readonly daily = input<string | undefined>();
   /** ?t=CODIGO: carrera del día de un torneo (intentos ilimitados, cuenta su mejor tiempo). */
   readonly t = input<string | undefined>();
+  /** ?duel=CODIGO: un intento de un 1 vs 1 (se gasta al salir; cuenta su mejor tiempo). */
+  readonly duel = input<string | undefined>();
 
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
@@ -171,6 +176,15 @@ export class RacePage {
   private tournamentCode: string | null = null;
   private tournament: Tournament | null = null;
   private readonly tournaments = inject(TournamentService);
+  private readonly duels = inject(DuelService);
+  /** Duelo en el que cuenta esta carrera (null fuera de un 1 vs 1). */
+  private duelCode: string | null = null;
+  /** Récord subiéndose: el duelo no se da por acabado hasta que esté en la nube. */
+  private publishing: Promise<void> = Promise.resolve();
+  /** Pidiendo otro intento a la nube: otro swipe mientras tanto no gasta uno más. */
+  private duelRestarting = false;
+  /** Sube con cada intento gastado desde esta pantalla. */
+  private duelRun = 0;
   private readonly settings = inject(SettingsRepository);
   /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
   protected readonly tutorialOpen = signal(false);
@@ -184,6 +198,8 @@ export class RacePage {
       this.controls.dispose();
       this.renderer.dispose();
       this.audio.stopRace();
+      // Al salir, por si era el último intento (también si se abandona a medias)
+      void this.closeDuelRun();
     });
   }
 
@@ -195,6 +211,16 @@ export class RacePage {
 
   /** «Repetir»: si hay siguiente rival, la próxima carrera es contra él. */
   protected async retry(): Promise<void> {
+    if (this.duelCode) {
+      // Sin intentos, «Repetir» lleva a la pantalla del duelo
+      if (await this.startDuelRun()) {
+        // Puede que el rival haya mejorado mientras corría
+        await this.useDuelRival(this.duelCode);
+        this.standing.set(null);
+        this.session?.restart();
+      } else if (!this.duelRestarting) this.exit();
+      return;
+    }
     if (this.tournamentCode) {
       // En el torneo se corre sin límite y contra el mismo rival
       this.standing.set(null);
@@ -225,6 +251,10 @@ export class RacePage {
    * gasta un intento como cualquier salida; sin intentos no hace nada y la carrera sigue.
    */
   private quickRestart(): void {
+    if (this.duelCode) {
+      void this.quickRestartDuel();
+      return;
+    }
     if (!this.tournamentCode && this.isDaily() && !this.dailyService.startAttempt()) return;
     this.session?.restart();
   }
@@ -237,8 +267,65 @@ export class RacePage {
     });
   }
 
+  /** Gasta un intento en la nube, así que tarda un momento; mientras, la carrera sigue. */
+  private async quickRestartDuel(): Promise<void> {
+    if (await this.startDuelRun()) this.session?.restart();
+  }
+
+  /**
+   * Gasta un intento; false si no se puede (sin intentos o sin red) o si ya se está pidiendo uno:
+   * un doble toque en «Repetir» o un segundo swipe no gastan otro.
+   */
+  private async startDuelRun(): Promise<boolean> {
+    const code = this.duelCode;
+    if (!code || this.duelRestarting) return false;
+    this.duelRestarting = true;
+    // Un aviso de «ya he acabado» aún pendiente es de la carrera anterior: se descarta
+    this.duelRun++;
+    try {
+      return await this.duels.startAttempt(code).catch(() => false);
+    } finally {
+      this.duelRestarting = false;
+    }
+  }
+
+  /** Corro contra la mejor vuelta del rival si ya tiene tiempo (si no, contra la mía). */
+  private async useDuelRival(code: string): Promise<void> {
+    try {
+      const duel = await this.duels.find(code);
+      const rival = duel && rivalOf(duel, this.account.profile()?.uid ?? '');
+      if (!duel || !rival) return;
+      const record = (await this.duels.scores(duel)).find((s) => s.uid === rival.uid);
+      if (!record) return;
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+      const ghost = await Promise.race([this.ranking.rivalGhost({ rank: 1, record }), timeout]);
+      if (!ghost) return;
+      const flag = rival.country ? `${flagEmoji(rival.country)} ` : '';
+      this.session?.useRival({ frames: ghost.frames, label: `${flag}${rival.nickname}` });
+      this.rivalName.set(rival.nickname);
+    } catch {
+      // El fantasma es un extra: sin él se corre igual
+    }
+  }
+
+  /**
+   * Avisa de que ya he acabado (solo cuenta si no me quedan intentos). Da tiempo a que empiece a
+   * subirse el récord y lo espera, para que el rival no vea el final sin mi último tiempo.
+   */
+  private async closeDuelRun(): Promise<void> {
+    const code = this.duelCode;
+    if (!code) return;
+    const run = this.duelRun;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await this.publishing;
+    // Si entretanto ha salido otra vez (el último intento), este aviso ya no vale: lo cerraría en marcha
+    if (run !== this.duelRun) return;
+    await this.duels.markDone(code).catch(() => undefined);
+  }
+
   protected exit(): void {
-    if (this.tournamentCode) void this.router.navigate(['/tournaments', this.tournamentCode]);
+    if (this.duelCode) void this.router.navigate(['/duels', this.duelCode]);
+    else if (this.tournamentCode) void this.router.navigate(['/tournaments', this.tournamentCode]);
     else void this.router.navigate([this.isDaily() ? '/daily' : '/maps']);
   }
 
@@ -286,6 +373,21 @@ export class RacePage {
       }
       this.boardId = boardId;
       this.tournamentCode = this.t()!.toUpperCase();
+    } else if (this.duel()) {
+      const code = this.duel()!.toUpperCase();
+      const duel = await this.duels.find(code).catch(() => null);
+      const uid = this.account.profile()?.uid ?? '';
+      // Mapa de otro duelo, duelo acabado o sin intentos: a su pantalla, sin gastar nada
+      if (!duel || duel.mapId !== map.id || !canRaceDuel(duel, uid, Date.now())) {
+        void this.router.navigate(['/duels', code]);
+        return;
+      }
+      if (!(await this.duels.startAttempt(code).catch(() => false))) {
+        void this.router.navigate(['/duels', code]);
+        return;
+      }
+      this.duelCode = code;
+      this.boardId = duelBoardId(code);
     }
     const track = trackOf(map);
     this.renderer.attach(
@@ -307,9 +409,12 @@ export class RacePage {
       loop: this.loop,
       bestRuns: this.bestRuns,
       audio: this.audio,
-      records: this.isDaily() ? { publish: (run) => void this.publishSpecial(run) } : this.cloudRecords,
+      records: this.isDaily()
+        ? { publish: (run) => void (this.publishing = this.publishSpecial(run)) }
+        : this.cloudRecords,
     }, this.boardId);
     if (pick?.ranked) await this.useRival(pick.ranked);
+    if (this.duelCode) await this.useDuelRival(this.duelCode);
     if (showTutorialBeforeRace(this.settings.getTutorialSeen())) {
       await new Promise<void>((resolve) => {
         this.tutorialClosed = resolve;
@@ -336,14 +441,14 @@ export class RacePage {
    * también cuenta para el ranking normal.
    */
   private async publishSpecial(run: BestRun): Promise<void> {
-    this.cloudRecords.publish(run);
+    await this.cloudRecords.publish(run);
     const map = this.map();
     if (!map) return;
     const best = await this.bestRuns.get(map.id);
     if (best && best.time <= run.time) return;
     const mapRun: BestRun = { ...run, mapId: map.id };
     await this.bestRuns.save(mapRun);
-    this.cloudRecords.publish(mapRun);
+    await this.cloudRecords.publish(mapRun);
   }
 
   /** Ranking del día del torneo si puedo correrlo ahora en este mapa; si no, null. */
@@ -360,6 +465,8 @@ export class RacePage {
 
   /** Líder y segundo del torneo o del ranking de esta carrera; sin red, sin carteles. */
   private async loadBillboards(): Promise<void> {
+    // En un 1 vs 1 no hay líderes que anunciar: son solo dos pilotos
+    if (this.duelCode) return;
     try {
       if (this.tournament) {
         const t = this.tournament;
@@ -412,6 +519,11 @@ export class RacePage {
     if (state.lap) {
       this.finishBanner.set(true);
       setTimeout(() => this.finishBanner.set(false), FINISH_BANNER_MS);
+    }
+    // En un 1 vs 1 no hay puesto mundial: los tiempos se ven en la pantalla del duelo
+    if (this.duelCode) {
+      void this.closeDuelRun();
+      return;
     }
     // Puesto mundial con mi mejor tiempo (el nuevo si es récord)
     if (!this.account.profile()) return;
