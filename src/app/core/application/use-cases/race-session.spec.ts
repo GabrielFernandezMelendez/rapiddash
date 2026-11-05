@@ -13,8 +13,9 @@ async function session(onRestart: (s: RaceSession) => void) {
   let tick: (dt: number) => void = () => undefined;
   let next: DriveInput = { throttle: false, swipes: [] };
   let view: RaceViewState | null = null;
+  let cubeSounds = 0;
   const silent = () =>
-    new Proxy({}, { get: () => () => undefined }) as never;
+    new Proxy({}, { get: (_, name) => () => void (name === 'cubeCollected' && cubeSounds++) }) as never;
   const race: RaceSession = new RaceSession(map, trackOf(map), {
     renderer: silent() as RendererPort,
     audio: silent() as AudioPort,
@@ -33,6 +34,8 @@ async function session(onRestart: (s: RaceSession) => void) {
     () => onRestart(race),
   );
   return {
+    race,
+    cubeSounds: () => cubeSounds,
     frame(restart = false) {
       next = { throttle: true, swipes: [], restart };
       tick(1 / 60);
@@ -44,6 +47,17 @@ async function session(onRestart: (s: RaceSession) => void) {
 async function untilRacing(s: Awaited<ReturnType<typeof session>>): Promise<void> {
   for (let i = 0; i < 60 * 10 && s.frame().phase !== 'racing'; i++);
 }
+
+describe('RaceSession: cubo azul', () => {
+  it('suena una sola vez al cogerlo, aunque se siga corriendo', async () => {
+    const s = await session(() => undefined);
+    let collected = 0;
+    s.race.useCube({ progress: 30, lateral: 0 }, () => collected++);
+    for (let i = 0; i < 60 * 12; i++) s.frame();
+    expect(collected).toBe(1);
+    expect(s.cubeSounds()).toBe(1);
+  });
+});
 
 describe('RaceSession: reinicio en carrera', () => {
   it('en el semáforo no se pide reiniciar', async () => {

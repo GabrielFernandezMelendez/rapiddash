@@ -3,7 +3,7 @@ import { Track } from '../track/track';
 
 /**
  * Cubo azul del mapa del día: el mismo carril y el mismo punto de la vuelta para todos ese día.
- * Se coge pasando por él (una vez al día) y regala un coche cerrado al azar.
+ * Se coge pasando por él (una vez al día) y regala un coche o un efecto cerrado al azar.
  */
 export interface DailyCube {
   /** Metros desde el principio de la vuelta (en un circuito sale en el mismo sitio cada vuelta). */
