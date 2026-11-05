@@ -1,3 +1,4 @@
+import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
@@ -66,6 +67,7 @@ const DAILY_RIVAL_KEY = 'daily';
         [myUid]="account.profile()?.uid ?? null"
         [rivalUid]="rivalUid()"
         [loading]="loading()"
+        [targets]="targets"
       />
 
       <rd-rival-picker
@@ -105,6 +107,8 @@ export class DailyPage implements OnInit {
   private readonly bestRuns = inject(BestRunRepository);
 
   protected readonly today = this.daily.today(ALL_MAPS);
+  /** Tiempos objetivo del mapa de hoy: colores de liga en el ranking del día. */
+  protected readonly targets = mapMedalTargets(this.today.map);
   protected readonly view = signal<RankingView>(EMPTY_RANKING);
   protected readonly loading = signal(true);
   protected readonly askMore = signal(false);

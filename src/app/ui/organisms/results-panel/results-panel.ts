@@ -8,21 +8,21 @@ import { Button } from '../../atoms/button/button';
 import { Flag } from '../../atoms/flag/flag';
 import { Modal } from '../../molecules/modal/modal';
 import { MedalCoin } from '../../molecules/medal-coin/medal-coin';
-import { Medal } from '../../../core/domain/medals/medals';
+import { Medal, MedalTargets } from '../../../core/domain/medals/medals';
+import { MedalLeague } from '../../molecules/medal-league/medal-league';
 
-/** MOCKUP: medalla del mapa tras la carrera. */
+/** Medalla del mapa tras la carrera (con el mejor tiempo, el nuevo si es récord). */
 export interface ResultMedal {
   readonly medal: Medal | null;
   /** Medalla nueva en esta carrera. */
   readonly fresh: boolean;
-  readonly name: string;
-  readonly nextName: string | null;
-  readonly nextGap: string | null;
+  readonly targets: MedalTargets;
+  readonly best: number;
 }
 
 @Component({
   selector: 'rd-results-panel',
-  imports: [Modal, Button, Flag, MedalCoin, TranslatePipe],
+  imports: [Modal, Button, Flag, MedalCoin, MedalLeague, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-modal [label]="'results.title' | t" (dismiss)="maps.emit()">
@@ -57,14 +57,15 @@ export interface ResultMedal {
           <rd-medal-coin [medal]="md.medal" [size]="44" [fresh]="md.fresh" />
           <span class="medal-text">
             @if (md.fresh) {
-              <span class="medal-new">¡Nueva medalla!</span>
+              <span class="medal-new">{{ 'medal.new' | t }}</span>
             }
-            <b>{{ md.name }}</b>
-            @if (md.nextName) {
-              <span class="medal-next">{{ md.nextName }} a <em>−{{ md.nextGap }}</em></span>
-            }
+            <b>{{ 'medal.' + (md.medal ?? 'none') | t }}</b>
           </span>
         </div>
+      @if (medal(); as md) {
+        <!-- La siguiente medalla: su tiempo objetivo y lo que te falta -->
+        <rd-medal-league [targets]="md.targets" [best]="md.best" />
+      }
       }
       @if (standing(); as st) {
         <div class="standing">
@@ -324,7 +325,7 @@ export class ResultsPanel {
   readonly standing = input<Standing | null>(null);
   /** Texto ya traducido de «Has adelantado a N pilotos». */
   readonly passedLabel = input('');
-  /** MOCKUP: medalla del mapa (null = mapa sin medallas). */
+  /** Medalla del mapa (null = mapa sin medallas). */
   readonly medal = input<ResultMedal | null>(null);
   readonly retry = output<void>();
   readonly maps = output<void>();

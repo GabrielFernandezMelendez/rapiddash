@@ -4,19 +4,19 @@
   [style.transform]="'rotate(' + tilt() + 'deg)'"
 >
   <div class="top">
-    <button rdButton variant="ghost" type="button" class="exit" (click)="exit.emit()">✕</button>
+    <button rdButton variant="ghost" type="button" class="exit" [attr.aria-label]="'hud.exit' | t" (click)="exit.emit()">✕</button>
     <div class="center">
       <span class="map">{{ mapName() }}</span>
       <span class="time" [class.pulse]="state().lapBanner !== null">{{ time() }}</span>
       <span class="row">
         @if (state().lap; as lap) {
-          <span class="chip"><b>V</b>{{ lap.current }}<small>/{{ lap.total }}</small></span>
+          <span class="chip"><b>{{ 'hud.lap' | t }}</b>{{ lap.current }}<small>/{{ lap.total }}</small></span>
         }
-        <span class="chip"><b>Mejor</b>{{ best() }}</span>
+        <span class="chip"><b>{{ 'hud.best' | t }}</b>{{ best() }}</span>
         @if (ghost(); as g) {
           @for (k of [ghostPop()]; track k) {
             <span class="chip ghost" [class.ahead]="g.ahead" [class.behind]="!g.ahead">
-              <b>{{ rivalName() ?? 'Fantasma' }}</b>{{ g.label }}
+              <b>{{ rivalName() ?? ('hud.ghost' | t) }}</b>{{ g.label }}
             </span>
           }
         }
@@ -27,7 +27,7 @@
           <!-- Liga actual: la medalla que ya tienes en este mapa -->
           <div class="league" [attr.data-medal]="current() ?? 'none'">
             <rd-medal-coin class="league-coin" [medal]="current()" [size]="26" />
-            <span class="league-name">{{ current() ? names[current()!] : 'Sin medalla' }}</span>
+            <span class="league-name">{{ 'medal.' + (current() ?? 'none') | t }}</span>
             <span class="league-bar"><i></i></span>
           </div>
           <!-- Objetivo: la siguiente medalla, se va gastando con el tiempo de carrera -->
@@ -46,12 +46,12 @@
                 }
               </span>
               <span class="goal-text">
-                <b>{{ names[n] }}</b> {{ targetText() }}
+                <b>{{ 'medal.' + n | t }}</b> {{ targetText() }}
                 <em>{{ missed() ? '✕' : margin() }}</em>
               </span>
             </div>
           } @else {
-            <div class="goal done"><span class="goal-text"><b>Platino</b> conseguido</span></div>
+            <div class="goal done"><span class="goal-text">{{ 'medal.allDone' | t }}</span></div>
           }
         </div>
       }
@@ -59,10 +59,10 @@
   </div>
 
   @if (aheadFlash()) {
-    <p class="ahead-flash">¡Por delante!</p>
+    <p class="ahead-flash">{{ 'hud.ahead' | t }}</p>
   }
   @if (state().crashFlash) {
-    <p class="crash">¡Choque!</p>
+    <p class="crash">{{ 'race.crash' | t }}</p>
   }
 
   <div class="speed" [class.boost]="state().accelerating" [class.top-speed]="topSpeed()">

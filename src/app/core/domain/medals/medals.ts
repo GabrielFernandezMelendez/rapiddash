@@ -33,3 +33,17 @@ export function nextMedal(current: Medal | null): Medal | null {
   const i = current === null ? 0 : MEDALS.indexOf(current) + 1;
   return MEDALS[i] ?? null;
 }
+
+/**
+ * Cuánto has avanzado dentro de tu liga hacia la siguiente medalla (0-1): 0 justo en el tiempo
+ * de tu medalla (o un 15 % por encima del bronce si no tienes), 1 en el tiempo de la siguiente.
+ */
+export function leagueProgress(best: number | null, targets: MedalTargets): number {
+  const current = medalFor(best, targets);
+  const next = nextMedal(current);
+  if (best === null) return 0;
+  if (!next) return 1;
+  const from = current ? targets[current] : targets.bronze * 1.15;
+  const to = targets[next];
+  return Math.max(0, Math.min(1, (from - best) / (from - to)));
+}

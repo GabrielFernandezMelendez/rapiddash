@@ -211,9 +211,8 @@ export class HomePage implements OnInit {
     }
   }
 
-  /** MOCKUP: pantalla Medallas. */
   protected openMedals(): void {
-    void this.router.navigate(['/medals'], { queryParams: { mock: 1 } });
+    void this.router.navigate(['/medals']);
   }
 
   protected openGarage(): void {

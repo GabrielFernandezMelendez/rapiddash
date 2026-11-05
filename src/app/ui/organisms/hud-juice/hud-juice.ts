@@ -10,21 +10,16 @@ import {
 } from '@angular/core';
 import { CAR_TUNING } from '../../../core/domain/car/car-tuning';
 import { RaceViewState } from '../../../core/application/use-cases/race-session';
-import { Medal, MedalTargets, medalFor, nextMedal } from '../../../core/domain/medals/medals';
+import { MedalTargets, medalFor, nextMedal } from '../../../core/domain/medals/medals';
 import { formatDelta, formatTime, NO_TIME } from '../../../shared/format-time';
 import { Button } from '../../atoms/button/button';
+import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { MedalCoin } from '../../molecules/medal-coin/medal-coin';
 
-/** MOCKUP del HUD «con juice»: mismos datos que el HUD actual, pero con vida. */
+/** HUD «con juice»: mismos datos que el HUD de siempre, pero con vida (muelles, brillos y reacciones). */
 const KMH_FACTOR = 9;
 const SEGMENTS = 24;
 
-export const MEDAL_NAMES: Readonly<Record<Medal, string>> = {
-  bronze: 'Bronce',
-  silver: 'Plata',
-  gold: 'Oro',
-  platinum: 'Platino',
-};
 
 /** Muelle crítico sencillo, por fotograma (el HUD se pinta una vez por tick). */
 class Spring {
@@ -44,7 +39,7 @@ class Spring {
 
 @Component({
   selector: 'rd-hud-juice',
-  imports: [Button, MedalCoin],
+  imports: [Button, MedalCoin, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hud-juice.html',
   styleUrl: './hud-juice.scss',
@@ -149,6 +144,5 @@ export class HudJuice {
     const target = this.nextTarget();
     return target === null ? '' : formatTime(target);
   });
-  protected readonly names = MEDAL_NAMES;
   protected readonly sparks = Array.from({ length: 9 }, (_, i) => i);
 }

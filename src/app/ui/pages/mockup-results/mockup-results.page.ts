@@ -45,8 +45,7 @@ export class MockupResultsPage {
   protected readonly medal = {
     medal: 'gold' as const,
     fresh: true,
-    name: 'Oro',
-    nextName: 'Platino',
-    nextGap: '0:01.088',
+    targets: { platinum: 47.644, gold: 49.117, silver: 53.046, bronze: 57.958 },
+    best: 48.732,
   };
 }
