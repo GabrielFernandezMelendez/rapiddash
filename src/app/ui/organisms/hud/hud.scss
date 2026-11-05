@@ -365,12 +365,15 @@
 .speed-bar {
   position: relative;
   display: grid;
+  // Más corta por los dos lados: deja sitio para que, a tope, la punta «rompa» el límite
+  margin-inline: 9%;
 }
 
-// Punta de la barra a tope: orbe rosa que late y chispas que salen hacia atrás, arriba y abajo
+// A tope: la punta rompe el límite de la barra. Un destello con anillos que se abren y chispas
+// que salen disparadas hacia la izquierda (hacia atrás), en abanico, más allá de la barra
 .speed-tip {
   position: absolute;
-  right: 0;
+  right: -4px;
   top: 50%;
   width: 0;
   height: 0;
@@ -386,6 +389,17 @@
     box-shadow: 0 0 16px #ff2a6d;
     animation: orb 0.22s ease-in-out infinite alternate;
   }
+  // Anillo que se abre desde la punta, como si la barra se partiera
+  .ring {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px;
+    border-radius: 50%;
+    border: 2px solid #ffd319;
+    box-shadow: 0 0 10px #ff2a6d;
+    animation: ring 0.55s ease-out infinite;
+  }
   .spark {
     position: absolute;
     width: 6px;
@@ -396,9 +410,9 @@
     box-shadow:
       0 0 4px var(--c),
       0 0 12px #ffd319;
-    --dx: calc(-18px - var(--k) * 4px);
-    --dy: calc((var(--k) - 4) * 5px - 6px);
-    animation: spark 0.5s calc(var(--k) * -0.056s) cubic-bezier(0.1, 0.6, 0.3, 1) infinite;
+    --dx: calc(-36px - var(--k) * 6px);
+    --dy: calc((var(--k) - 5.5) * 5px);
+    animation: spark 0.55s calc(var(--k) * -0.046s) cubic-bezier(0.1, 0.6, 0.3, 1) infinite;
   }
 }
 
@@ -445,6 +459,7 @@
   .tip .orb,
   .tip .spark,
   .speed-tip .orb,
+  .speed-tip .ring,
   .speed-tip .spark,
   .top-speed .segments i.lit,
   .top-speed .kmh b {
@@ -527,6 +542,16 @@
   100% {
     opacity: 0;
     translate: 0 -10px;
+  }
+}
+@keyframes ring {
+  from {
+    scale: 0.6;
+    opacity: 1;
+  }
+  to {
+    scale: 2.4;
+    opacity: 0;
   }
 }
 @keyframes stripes {

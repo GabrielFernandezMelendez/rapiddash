@@ -145,4 +145,6 @@ export class Hud {
     return target === null ? '' : formatTime(target);
   });
   protected readonly sparks = Array.from({ length: 9 }, (_, i) => i);
+  /** Chispas de la punta de la velocidad a tope (más que en las medallas). */
+  protected readonly tipSparks = Array.from({ length: 12 }, (_, i) => i);
 }
