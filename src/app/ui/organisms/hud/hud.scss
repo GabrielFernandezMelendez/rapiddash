@@ -365,16 +365,20 @@
 .speed-bar {
   position: relative;
   display: grid;
+  // Más corta por los dos lados: deja sitio para que, a tope, la punta «rompa» el límite
+  margin-inline: 9%;
 }
 
-// Punta de la barra a tope: orbe rosa que late y chispas que salen hacia atrás, arriba y abajo
+// A tope: la punta rompe el límite de la barra. Destello rojo con un anillo que se abre y una
+// lluvia de chispas rojas que salen disparadas hacia fuera (a la derecha, más allá de la barra),
+// en abanico, como si la velocidad se saliera de la escala
 .speed-tip {
   position: absolute;
-  right: 0;
+  right: -4px;
   top: 50%;
   width: 0;
   height: 0;
-  --c: #ff4fd8;
+  --c: #ff2a2a;
 
   .orb {
     position: absolute;
@@ -382,23 +386,36 @@
     height: 18px;
     margin: -9px;
     border-radius: 50%;
-    background: radial-gradient(circle, #fff 0 22%, #ff4fd8 55%, transparent 72%);
-    box-shadow: 0 0 16px #ff2a6d;
-    animation: orb 0.22s ease-in-out infinite alternate;
+    background: radial-gradient(circle, #fff 0 20%, #ff3b2a 55%, transparent 72%);
+    box-shadow: 0 0 16px #ff1a1a;
+    animation: orb 0.2s ease-in-out infinite alternate;
   }
+  // Anillo que se abre desde la punta, como si la barra se partiera
+  .ring {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px;
+    border-radius: 50%;
+    border: 2px solid #ff6a3a;
+    box-shadow: 0 0 10px #ff1a1a;
+    animation: ring 0.45s ease-out infinite;
+  }
+  // Chispas de píxel: cuadrados sin redondear (3 tonos de rojo), como un juego retro
   .spark {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    margin: -3px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow:
-      0 0 4px var(--c),
-      0 0 12px #ffd319;
-    --dx: calc(-18px - var(--k) * 4px);
-    --dy: calc((var(--k) - 4) * 5px - 6px);
-    animation: spark 0.5s calc(var(--k) * -0.056s) cubic-bezier(0.1, 0.6, 0.3, 1) infinite;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 0;
+    border-radius: 0;
+    background: var(--px, #ff2a2a);
+    box-shadow: 0 0 4px var(--c);
+    image-rendering: pixelated;
+    transform-origin: 0 50%;
+    // Abanico hacia fuera: de −50° a 50° respecto a la derecha
+    --a: calc((var(--k) - 9.5) * 5.2deg);
+    rotate: var(--a);
+    animation: spark-out 0.42s calc(var(--k) * -0.021s) cubic-bezier(0.1, 0.7, 0.3, 1) infinite;
   }
 }
 
@@ -445,6 +462,7 @@
   .tip .orb,
   .tip .spark,
   .speed-tip .orb,
+  .speed-tip .ring,
   .speed-tip .spark,
   .top-speed .segments i.lit,
   .top-speed .kmh b {
@@ -527,6 +545,31 @@
   100% {
     opacity: 0;
     translate: 0 -10px;
+  }
+}
+@keyframes spark-out {
+  0% {
+    transform: translateX(0) scale(1.2);
+    opacity: 1;
+  }
+  // Los píxeles se apagan a saltos, no suave
+  70% {
+    opacity: 1;
+  }
+  100% {
+    // Hacia fuera en su dirección (la rotación ya la orienta), encogiéndose
+    transform: translateX(var(--len)) scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes ring {
+  from {
+    scale: 0.6;
+    opacity: 1;
+  }
+  to {
+    scale: 2.4;
+    opacity: 0;
   }
 }
 @keyframes stripes {
