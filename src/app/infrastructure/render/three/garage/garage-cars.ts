@@ -22,7 +22,7 @@ import {
 } from 'three';
 
 /**
- * Coches del garaje (estéticas retro y futurista).
+ * Coches del garaje.
  *
  * Los 10 primeros son recoloreados del deportivo retro que ya existe en el juego
  * (`synthwave/vehicles.ts`): misma silueta, lunas, pilotos, llantas y luz de bajos.

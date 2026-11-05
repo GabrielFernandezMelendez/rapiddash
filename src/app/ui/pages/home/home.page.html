@@ -1,4 +1,4 @@
-<rd-menu-layout [align]="synthwave() ? 'start' : 'center'">
+<rd-menu-layout align="start">
   <div menu-backdrop #backdrop class="backdrop" aria-hidden="true"></div>
   <div menu-header class="top">
     @if (account.profile(); as profile) {
@@ -9,8 +9,6 @@
       variant="ghost"
       type="button"
       class="settings"
-      #settingsButton
-      [class.lit]="hint() !== null"
       [attr.aria-label]="'home.settings' | t"
       (click)="openSettings()"
     >
@@ -26,7 +24,7 @@
   </div>
 
   <div class="hero">
-    <rd-logo [aesthetic]="aesthetic.aesthetic()" />
+    <rd-logo />
     <p class="tagline">{{ 'app.tagline' | t }}</p>
   </div>
 
@@ -79,8 +77,6 @@
   <rd-settings-dialog
     [language]="i18n.language()"
     (languageChange)="setLanguage($event)"
-    [aesthetic]="aesthetic.aesthetic()"
-    (aestheticChange)="setAesthetic($event)"
     (closed)="settingsOpen.set(false)"
     (tutorial)="openTutorial()"
     [volumes]="volumes()"
@@ -91,10 +87,6 @@
     (debugOff)="garage.setDebug(false)"
     (allMaps)="openAllMaps()"
   />
-}
-
-@if (hint(); as anchor) {
-  <rd-aesthetic-hint [anchor]="anchor" (closed)="closeHint()" />
 }
 
 @if (tutorialOpen()) {

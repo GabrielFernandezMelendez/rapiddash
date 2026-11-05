@@ -12,7 +12,6 @@ import {
   stepRace,
 } from '../../domain/race/race';
 import { CAR_TUNING } from '../../domain/car/car-tuning';
-import { Aesthetic } from '../../domain/settings/aesthetic';
 import { RaceMap } from '../../domain/track/race-map';
 import { Track } from '../../domain/track/track';
 import { AudioPort } from '../ports/out/audio.port';
@@ -94,8 +93,6 @@ export class RaceSession {
     private readonly map: RaceMap,
     private readonly track: Track,
     private readonly ports: RaceSessionPorts,
-    /** Estética: elige la música y el motor (nunca cambia la física). */
-    private readonly aesthetic: Aesthetic = 'classic',
     /** Ranking donde cuenta el tiempo: el del mapa o el del día («daily-…»). */
     private readonly boardId: string = map.id,
   ) {}
@@ -104,7 +101,7 @@ export class RaceSession {
     this.listener = listener;
     this.best = await this.ports.bestRuns.get(this.boardId);
     this.reset();
-    this.ports.audio.start(this.aesthetic);
+    this.ports.audio.start();
     this.ports.loop.start((dt) => this.tick(dt));
   }
 

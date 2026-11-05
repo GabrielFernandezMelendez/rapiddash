@@ -1,12 +1,11 @@
 import { AudioFrame, AudioPort } from '../../core/application/ports/out/audio.port';
 import {
   EngineSound,
-  engineFor,
-  musicFor,
+  ENGINE,
+  MUSIC,
   MusicTrack,
   pickTrack,
 } from '../../core/domain/audio/soundtrack';
-import { Aesthetic } from '../../core/domain/settings/aesthetic';
 import { DEFAULT_VOLUMES, VolumeChannel, Volumes } from '../../core/domain/settings/volume';
 
 /** Carpeta de los sonidos (public/audio). Si falta un archivo, esa parte queda en silencio. */
@@ -20,12 +19,7 @@ const ENGINE_VOLUME = 0.22;
 /** Constantes de tiempo (s) de los fundidos: subida suave, bajada rápida al soltar. */
 const ENGINE_FADE_IN = 0.12;
 const ENGINE_FADE_OUT = 0.06;
-/**
- * El sonido del motor es una subida de vueltas. Se arranca en el punto del clip que corresponde
- * a la velocidad actual, y al llegar al final repite el tramo de vueltas altas.
- */
-const ENGINE_REV_PORTION = 0.55;
-/** Motor en bucle (retro y nave): el tono sube con la velocidad entre estos dos valores. */
+/** Motor en bucle: el tono sube con la velocidad entre estos dos valores. */
 const ENGINE_LOOP_RATE_MIN = 0.85;
 const ENGINE_LOOP_RATE_MAX = 1.3;
 /** Fundido entre canciones al repetir la carrera (s). */
@@ -56,17 +50,15 @@ export class WebAudioAdapter extends AudioPort {
   /** Volumen elegido en Ajustes: multiplica el de la mezcla. */
   private volumes: Volumes = DEFAULT_VOLUMES;
   private previewVoice: AudioBufferSourceNode | null = null;
-  /** Qué suena: la música del menú (y de qué estética) o una carrera. */
+  /** Qué suena: la música del menú o una carrera. */
   private mode: 'idle' | 'menu' | 'race' = 'idle';
-  private menuAesthetic: Aesthetic | null = null;
 
-  start(aesthetic: Aesthetic): void {
+  start(): void {
     if (!this.ensureContext()) return;
     this.mode = 'race';
-    this.menuAesthetic = null;
     this.restoreMusicLevel();
-    this.tracks = musicFor(aesthetic);
-    this.engineSound = engineFor(aesthetic);
+    this.tracks = MUSIC;
+    this.engineSound = ENGINE;
     this.nextSong();
     void this.load(this.engineSound.file).then((buffer) => (this.engineBuffer = buffer));
   }
@@ -78,14 +70,14 @@ export class WebAudioAdapter extends AudioPort {
     this.engineGain?.gain.setTargetAtTime(ENGINE_VOLUME * volumes.effects, now, 0.05);
   }
 
-  /** Un trozo de la primera canción de la estética o del motor, al volumen elegido. */
-  preview(channel: VolumeChannel, volumes: Volumes, aesthetic: Aesthetic): void {
+  /** Un trozo de la primera canción o del motor, al volumen elegido. */
+  preview(channel: VolumeChannel, volumes: Volumes): void {
     if (!this.ensureContext()) return;
     this.setVolumes(volumes);
     void this.ctx!.resume().catch(() => undefined);
     const music = channel === 'music';
-    const file = music ? musicFor(aesthetic)[0]?.file : engineFor(aesthetic).file;
-    const offset = music ? (musicFor(aesthetic)[0]?.start ?? 0) : 0;
+    const file = music ? MUSIC[0]?.file : ENGINE.file;
+    const offset = music ? (MUSIC[0]?.start ?? 0) : 0;
     if (!file) return;
     void this.load(file).then((buffer) => {
       const ctx = this.ctx;
@@ -108,14 +100,12 @@ export class WebAudioAdapter extends AudioPort {
     });
   }
 
-  playMenu(aesthetic: Aesthetic): void {
-    if (this.mode === 'race') return;
-    if (this.mode === 'menu' && this.menuAesthetic === aesthetic) return;
+  playMenu(): void {
+    if (this.mode === 'race' || this.mode === 'menu') return;
     if (!this.ensureContext()) return;
     this.mode = 'menu';
-    this.menuAesthetic = aesthetic;
     this.restoreMusicLevel();
-    this.tracks = musicFor(aesthetic);
+    this.tracks = MUSIC;
     this.nextSong();
   }
 
@@ -153,7 +143,7 @@ export class WebAudioAdapter extends AudioPort {
     if (accelerating && !this.engine) this.startEngine(frame.speedRatio);
     if (!accelerating && this.engine) this.stopEngine();
     this.engine?.gain.gain.setTargetAtTime(0.35 + 0.65 * frame.speedRatio, now, ENGINE_FADE_IN);
-    if (this.engine && this.engineSound?.mode === 'loop') {
+    if (this.engine) {
       const rate =
         ENGINE_LOOP_RATE_MIN + (ENGINE_LOOP_RATE_MAX - ENGINE_LOOP_RATE_MIN) * frame.speedRatio;
       this.engine.source.playbackRate.setTargetAtTime(rate, now, 0.15);
@@ -256,17 +246,10 @@ export class WebAudioAdapter extends AudioPort {
     gain.gain.value = 0;
     source.connect(gain);
     gain.connect(this.engineGain);
-    if (this.engineSound?.mode === 'loop') {
-      // Zumbido continuo desde el principio; el tono lo ajusta update() según la velocidad
-      source.playbackRate.value =
-        ENGINE_LOOP_RATE_MIN + (ENGINE_LOOP_RATE_MAX - ENGINE_LOOP_RATE_MIN) * speedRatio;
-      source.start();
-    } else {
-      source.loopStart = buffer.duration * ENGINE_REV_PORTION;
-      source.loopEnd = buffer.duration;
-      // Empieza en las vueltas que corresponden a la velocidad actual
-      source.start(0, Math.min(speedRatio, 0.98) * buffer.duration * ENGINE_REV_PORTION);
-    }
+    // Zumbido continuo desde el principio; el tono lo ajusta update() según la velocidad
+    source.playbackRate.value =
+      ENGINE_LOOP_RATE_MIN + (ENGINE_LOOP_RATE_MAX - ENGINE_LOOP_RATE_MIN) * speedRatio;
+    source.start();
     this.engine = { source, gain };
   }
 

@@ -13,7 +13,6 @@ import { Router } from '@angular/router';
 import { GarageScenePort } from '../../../core/application/ports/out/garage-scene.port';
 import { GARAGE_CARS, GARAGE_FX } from '../../../core/domain/garage/garage';
 import { provideGarageAdapters } from '../../../infrastructure/di/garage.providers';
-import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { GarageService } from '../../../shared/garage/garage.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
@@ -41,7 +40,6 @@ export class GaragePage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly scene = inject(GarageScenePort);
   protected readonly garage = inject(GarageService);
-  protected readonly aesthetic = inject(AestheticService);
   private readonly stage = viewChild.required<ElementRef<HTMLElement>>('stage');
 
   protected readonly tab = signal<Tab>('cars');
@@ -51,7 +49,6 @@ export class GaragePage implements OnDestroy {
   protected readonly previewCar = signal<number | null>(this.garage.choice().car);
   protected readonly previewFx = signal<number>(this.garage.choice().fx);
   protected readonly accelerating = signal(false);
-  protected readonly classic = computed(() => this.aesthetic.aesthetic() === 'classic');
 
   /** Nombre, descripción y estado de lo que se ve, según la pestaña. */
   protected readonly current = computed(() => {
@@ -82,7 +79,7 @@ export class GaragePage implements OnDestroy {
         this.scene.attach(host);
         attached = true;
       }
-      this.scene.show(this.previewCar(), this.aesthetic.aesthetic());
+      this.scene.show(this.previewCar());
     });
     effect(() => this.scene.setFx(this.previewFx()));
     effect(() => this.scene.setAccelerating(this.accelerating()));

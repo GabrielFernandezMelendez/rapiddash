@@ -71,34 +71,25 @@ class TrackBuffers {
 
   readonly roadA: Color;
   readonly roadB: Color;
-  readonly wallA: Color;
-  readonly wallB: Color;
-  readonly neonLeft: Color | null;
-  readonly neonRight: Color | null;
+  readonly neonLeft: Color;
+  readonly neonRight: Color;
 
   constructor(palette: ScenePalette) {
     this.roadA = new Color(palette.road[0]);
     this.roadB = new Color(palette.road[1]);
-    this.wallA = new Color(palette.wall[0]);
-    this.wallB = new Color(palette.wall[1]);
-    this.neonLeft = palette.neon ? new Color(palette.neon.left) : null;
-    this.neonRight = palette.neon ? new Color(palette.neon.right) : null;
+    this.neonLeft = new Color(palette.neon.left);
+    this.neonRight = new Color(palette.neon.right);
   }
 
   /** `side`: -1 muro izquierdo, 1 derecho, 0 muros de los cruces (alternan los dos neones). */
   wallSegment(a: Vec3, b: Vec3, stripe: boolean, side: -1 | 0 | 1 = 0): void {
     pushQuad(this.wall, a, b, [a[0], WALL_HEIGHT, a[2]], [b[0], WALL_HEIGHT, b[2]]);
-    if (this.neonLeft && this.neonRight) {
-      const left = side === 0 ? stripe : side < 0;
-      pushColor(this.wallColors, left ? this.neonLeft : this.neonRight, 6);
-    } else {
-      pushColor(this.wallColors, stripe ? this.wallA : this.wallB, 6);
-    }
+    const left = side === 0 ? stripe : side < 0;
+    pushColor(this.wallColors, left ? this.neonLeft : this.neonRight, 6);
   }
 
   /** Halo en el suelo por fuera del muro: de su color a transparente (mezcla aditiva). */
   glowSegment(a: Vec3, b: Vec3, aOut: Vec3, bOut: Vec3, side: -1 | 1): void {
-    if (!this.neonLeft || !this.neonRight) return;
     pushQuad(this.glow, a, b, aOut, bOut);
     const c = side < 0 ? this.neonLeft : this.neonRight;
     const black = new Color(0x000000);
@@ -274,9 +265,7 @@ export function buildTrackMesh(track: Track, palette: ScenePalette, circuit = fa
     new Mesh(
       geometry(buf.wall, buf.wallColors),
       // Los muros de neón no reciben luz: así brillan siempre con su color
-      palette.neon
-        ? new MeshBasicMaterial({ vertexColors: true, side: DoubleSide })
-        : flat(0xffffff, { vertexColors: true, side: DoubleSide }),
+      new MeshBasicMaterial({ vertexColors: true, side: DoubleSide }),
     ),
     new Mesh(geometry(buf.lanes), new MeshBasicMaterial({ color: palette.lane, side: DoubleSide })),
     new Mesh(

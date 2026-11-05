@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Plantilla de las pantallas de menú: fondo de carretera en perspectiva y tres huecos.
+ * Plantilla de las pantallas de menú: rejilla de neón en perspectiva y tres huecos.
  * [menu-header], contenido por defecto y [menu-footer]. [menu-backdrop] (opcional) cubre el
- * fondo, por ejemplo con la escena 3D de las estéticas synthwave.
+ * fondo, por ejemplo con la escena 3D synthwave.
  */
 @Component({
   selector: 'rd-menu-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="road" aria-hidden="true"><div class="lanes"></div></div>
+    <div class="road" aria-hidden="true"></div>
     <ng-content select="[menu-backdrop]" />
     <header><ng-content select="[menu-header]" /></header>
     <div class="content" [class.start]="align() === 'start'"><ng-content /></div>

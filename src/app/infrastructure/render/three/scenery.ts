@@ -1,16 +1,5 @@
-import {
-  ConeGeometry,
-  CylinderGeometry,
-  DodecahedronGeometry,
-  Group,
-  InstancedMesh,
-  Mesh,
-  Object3D,
-  PlaneGeometry,
-} from 'three';
 import { TRACK_HALF_WIDTH } from '../../../core/domain/track/track-constants';
 import { Track } from '../../../core/domain/track/track';
-import { flat } from './track-mesh';
 import { ScenePalette, seededRandom } from './themes';
 
 const MAX_PROPS = 320;
@@ -33,7 +22,7 @@ export interface SceneryLayout {
 
 /**
  * Límites de la pista y posiciones del decorado: aleatorias pero reproducibles, fuera de la
- * pista y no demasiado lejos de ella. Las comparten la estética clásica y la synthwave.
+ * pista y no demasiado lejos de ella (palmeras, pirámides y cristales del mundo synthwave).
  */
 export function sceneryLayout(track: Track, palette: ScenePalette): SceneryLayout {
   const s = track.legs.flatMap((l) => l.samples);
@@ -68,54 +57,4 @@ export function sceneryLayout(track: Track, palette: ScenePalette): SceneryLayou
     }
   }
   return { minX, maxX, minZ, maxZ, spots };
-}
-
-/** Suelo, árboles y rocas instanciados alrededor de la pista. */
-export function buildScenery(track: Track, palette: ScenePalette): Group {
-  const group = new Group();
-  const { minX, maxX, minZ, maxZ, spots } = sceneryLayout(track, palette);
-
-  const ground = new Mesh(
-    new PlaneGeometry(maxX - minX + 400, maxZ - minZ + 400),
-    flat(palette.ground),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set((minX + maxX) / 2, -0.05, (minZ + maxZ) / 2);
-  ground.userData['terrain'] = 'ground';
-  group.add(ground);
-
-  const trees = spots.filter((p) => p.tree);
-  const rocks = spots.filter((p) => !p.tree);
-  const leaves = new InstancedMesh(new ConeGeometry(1.3, 3.2, 6), flat(palette.leaf), trees.length);
-  const trunks = new InstancedMesh(
-    new CylinderGeometry(0.22, 0.28, 1, 5),
-    flat(palette.trunk),
-    trees.length,
-  );
-  const stones = new InstancedMesh(
-    new DodecahedronGeometry(0.9, 0),
-    flat(palette.rock),
-    rocks.length,
-  );
-
-  const m = new Object3D();
-  trees.forEach((t, i) => {
-    m.rotation.set(0, t.spin * 6, 0);
-    m.scale.setScalar(t.scale);
-    m.position.set(t.x, 0.5 * t.scale, t.z);
-    m.updateMatrix();
-    trunks.setMatrixAt(i, m.matrix);
-    m.position.set(t.x, 2.6 * t.scale, t.z);
-    m.updateMatrix();
-    leaves.setMatrixAt(i, m.matrix);
-  });
-  rocks.forEach((r, i) => {
-    m.rotation.set(r.spin, r.spin * 5, 0);
-    m.scale.set(r.scale * 1.4, r.scale, r.scale * 1.4);
-    m.position.set(r.x, 0.3 * r.scale, r.z);
-    m.updateMatrix();
-    stones.setMatrixAt(i, m.matrix);
-  });
-  group.add(leaves, trunks, stones);
-  return group;
 }

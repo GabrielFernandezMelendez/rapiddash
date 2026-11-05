@@ -3,9 +3,8 @@ import { TutorialStep } from '../../../core/domain/settings/tutorial';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 
 /**
- * Animación en bucle de cada paso del tutorial, vista desde arriba. Siempre con la estética
- * futurista (pista violeta, muros de neón y la nave), sea cual sea la elegida: es solo un
- * esquema, ligero (CSS) y que se entiende de un vistazo.
+ * Animación en bucle de cada paso del tutorial, vista desde arriba (pista violeta, muros de neón
+ * y una flecha como vehículo): es solo un esquema, ligero (CSS) y que se entiende de un vistazo.
  */
 @Component({
   selector: 'rd-tutorial-scene',

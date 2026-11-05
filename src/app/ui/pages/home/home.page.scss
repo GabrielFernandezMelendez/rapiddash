@@ -5,15 +5,6 @@
   gap: 10px;
 }
 
-.settings.lit {
-  // Iluminado por encima del oscurecido del aviso de estética
-  position: relative;
-  z-index: 41;
-  box-shadow:
-    0 0 0 3px var(--rd-signal),
-    0 0 18px var(--rd-signal);
-}
-
 .chip {
   min-width: 0;
   margin-right: auto;
@@ -23,22 +14,9 @@
   display: grid;
   justify-items: center;
   gap: 10px;
-  margin-top: -18%;
-}
-
-// En synthwave el logo va arriba para dejar ver el sol y el coche de fondo, pero siempre con
-// una distancia mínima bajo la cabecera: así no se monta sobre ella en ningún móvil
-:host-context([data-aesthetic='retro']) .hero,
-:host-context([data-aesthetic='futurist']) .hero {
+  // El logo va arriba para dejar ver el sol y el coche de fondo, pero siempre con una distancia
+  // mínima bajo la cabecera: así no se monta sobre ella en ningún móvil
   margin-top: clamp(16px, 4vh, 40px);
-}
-
-:host-context([data-aesthetic='retro']) .tagline,
-:host-context([data-aesthetic='futurist']) .tagline {
-  color: var(--rd-neon-cyan);
-  text-shadow:
-    0 0 10px rgb(45 226 230 / 0.7),
-    0 1px 0 #1d0428;
 }
 
 .backdrop {
@@ -54,7 +32,10 @@
   font-size: 16px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--rd-muted);
+  color: var(--rd-neon-cyan);
+  text-shadow:
+    0 0 10px rgb(45 226 230 / 0.7),
+    0 1px 0 #1d0428;
 }
 
 .bottom {

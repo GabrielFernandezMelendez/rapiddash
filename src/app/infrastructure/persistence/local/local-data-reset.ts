@@ -5,10 +5,8 @@ const APPLIED_KEY = 'rapiddash.dataReset';
 const KEPT_KEYS = new Set([
   APPLIED_KEY,
   'rapiddash.language',
-  'rapiddash.aesthetic',
   'rapiddash.volumes',
   'rapiddash.tutorialSeen',
-  'rapiddash.aestheticHintSeen',
   'rapiddash.garage',
   'rapiddash.debug',
 ]);

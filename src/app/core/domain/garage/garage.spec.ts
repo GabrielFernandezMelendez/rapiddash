@@ -3,7 +3,6 @@ import {
   DEBUG_TAPS,
   debugTap,
   DEFAULT_GARAGE,
-  garageCarFor,
   isCarUnlocked,
   isFxUnlocked,
   usableGarage,
@@ -31,12 +30,6 @@ describe('garaje', () => {
     expect(usableGarage({ car: 14, fx: 5 }, false)).toEqual(DEFAULT_GARAGE);
     expect(usableGarage('basura', false)).toEqual(DEFAULT_GARAGE);
     expect(usableGarage(null, true)).toEqual(DEFAULT_GARAGE);
-  });
-
-  it('en la estética clásica no se usa el coche del garaje', () => {
-    expect(garageCarFor({ car: 12, fx: 1 }, 'classic')).toBeNull();
-    expect(garageCarFor({ car: 12, fx: 1 }, 'retro')).toBe(12);
-    expect(garageCarFor({ car: 12, fx: 1 }, 'futurist')).toBe(12);
   });
 
   it('el debug se activa con 7 toques seguidos; una pausa larga vuelve a empezar', () => {

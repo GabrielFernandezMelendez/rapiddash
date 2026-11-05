@@ -16,7 +16,6 @@ import { countryFromLocales } from '../../../core/domain/profile/country';
 import { Profile } from '../../../core/domain/profile/profile';
 import { provideMenuAdapters } from '../../../infrastructure/di/menu.providers';
 import { AccountService } from '../../../shared/account/account.service';
-import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
@@ -67,7 +66,7 @@ const STEPS: readonly WelcomeStep[] = ['start', 'signup', 'login', 'verify', 'pi
       @switch (current()) {
         @case ('start') {
           <div class="hero">
-            <rd-logo [aesthetic]="aesthetic.aesthetic()" />
+            <rd-logo />
             <p class="lead">{{ 'welcome.lead' | t }}</p>
           </div>
         }
@@ -137,10 +136,7 @@ const STEPS: readonly WelcomeStep[] = ['start', 'signup', 'login', 'verify', 'pi
       justify-items: center;
       gap: 14px;
       text-align: center;
-    }
-    /* En synthwave, el logo arriba para dejar ver el sol y la carretera (como en el menú) */
-    :host-context([data-aesthetic='retro']) .hero,
-    :host-context([data-aesthetic='futurist']) .hero {
+      /* El logo arriba para dejar ver el sol y la carretera (como en el menú) */
       margin-top: -45%;
     }
     .lead {
@@ -158,7 +154,6 @@ export class WelcomePage {
   readonly step = input<string | undefined>();
 
   protected readonly account = inject(AccountService);
-  protected readonly aesthetic = inject(AestheticService);
   protected readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
   private readonly backdrop = inject(MenuBackdropPort);
@@ -176,11 +171,10 @@ export class WelcomePage {
   protected readonly nickname = new NicknameAvailabilityCheck((n) => this.account.isNicknameFree(n));
 
   constructor() {
-    // Fondo 3D (synthwave) solo en la bienvenida
+    // Fondo 3D solo en la bienvenida
     effect(() => {
       const host = this.backdropHost();
-      const aesthetic = this.aesthetic.aesthetic();
-      if (host) void this.backdrop.attach(host.nativeElement, aesthetic);
+      if (host) void this.backdrop.attach(host.nativeElement);
       else this.backdrop.dispose();
     });
     // Al cambiar de paso se limpian los mensajes

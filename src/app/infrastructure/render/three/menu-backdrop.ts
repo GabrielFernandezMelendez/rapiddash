@@ -12,13 +12,12 @@ import {
   WebGLRenderer,
 } from 'three';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
-import { Aesthetic } from '../../../core/domain/settings/aesthetic';
 import { LANE_WIDTH } from '../../../core/domain/track/track-constants';
 import { straight } from '../../../core/domain/track/track-segment';
 import { Track } from '../../../core/domain/track/track';
 import { SYNTH_PALETTES } from './synthwave/synth-palettes';
 import { buildSynthScenery, skyTexture, SynthSky } from './synthwave/synth-world';
-import { buildRetroCar, buildShip } from './synthwave/vehicles';
+import { buildRetroCar } from './synthwave/vehicles';
 import { buildTrackMesh } from './track-mesh';
 
 const ROAD_LENGTH = 900;
@@ -45,7 +44,7 @@ export class ThreeMenuBackdrop extends MenuBackdropPort {
   private laneVelocity = 0;
   private nextSwap = 2.5;
 
-  async attach(host: HTMLElement, aesthetic: Aesthetic): Promise<void> {
+  async attach(host: HTMLElement): Promise<void> {
     this.dispose();
     this.host = host;
     const palette = SYNTH_PALETTES.bay;
@@ -69,7 +68,7 @@ export class ThreeMenuBackdrop extends MenuBackdropPort {
     this.sky = new SynthSky(palette);
     this.scene.add(key, rim, this.sky.group);
     this.scene.add(buildSynthScenery(track, palette), buildTrackMesh(track, palette));
-    this.car = aesthetic === 'futurist' ? buildShip() : buildRetroCar();
+    this.car = buildRetroCar();
     this.scene.add(this.car);
 
     this.resize();
