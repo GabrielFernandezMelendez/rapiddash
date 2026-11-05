@@ -1,7 +1,25 @@
 import { TRACK_HALF_WIDTH } from '../track/track-constants';
 
+/**
+ * Modelo de las curvas:
+ * - grip: física de agarre. La curva pide v²·curvatura de aceleración lateral; si pasa del agarre
+ *   y se va acelerando, el coche no gira tanto como la carretera y se abre de forma continua
+ *   hacia el muro exterior (sin imán de carril mientras derrapa). Soltando, recupera el agarre y
+ *   el imán lo devuelve al carril más cercano. En recta, siempre recto.
+ * - magnet: el de antes. Desvío lineal con la velocidad contra el imán de carril, que hace que el
+ *   coche salte de carril a tramos.
+ */
+export type CurveModel = 'grip' | 'magnet';
+
 // Parámetros de conducción. Velocidades en m/s, ángulos en radianes.
 export const CAR_TUNING = {
+  curveModel: 'grip' as CurveModel,
+  /** Agarre lateral máximo (m/s²) del modelo de agarre: por encima, el coche se abre. */
+  gripAccel: 16,
+  /** Cuánto empuja hacia fuera el exceso sobre el agarre (1 = físico). */
+  slideGain: 1,
+  /** Con qué rapidez se frena el derrape lateral al recuperar el agarre (1/s). */
+  slideRecovery: 8,
   maxSpeed: 26,
   acceleration: 9,
   /** Pérdida de velocidad al soltar el dedo. */
@@ -55,7 +73,23 @@ export const CAR_TUNING = {
   lanePull: 5,
   carHalfWidth: 0.75,
   carHalfLength: 1.3,
-} as const;
+};
+
+export type CarTuning = typeof CAR_TUNING;
+
+let active: CarTuning = CAR_TUNING;
+
+/** Parámetros en uso: los de serie o los del laboratorio de física (solo en debug). */
+export const tuning = (): CarTuning => active;
+
+/** Cambia los parámetros en uso; null = los de serie. */
+export function setActiveTuning(overrides: Partial<CarTuning> | null): void {
+  active = overrides ? { ...CAR_TUNING, ...overrides } : CAR_TUNING;
+}
+
+/** ¿Se corre con parámetros distintos de los de serie? (entonces no cuentan los récords) */
+export const isCustomTuning = (): boolean =>
+  (Object.keys(CAR_TUNING) as (keyof CarTuning)[]).some((k) => active[k] !== CAR_TUNING[k]);
 
 /** Desplazamiento lateral máximo antes de tocar el muro. */
 export const WALL_LIMIT = TRACK_HALF_WIDTH - CAR_TUNING.carHalfWidth;
