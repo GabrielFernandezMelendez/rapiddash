@@ -243,6 +243,12 @@ export interface ResultMedal {
       color: var(--rd-chalk);
       font-variant-numeric: tabular-nums;
     }
+    /* Botones en una línea aunque el texto sea largo («Repetir contra él») */
+    button[rdButton] {
+      min-width: 0;
+      white-space: nowrap;
+      font-size: clamp(14px, 4.4vw, 18px);
+    }
     .place-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(0, 1fr));

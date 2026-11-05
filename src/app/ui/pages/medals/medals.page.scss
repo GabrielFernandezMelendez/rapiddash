@@ -41,7 +41,7 @@ h1 {
 [data-medal='silver'] { --c: var(--silver); }
 [data-medal='gold'] { --c: var(--gold); }
 [data-medal='platinum'] { --c: var(--platinum); }
-[data-medal='none'] { --c: #5a4a80; }
+[data-medal='none'] { --c: #8a7ab0; }
 
 // ---------- Resumen ----------
 .summary {
@@ -156,6 +156,32 @@ h1 {
   display: grid;
   gap: 3px;
   min-width: 0;
+}
+
+.day {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rd-muted);
+}
+
+// El de hoy se puede mejorar: brilla con el color de su medalla
+.row.today {
+  box-shadow:
+    inset 3px 0 0 var(--c),
+    inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent),
+    0 0 16px color-mix(in srgb, var(--c) 30%, transparent);
+}
+
+.row:disabled {
+  cursor: default;
+}
+
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--rd-muted);
 }
 
 .name {

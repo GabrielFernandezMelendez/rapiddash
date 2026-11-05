@@ -37,11 +37,6 @@ export const routes: Routes = [
     loadComponent: () => import('./ui/pages/race/race.page').then((m) => m.RacePage),
   },
   {
-    path: 'mockup-results',
-    loadComponent: () =>
-      import('./ui/pages/mockup-results/mockup-results.page').then((m) => m.MockupResultsPage),
-  },
-  {
     path: 'medals',
     canMatch: [hasPilot],
     loadComponent: () => import('./ui/pages/medals/medals.page').then((m) => m.MedalsPage),

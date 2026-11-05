@@ -1,4 +1,3 @@
-import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CountryCode } from '../../../core/domain/profile/country';
 import { RankingView, RivalChoice, RivalOptions } from '../../../core/domain/race/ranking';
@@ -35,7 +34,6 @@ import { RivalPicker } from '../../molecules/rival-picker/rival-picker';
         [rivalUid]="rivalUid()"
         [loading]="loading()"
         [offline]="offline()"
-        [targets]="targets()"
       />
       <rd-rival-picker
         [options]="options()"
@@ -88,7 +86,6 @@ import { RivalPicker } from '../../molecules/rival-picker/rival-picker';
 })
 export class MapDialog {
   readonly map = input.required<RaceMap>();
-  protected readonly targets = computed(() => mapMedalTargets(this.map()));
   readonly view = input.required<RankingView>();
   readonly options = input.required<RivalOptions>();
   readonly selected = input<RivalChoice | null>(null);

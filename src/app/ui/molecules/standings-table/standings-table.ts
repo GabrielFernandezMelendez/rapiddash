@@ -3,10 +3,14 @@ import { StandingRow, TOURNAMENT_DAYS } from '../../../core/domain/tournament/to
 import { formatTime } from '../../../shared/format-time';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Flag } from '../../atoms/flag/flag';
+import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
+import { Medal, medalFor } from '../../../core/domain/medals/medals';
+import { findMap } from '../../../core/domain/track/race-map';
 
 /**
  * Clasificación del torneo: puntos de cada día, total y, al lado, el tiempo del día que se juega
- * (o del último, si ya acabó) como una métrica más. Mi fila, en amarillo.
+ * (o del último, si ya acabó) como una métrica más. Cada fila, del color de la liga que da ese
+ * tiempo en el circuito de ese día (como en el top 10 del mapa del día); mi fila, más intensa.
  */
 @Component({
   selector: 'rd-standings-table',
@@ -23,7 +27,12 @@ import { Flag } from '../../atoms/flag/flag';
     </div>
     <ol>
       @for (row of rows(); track row.member.uid; let i = $index) {
-        <li class="row" [class.me]="row.member.uid === myUid()" [style.grid-template-columns]="columns()">
+        <li
+          class="row"
+          [class.me]="row.member.uid === myUid()"
+          [attr.data-medal]="medalOf(row)"
+          [style.grid-template-columns]="columns()"
+        >
           <span class="pos" [class.first]="i === 0 && row.total > 0">{{ i + 1 }}</span>
           <span class="who"><rd-flag [country]="row.member.country" /><span>{{ row.member.nickname }}</span></span>
           @for (d of shownDays(); track d) {
@@ -106,6 +115,40 @@ import { Flag } from '../../atoms/flag/flag';
     .time.none {
       color: var(--rd-muted);
     }
+    /* Liga de cada piloto por su tiempo del día: cápsula, apodo y tiempo en su color */
+    li[data-medal] {
+      --c: var(--rd-chalk);
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--c) 20%, transparent),
+        color-mix(in srgb, var(--c) 6%, transparent) 65%,
+        transparent
+      );
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent);
+    }
+    li[data-medal] .who span,
+    li[data-medal] .time {
+      color: var(--c);
+    }
+    li[data-medal] .time {
+      text-shadow: 0 0 8px color-mix(in srgb, var(--c) 45%, transparent);
+    }
+    li[data-medal].me {
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--c) 38%, transparent),
+        color-mix(in srgb, var(--c) 14%, transparent) 70%,
+        color-mix(in srgb, var(--c) 6%, transparent)
+      );
+      box-shadow:
+        inset 3px 0 0 var(--c),
+        inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent),
+        0 0 14px color-mix(in srgb, var(--c) 30%, transparent);
+    }
+    li[data-medal='bronze'] { --c: var(--rd-medal-bronze); }
+    li[data-medal='silver'] { --c: var(--rd-medal-silver); }
+    li[data-medal='gold'] { --c: var(--rd-medal-gold); }
+    li[data-medal='platinum'] { --c: var(--rd-medal-platinum); }
     .total {
       font-family: var(--rd-font-display);
       font-style: var(--rd-display-style);
@@ -118,6 +161,8 @@ export class StandingsTable {
   readonly myUid = input<string | null>(null);
   /** Día en curso (sus puntos son provisionales). */
   readonly today = input<number | null>(null);
+  /** Circuito de cada día del torneo (para los colores de liga). */
+  readonly mapIds = input<readonly string[]>([]);
 
   protected readonly days = Array.from({ length: TOURNAMENT_DAYS }, (_, i) => i);
   /** Columnas de puntos: solo los días ya empezados (deja sitio al apodo y al tiempo). */
@@ -135,6 +180,18 @@ export class StandingsTable {
   protected readonly columns = computed(
     () => `22px minmax(0, 1fr) ${this.shownDays().map(() => '26px').join(' ')} 38px 66px`,
   );
+
+  /** Tiempos objetivo del circuito del día que se muestra. */
+  private readonly targets = computed(() => {
+    const map = findMap(this.mapIds()[this.shownDay()] ?? '');
+    return map ? mapMedalTargets(map) : null;
+  });
+
+  protected medalOf(row: StandingRow): Medal | null {
+    const t = row.times[this.shownDay()];
+    const targets = this.targets();
+    return t == null || !targets ? null : medalFor(t, targets);
+  }
 
   protected timeOf(row: StandingRow): string | null {
     const t = row.times[this.shownDay()];
