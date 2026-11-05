@@ -27,6 +27,8 @@ import {
   TOURNAMENT_MAX_MEMBERS,
 } from '../../../core/domain/tournament/tournament';
 import { CIRCUIT_MAPS, findMap } from '../../../core/domain/track/race-map';
+import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
+import { MedalLeague } from '../../molecules/medal-league/medal-league';
 import { AccountService } from '../../../shared/account/account.service';
 import { RankingService } from '../../../shared/account/ranking.service';
 import { TournamentService } from '../../../shared/account/tournament.service';
@@ -48,7 +50,7 @@ const TOURNAMENT_RIVAL_KEY = 'tournament';
 /** Un torneo: sala de espera antes de empezar; días y clasificación después. */
 @Component({
   selector: 'rd-tournament-page',
-  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, RivalPicker, LeaderPhoto, TranslatePipe],
+  imports: [MenuLayout, Button, Flag, DayCards, StandingsTable, RivalPicker, LeaderPhoto, MedalLeague, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -92,11 +94,20 @@ const TOURNAMENT_RIVAL_KEY = 'tournament';
       } @else {
         <rd-day-cards [days]="dayCards()" />
         <h2>{{ 'tournament.standings' | t }}</h2>
-        <rd-standings-table [rows]="board()?.rows ?? []" [myUid]="myUid" [today]="today()" />
+        <rd-standings-table
+          [rows]="board()?.rows ?? []"
+          [myUid]="myUid"
+          [today]="today()"
+          [mapIds]="t()?.mapIds ?? []"
+        />
         @if (status() === 'running') {
           <p class="note">{{ 'tournament.provisional' | t }}</p>
           <!-- Contra quién corro hoy: del ranking del día del torneo -->
           @if (today() !== null) {
+            @if (dayTargets(); as tg) {
+              <!-- Mi liga de hoy en el torneo y la siguiente medalla con su tiempo objetivo -->
+              <rd-medal-league [targets]="tg" [best]="dayBest()" />
+            }
             <rd-rival-picker
               [options]="rivalOptions()"
               [selected]="rivalChoice()"
@@ -291,6 +302,13 @@ export class TournamentPage implements OnInit {
   /** Rival de hoy: ranking del día del torneo y mi mejor tiempo de hoy en este dispositivo. */
   protected readonly dayView = signal<RankingView>(EMPTY_RANKING);
   protected readonly dayBest = signal<number | null>(null);
+  /** Tiempos objetivo de las medallas del circuito de hoy. */
+  protected readonly dayTargets = computed(() => {
+    const t = this.t();
+    const day = this.today();
+    const map = t && day !== null ? findMap(t.mapIds[day] ?? '') : undefined;
+    return map ? mapMedalTargets(map) : null;
+  });
   protected readonly rivalChoice = signal<RivalChoice | null>(null);
   protected readonly rivalOptions = computed(() =>
     rivalOptions(this.dayView(), this.myUid, this.dayBest() !== null),

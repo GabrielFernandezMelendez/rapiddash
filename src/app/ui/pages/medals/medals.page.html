@@ -4,27 +4,49 @@
     <h1>{{ 'medals.title' | t }}</h1>
   </header>
 
-  <!-- Resumen: cuántas de cada (tener oro cuenta también como plata y bronce) -->
+  <!-- Resumen de todos los días jugados (tener oro cuenta también como plata y bronce) -->
   <section class="summary">
     @for (m of medals; track m; let i = $index) {
       <div class="count" [style.--d]="i * 0.08 + 's'">
         <rd-medal-coin [medal]="m" [size]="40" />
-        <b>{{ counts()[m] }}<small>/{{ total() }}</small></b>
+        <b>{{ counts()[m] }}</b>
         <span>{{ 'medal.' + m | t }}</span>
       </div>
     }
-    <div class="progress" [style.--p]="golds() / (total() || 1)">
+    <div class="progress" [style.--p]="played() ? counts().gold / played() : 0">
       <span class="progress-bar"><i></i></span>
-      <span class="progress-text">{{ golds() }} {{ 'medals.goldsOf' | t }} {{ total() }}</span>
+      <span class="progress-text">{{ counts().gold }} {{ 'medals.goldsOf' | t }} {{ played() }} {{ 'medals.days' | t }}</span>
     </div>
   </section>
 
   <ul class="list">
-    @for (row of rows(); track row.map.id; let i = $index) {
+    @if (loaded() && !playedToday() && todayMap) {
+      <!-- Hoy aún sin correr: invitación al mapa del día -->
+      <li [style.--d]="'0.2s'">
+        <button type="button" class="row" data-medal="none" (click)="playToday()">
+          <rd-medal-coin [medal]="null" [size]="38" />
+          <span class="info">
+            <span class="day">{{ 'medals.today' | t }}</span>
+            <b class="name">{{ todayMap.nameKey | t }}</b>
+            <span class="best">{{ 'medals.notYet' | t }}</span>
+          </span>
+          <span class="goal"><span class="play">▶</span></span>
+        </button>
+      </li>
+    }
+    @for (row of rows(); track row.key; let i = $index) {
       <li [style.--d]="0.25 + i * 0.05 + 's'">
-        <button type="button" class="row" [attr.data-medal]="row.medal ?? 'none'" (click)="play(row)">
+        <button
+          type="button"
+          class="row"
+          [class.today]="row.today"
+          [attr.data-medal]="row.medal ?? 'none'"
+          [disabled]="!row.today"
+          (click)="playToday()"
+        >
           <rd-medal-coin [medal]="row.medal" [size]="38" />
           <span class="info">
+            <span class="day">{{ row.label }}</span>
             <b class="name">{{ row.map.nameKey | t }}</b>
             <span class="best">{{ 'medals.best' | t }} <em>{{ time(row.best) }}</em></span>
             <span class="tiers">
@@ -36,16 +58,23 @@
             </span>
           </span>
           <span class="goal">
-            @if (row.next; as n) {
-              <span class="goal-name" [attr.data-medal]="n">{{ 'medal.' + n | t }}</span>
-              <span class="goal-gap">{{ row.gap ?? time(row.targets[n]) }}</span>
+            @if (row.today) {
+              @if (row.next; as n) {
+                <span class="goal-name" [attr.data-medal]="n">{{ 'medal.' + n | t }}</span>
+                <span class="goal-gap">−{{ row.gap }}</span>
+              } @else {
+                <span class="goal-name done">{{ 'medals.all' | t }}</span>
+              }
+              <span class="play">▶</span>
             } @else {
-              <span class="goal-name done">{{ 'medals.all' | t }}</span>
+              <span class="goal-name" [attr.data-medal]="row.medal ?? 'none'">{{ 'medal.' + (row.medal ?? 'none') | t }}</span>
             }
-            <span class="play">▶</span>
           </span>
         </button>
       </li>
+    }
+    @if (loaded() && !rows().length && !todayMap) {
+      <li class="empty">{{ 'medals.empty' | t }}</li>
     }
   </ul>
 </div>

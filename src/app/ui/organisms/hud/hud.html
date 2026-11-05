@@ -1,31 +1,87 @@
-<div class="top">
-  <button rdButton variant="ghost" type="button" class="exit" (click)="exit.emit()">
-    ✕ <span class="sr">{{ 'hud.exit' | t }}</span>
-  </button>
-  <div class="center">
-    <span class="map">{{ mapName() }}</span>
-    <span class="time">{{ time() }}</span>
-    <span class="row">
-      @if (state().lap; as lap) {
-        <rd-stat [label]="'hud.lap' | t" [value]="lap.current + '/' + lap.total" />
+<div
+  class="shell"
+  [class.shake]="state().crashFlash"
+  [style.transform]="'rotate(' + tilt() + 'deg)'"
+>
+  <div class="top">
+    <button rdButton variant="ghost" type="button" class="exit" [attr.aria-label]="'hud.exit' | t" (click)="exit.emit()">✕</button>
+    <div class="center">
+      <span class="map">{{ mapName() }}</span>
+      <span class="time" [class.pulse]="state().lapBanner !== null">{{ time() }}</span>
+      <span class="row">
+        @if (state().lap; as lap) {
+          <span class="chip"><b>{{ 'hud.lap' | t }}</b>{{ lap.current }}<small>/{{ lap.total }}</small></span>
+        }
+        <span class="chip"><b>{{ 'hud.best' | t }}</b>{{ best() }}</span>
+        @if (ghost(); as g) {
+          @for (k of [ghostPop()]; track k) {
+            <span class="chip ghost" [class.ahead]="g.ahead" [class.behind]="!g.ahead">
+              <b>{{ rivalName() ?? ('hud.ghost' | t) }}</b>{{ g.label }}
+            </span>
+          }
+        }
+      </span>
+
+      @if (targets()) {
+        <div class="medals" [class.urgent]="progress() > 0.85 && !missed()" [class.missed]="missed()">
+          <!-- Liga actual: la medalla que ya tienes en este mapa -->
+          <div class="league" [attr.data-medal]="current() ?? 'none'">
+            <rd-medal-coin class="league-coin" [medal]="current()" [size]="26" />
+            <span class="league-name">{{ 'medal.' + (current() ?? 'none') | t }}</span>
+            <span class="league-bar"><i></i></span>
+          </div>
+          <!-- Objetivo: la siguiente medalla, se va gastando con el tiempo de carrera -->
+          @if (next(); as n) {
+            <div class="goal" [attr.data-medal]="n">
+              <span class="goal-bar">
+                <span class="goal-track"><i class="fill" [style.width.%]="progress() * 100"></i></span>
+                @if (!missed()) {
+                  <!-- Punta viva: un orbe que late y suelta chispas hacia atrás -->
+                  <span class="tip" [style.left.%]="progress() * 100">
+                    <i class="orb"></i>
+                    @for (p of sparks; track p) {
+                      <i class="spark" [style.--k]="p"></i>
+                    }
+                  </span>
+                }
+              </span>
+              <span class="goal-text">
+                <b>{{ 'medal.' + n | t }}</b> {{ targetText() }}
+                <em>{{ missed() ? '✕' : margin() }}</em>
+              </span>
+            </div>
+          } @else {
+            <div class="goal done"><span class="goal-text">{{ 'medal.allDone' | t }}</span></div>
+          }
+        </div>
       }
-      <rd-stat [label]="'hud.best' | t" [value]="best()" />
-      @if (ghost(); as g) {
-        <rd-stat
-          [label]="rivalName() ? ('hud.vs' | t) + ' ' + rivalName() : ('hud.ghost' | t)"
-          [value]="g.label"
-          [tone]="g.tone"
-        />
+    </div>
+  </div>
+
+  @if (aheadFlash()) {
+    <p class="ahead-flash">{{ 'hud.ahead' | t }}</p>
+  }
+  @if (state().crashFlash) {
+    <p class="crash">{{ 'race.crash' | t }}</p>
+  }
+
+  <div class="speed" [class.boost]="state().accelerating" [class.top-speed]="topSpeed()">
+    <span class="kmh"><b>{{ kmh() }}</b> km/h</span>
+    <span class="speed-bar">
+      <span class="segments">
+        @for (i of segments; track i) {
+          <i [class.lit]="i < litSegments()" [style.--i]="i"></i>
+        }
+      </span>
+      @if (topSpeed() && state().accelerating) {
+        <!-- A tope: la punta de la barra suelta chispas hacia atrás -->
+        <span class="speed-tip">
+          <i class="orb"></i>
+          @for (k of sparks; track k) {
+            <i class="spark" [style.--k]="k"></i>
+          }
+        </span>
       }
     </span>
   </div>
-</div>
-
-@if (state().crashFlash) {
-  <p class="crash">{{ 'race.crash' | t }}</p>
-}
-
-<div class="speed" [class.boost]="state().accelerating">
-  <span class="bar"><i [style.width.%]="speedPct()"></i></span>
-  <span class="kmh">{{ kmh() }} km/h</span>
 </div>

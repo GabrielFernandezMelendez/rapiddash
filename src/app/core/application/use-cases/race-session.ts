@@ -12,6 +12,7 @@ import {
   stepRace,
 } from '../../domain/race/race';
 import { CAR_TUNING } from '../../domain/car/car-tuning';
+import { DriveInput } from '../../domain/car/car';
 import { RaceMap } from '../../domain/track/race-map';
 import { Track } from '../../domain/track/track';
 import { AudioPort } from '../ports/out/audio.port';
@@ -52,7 +53,7 @@ export interface RaceViewState {
   readonly lapTimes: readonly number[];
   /** Cartel de vuelta en el centro (solo un momento tras cruzar la línea). */
   readonly lapBanner: LapBanner | null;
-  /** MOCKUP: posición lateral del coche (para inclinar el HUD en los cambios de carril). */
+  /** Posición lateral del coche (el HUD se inclina en los cambios de carril). */
   readonly lateral: number;
 }
 
@@ -147,8 +148,8 @@ export class RaceSession {
     this.ports.input.read(); // descarta swipes pendientes
   }
 
-  /** MOCKUP: conductor automático para grabar vídeos (null = el jugador). */
-  driver: ((car: RaceState['car'], track: Track) => import('../../domain/car/car').DriveInput) | null = null;
+  /** Conductor automático para pruebas (solo en debug; null = el jugador). */
+  driver: ((car: RaceState['car'], track: Track) => DriveInput) | null = null;
 
   private tick(dt: number): void {
     const read = this.ports.input.read();
