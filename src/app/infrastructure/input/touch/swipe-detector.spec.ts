@@ -114,6 +114,44 @@ describe('SwipeDetector', () => {
       expect(slide(d, 0, RESTART_SWIPE_PX + 20, 250, { x: 0, y: 0, t: 5000 })).toEqual(['restart']);
     });
 
+    it('con el dedo temblando tras mucho rato acelerando, funciona en cualquier momento', () => {
+      // Un dedo pulsado nunca está quieto del todo: se probaron todos los instantes posibles
+      for (let delay = 0; delay < RESTART_SWIPE_MS; delay += 20) {
+        const d = new SwipeDetector();
+        d.down(0, 0);
+        let t = 0;
+        for (; t < 60_000 + delay; t += 16) expect(d.move(t % 32 ? 1 : 0, t % 48 ? 1 : 0, t)).toBeNull();
+        const from = { x: 0, y: 0, t };
+        expect(slide(d, 0, RESTART_SWIPE_PX + 20, 250, from), `a ${delay} ms`).toEqual(['restart']);
+      }
+    });
+
+    it('con el mismo dedo se puede reiniciar otra vez, sin levantarlo', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX + 20, 200)).toEqual(['restart']);
+      // Vuelve a subir el dedo (despacio, acelerando) y unas vueltas después repite
+      const y = RESTART_SWIPE_PX + 20;
+      expect(slide(d, 0, 0, 2000, { x: 0, y, t: 200 })).toEqual([]);
+      expect(slide(d, 0, RESTART_SWIPE_PX + 20, 200, { x: 0, y: 0, t: 30_000 })).toEqual(['restart']);
+    });
+
+    it('tras cambiar de carril se puede reiniciar sin levantar el dedo', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 60, 0, 60)).toEqual(['right']);
+      const from = { x: 60, y: 0, t: 1000 };
+      expect(slide(d, 60, RESTART_SWIPE_PX + 20, 250, from)).toEqual(['restart']);
+    });
+
+    it('un swipe lento con un tramo final rápido cuenta por el tramo rápido', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, 40, 400)).toEqual([]);
+      const from = { x: 0, y: 40, t: 400 };
+      expect(slide(d, 0, 40 + RESTART_SWIPE_PX + 10, 200, from)).toEqual(['restart']);
+    });
+
     it('al poner el dedo otra vez se puede volver a reiniciar', () => {
       const d = new SwipeDetector();
       d.down(0, 0);

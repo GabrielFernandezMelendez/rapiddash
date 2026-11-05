@@ -34,22 +34,18 @@ export class SwipeDetector {
   private lastX = 0;
   private lastY = 0;
   private lastMoveAt = 0;
-  /** Inicio del posible swipe de reinicio (`restartAt` null: empieza con el próximo movimiento). */
-  private restartX = 0;
-  private restartY = 0;
-  private restartAt: number | null = null;
-  /** Cada vez que se pone el dedo se puede reiniciar una sola vez. */
-  private restartDone = false;
+  /** Por dónde ha pasado el dedo en los últimos RESTART_SWIPE_MS: de ahí se mide el reinicio. */
+  private trail: { x: number; y: number; time: number }[] = [];
+  /** Tras un reinicio, hasta cuándo se ignora: el mismo deslizamiento no lo pide otra vez. */
+  private restartBlockedUntil = -Infinity;
 
   down(x: number, y: number): void {
     this.originX = this.lastX = x;
     this.originY = this.lastY = y;
     this.active = true;
     this.following = false;
-    this.restartX = x;
-    this.restartY = y;
-    this.restartAt = null;
-    this.restartDone = false;
+    this.trail = [{ x, y, time: -Infinity }];
+    this.restartBlockedUntil = -Infinity;
   }
 
   /** `time` en ms (p. ej. `PointerEvent.timeStamp`). */
@@ -83,9 +79,7 @@ export class SwipeDetector {
     if (Math.abs(dx) <= Math.abs(dy)) return null;
     this.following = true;
     // Un swipe lateral no se puede convertir en reinicio: el recorrido empieza de cero
-    this.restartX = x;
-    this.restartY = y;
-    this.restartAt = time;
+    this.trail = [{ x, y, time }];
     return dx > 0 ? 'right' : 'left';
   }
 
@@ -94,20 +88,28 @@ export class SwipeDetector {
     this.following = false;
   }
 
-  /** Swipe largo, rápido y casi recto hacia abajo. */
+  /**
+   * Swipe largo, rápido y casi recto hacia abajo, medido desde cualquier punto de los últimos
+   * RESTART_SWIPE_MS: un dedo pulsado nunca está quieto del todo, así que el swipe no tiene un
+   * inicio claro y puede llegar en cualquier momento de la carrera.
+   */
   private isRestart(x: number, y: number, time: number): boolean {
-    if (this.restartDone) return false;
-    if (this.restartAt === null) this.restartAt = time;
-    else if (time - this.restartAt > RESTART_SWIPE_MS) {
-      // Demasiado lento (o el dedo estaba quieto): el recorrido empieza aquí
-      this.restartX = x;
-      this.restartY = y;
-      this.restartAt = time;
+    const last = this.trail[this.trail.length - 1];
+    this.trail = this.trail.filter((p) => time - p.time <= RESTART_SWIPE_MS);
+    // Sin movimiento reciente, el dedo estaba parado donde se quedó: de ahí sale el swipe
+    if (!this.trail.length && last) this.trail.push({ ...last, time });
+    if (time < this.restartBlockedUntil) {
+      this.trail = [{ x, y, time }];
+      return false;
     }
-    const down = y - this.restartY;
-    if (down < RESTART_SWIPE_PX) return false;
-    if (Math.abs(x - this.restartX) > down * RESTART_MAX_SLANT) return false;
-    this.restartDone = true;
+    const isSwipe = this.trail.some((p) => {
+      const down = y - p.y;
+      return down >= RESTART_SWIPE_PX && Math.abs(x - p.x) <= down * RESTART_MAX_SLANT;
+    });
+    this.trail.push({ x, y, time });
+    if (!isSwipe) return false;
+    this.trail = [{ x, y, time }];
+    this.restartBlockedUntil = time + RESTART_SWIPE_MS;
     return true;
   }
 }
