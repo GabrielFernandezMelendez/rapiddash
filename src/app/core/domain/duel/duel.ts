@@ -2,7 +2,7 @@ import { GarageChoice } from '../garage/garage';
 import { TournamentMember } from '../tournament/tournament';
 
 /**
- * 1 vs 1 Turbo Race: uno crea el duelo y comparte un código, entra el rival y cada uno tiene 3
+ * 1 vs 1 Turbo: uno crea el duelo y comparte un código, entra el rival y cada uno tiene 3
  * intentos en el mismo circuito. Gana el mejor tiempo. Los códigos son como los de los torneos.
  */
 export const DUEL_ATTEMPTS = 3;

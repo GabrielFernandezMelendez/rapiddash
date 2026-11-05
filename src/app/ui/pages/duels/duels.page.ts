@@ -7,12 +7,13 @@ import { I18nService } from '../../../shared/i18n/i18n.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
 import { TournamentCard } from '../../molecules/tournament-card/tournament-card';
+import { ConfirmDialog } from '../../organisms/confirm-dialog/confirm-dialog';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 
-/** «1 vs 1 Turbo Race»: crear, unirse y la lista de mis duelos. */
+/** «1 vs 1 Turbo»: crear, unirse y la lista de mis duelos. */
 @Component({
   selector: 'rd-duels-page',
-  imports: [MenuLayout, Button, TournamentCard, TranslatePipe],
+  imports: [MenuLayout, Button, TournamentCard, ConfirmDialog, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-menu-layout>
@@ -44,15 +45,28 @@ import { MenuLayout } from '../../templates/menu-layout/menu-layout';
             [status]="status(d)"
             [statusLabel]="'duel.status.' + status(d) | t"
             [detail]="detail(d)"
-            [removable]="false"
-            removeLabel=""
+            [removable]="d.ownerUid === myUid"
+            [removeLabel]="removeLabel(d)"
             (open)="go('/duels/' + d.code)"
+            (remove)="removing.set(d)"
           />
         } @empty {
           <p class="note">{{ 'duel.none' | t }}</p>
         }
       }
     </rd-menu-layout>
+
+    @if (removing(); as d) {
+      <rd-confirm-dialog
+        [title]="'duel.removeTitle' | t"
+        [text]="removeText(d)"
+        [confirmLabel]="'duel.removeGo' | t"
+        [busy]="removeBusy()"
+        [error]="removeError()"
+        (confirm)="remove(d)"
+        (cancel)="closeRemove()"
+      />
+    }
   `,
   styleUrl: '../tournaments/tournaments.page.scss',
 })
@@ -66,6 +80,11 @@ export class DuelsPage implements OnInit {
   protected readonly error = signal(false);
   protected readonly busy = signal(false);
   protected readonly createError = signal<string | null>(null);
+  protected readonly myUid = this.duels.uid();
+  /** Duelo que se va a eliminar (ventana de confirmación abierta). */
+  protected readonly removing = signal<Duel | null>(null);
+  protected readonly removeBusy = signal(false);
+  protected readonly removeError = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     try {
@@ -89,6 +108,33 @@ export class DuelsPage implements OnInit {
   protected detail(d: Duel): string {
     const map = findMap(d.mapId);
     return map ? this.i18n.t(map.nameKey) : '';
+  }
+
+  protected removeLabel(d: Duel): string {
+    return this.i18n.t('duel.removeAria').replace('{name}', this.name(d));
+  }
+
+  protected removeText(d: Duel): string {
+    return this.i18n.t('duel.removeText').replace('{name}', this.name(d));
+  }
+
+  protected closeRemove(): void {
+    this.removing.set(null);
+    this.removeError.set(null);
+  }
+
+  protected async remove(d: Duel): Promise<void> {
+    this.removeBusy.set(true);
+    this.removeError.set(null);
+    try {
+      if (await this.duels.remove(d)) this.list.update((list) => list.filter((x) => x.code !== d.code));
+      this.removing.set(null);
+    } catch (e) {
+      console.error('[1 vs 1]', e);
+      this.removeError.set('auth.error.network');
+    } finally {
+      this.removeBusy.set(false);
+    }
   }
 
   protected go(path: string): void {

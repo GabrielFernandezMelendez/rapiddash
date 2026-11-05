@@ -101,7 +101,8 @@ const OPEN_AT = REVEAL / 2;
     button.card.running {
       box-shadow: inset 0 0 0 2px var(--rd-go);
     }
-    button.card.finished {
+    /* Se atenúa el contenido, no la tarjeta: si no, se vería la papelera a través de ella */
+    button.card.finished > * {
       opacity: 0.75;
     }
     .top {

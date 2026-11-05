@@ -94,14 +94,15 @@ describe('Duels', () => {
     ]);
   });
 
-  it('solo el creador cancela, y solo mientras espera', async () => {
+  it('solo el creador lo elimina, también ya empezado', async () => {
     const repo = new FakeRepo();
     const duels = new Duels(repo, records([]));
     const waiting = { code: 'X', ownerUid: 'a', startedAt: null } as Duel;
     await expect(duels.remove(waiting, 'b')).resolves.toBe(false);
-    await expect(duels.remove({ ...waiting, startedAt: 5 }, 'a')).resolves.toBe(false);
+    await expect(duels.remove({ ...waiting, startedAt: 5 }, 'b')).resolves.toBe(false);
     await expect(duels.remove(waiting, 'a')).resolves.toBe(true);
-    expect(repo.removed).toEqual(['X']);
+    await expect(duels.remove({ ...waiting, startedAt: 5 }, 'a')).resolves.toBe(true);
+    expect(repo.removed).toEqual(['X', 'X']);
   });
 
   it('mis duelos: en curso, esperando y terminados', async () => {

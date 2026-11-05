@@ -227,10 +227,8 @@ service cloud.firestore {
         || (request.auth.uid in resource.data.memberUids
           && onlyMyPlayerChanges()
           && marksDone()));
-      // Cancelar: solo el creador y mientras no haya entrado nadie
-      allow delete: if signedIn()
-        && resource.data.ownerUid == request.auth.uid
-        && resource.data.startedAt == null;
+      // Eliminar: solo el creador, en cualquier momento (como los torneos)
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }
 
     // Reserva de apodos únicos: el id es el apodo sin mayúsculas ni tildes.

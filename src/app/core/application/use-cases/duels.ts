@@ -67,9 +67,9 @@ export class Duels {
     return this.repo.markDone(code, uid);
   }
 
-  /** Solo el creador y mientras nadie más haya entrado. */
+  /** Solo el creador, en cualquier momento (como los torneos). */
   async remove(duel: Duel, uid: string): Promise<boolean> {
-    if (duel.ownerUid !== uid || duel.startedAt !== null) return false;
+    if (duel.ownerUid !== uid) return false;
     await this.repo.remove(duel.code);
     return true;
   }

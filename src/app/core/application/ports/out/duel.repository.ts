@@ -17,6 +17,6 @@ export abstract class DuelRepository {
   abstract startAttempt(code: string, uid: string, garage: GarageChoice): Promise<boolean>;
   /** Avisa de que el piloto ya ha terminado su último intento. */
   abstract markDone(code: string, uid: string): Promise<void>;
-  /** Cancelar mientras se espera al rival: solo el creador. */
+  /** Eliminarlo para los dos: solo el creador. */
   abstract remove(code: string): Promise<void>;
 }
