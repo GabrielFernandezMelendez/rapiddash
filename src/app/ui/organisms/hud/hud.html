@@ -74,12 +74,12 @@
         }
       </span>
       @if (topSpeed() && state().accelerating) {
-        <!-- A tope: la punta rompe el límite de la barra y suelta chispas hacia atrás -->
+        <!-- A tope: la punta rompe el límite de la barra y suelta chispas rojas hacia fuera -->
         <span class="speed-tip">
           <i class="ring"></i>
           <i class="orb"></i>
-          @for (k of tipSparks; track k) {
-            <i class="spark" [style.--k]="k"></i>
+          @for (p of tipSparks; track p.k) {
+            <i class="spark" [style.--k]="p.k" [style.--len.px]="p.len"></i>
           }
         </span>
       }
