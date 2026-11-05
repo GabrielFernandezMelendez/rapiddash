@@ -179,6 +179,7 @@ export class RaceSession {
     ) {
       this.cube = null;
       this.ports.renderer.collectCube();
+      this.ports.audio.cubeCollected();
       cube.onCollect();
     }
 

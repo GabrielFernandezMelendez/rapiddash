@@ -22,6 +22,14 @@ Suena solo al acelerar, por debajo de la música; el volumen sigue a la velocida
 | --- | --- | --- |
 | `engine/retro.mp3` | Bucle entero; el tono sube con la velocidad | Spacecraft engine loop 01 (Pixabay) |
 
+## Efectos
+
+Suenan una vez, con el volumen de efectos de Ajustes. La lista está en `soundtrack.ts`.
+
+| Archivo | Cuándo suena |
+| --- | --- |
+| `soundeffects/video-game-bonus-323603.mp3` | Al coger el cubo azul del mapa del día |
+
 Licencia de contenido de Pixabay: uso gratuito, sin atribución obligatoria. Las canciones se
 guardan a 128 kbps para que carguen rápido en el móvil.
 

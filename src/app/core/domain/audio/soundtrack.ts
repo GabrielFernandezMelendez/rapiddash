@@ -29,6 +29,9 @@ export const MUSIC: readonly MusicTrack[] = [
 
 export const ENGINE: EngineSound = { file: 'engine/retro.mp3' };
 
+/** Suena una vez al coger el cubo azul del mapa del día. */
+export const CUBE_SOUND = { file: 'soundeffects/video-game-bonus-323603.mp3' } as const;
+
 /** Canción al azar para una carrera nueva, sin repetir la anterior si hay donde elegir. */
 export function pickTrack(
   tracks: readonly MusicTrack[],

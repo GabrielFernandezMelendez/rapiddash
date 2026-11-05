@@ -1,5 +1,6 @@
 import { AudioFrame, AudioPort } from '../../core/application/ports/out/audio.port';
 import {
+  CUBE_SOUND,
   EngineSound,
   ENGINE,
   MUSIC,
@@ -16,6 +17,8 @@ const MUSIC_VOLUME = 0.45;
 const MUSIC_FINISHED_VOLUME = 0.2;
 /** El motor queda por debajo de la música: acompaña sin tapar. */
 const ENGINE_VOLUME = 0.22;
+/** Efectos sueltos (el cubo azul): por encima de la música, para que se oigan en plena carrera. */
+const SFX_VOLUME = 0.9;
 /** Constantes de tiempo (s) de los fundidos: subida suave, bajada rápida al soltar. */
 const ENGINE_FADE_IN = 0.12;
 const ENGINE_FADE_OUT = 0.06;
@@ -41,6 +44,8 @@ export class WebAudioAdapter extends AudioPort {
   private musicGain: GainNode | null = null;
   private engineGain: GainNode | null = null;
   private engineBuffer: AudioBuffer | null = null;
+  private sfxGain: GainNode | null = null;
+  private cubeBuffer: AudioBuffer | null = null;
   private engineSound: EngineSound | null = null;
   /** Voz del motor en curso: cada acelerón crea una con su propio fundido. */
   private engine: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
@@ -64,6 +69,8 @@ export class WebAudioAdapter extends AudioPort {
     this.engineSound = ENGINE;
     this.nextSong();
     void this.load(this.engineSound.file).then((buffer) => (this.engineBuffer = buffer));
+    // Cargado desde la salida: al coger el cubo tiene que sonar en ese mismo instante
+    if (!this.cubeBuffer) void this.load(CUBE_SOUND.file).then((buffer) => (this.cubeBuffer = buffer));
   }
 
   setVolumes(volumes: Volumes): void {
@@ -71,6 +78,7 @@ export class WebAudioAdapter extends AudioPort {
     const now = this.ctx?.currentTime ?? 0;
     this.musicGain?.gain.setTargetAtTime(MUSIC_VOLUME * volumes.music, now, 0.05);
     this.engineGain?.gain.setTargetAtTime(ENGINE_VOLUME * volumes.effects, now, 0.05);
+    this.sfxGain?.gain.setTargetAtTime(SFX_VOLUME * volumes.effects, now, 0.05);
   }
 
   /** Un trozo de la primera canción o del motor, al volumen elegido. */
@@ -118,6 +126,16 @@ export class WebAudioAdapter extends AudioPort {
     this.stopEngine();
     this.songRequest++;
     if (this.ctx) this.fadeOutSong(this.ctx.currentTime);
+  }
+
+  cubeCollected(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.cubeBuffer || !this.sfxGain) return;
+    const source = ctx.createBufferSource();
+    source.buffer = this.cubeBuffer;
+    source.connect(this.sfxGain);
+    source.onended = () => source.disconnect();
+    source.start();
   }
 
   prizeTick(): void {
@@ -183,6 +201,9 @@ export class WebAudioAdapter extends AudioPort {
     this.engineGain = this.ctx.createGain();
     this.engineGain.gain.value = ENGINE_VOLUME * this.volumes.effects;
     this.engineGain.connect(this.ctx.destination);
+    this.sfxGain = this.ctx.createGain();
+    this.sfxGain.gain.value = SFX_VOLUME * this.volumes.effects;
+    this.sfxGain.connect(this.ctx.destination);
     // Los navegadores móviles solo dejan sonar el audio tras un gesto del jugador
     for (const type of UNLOCK_EVENTS) window.addEventListener(type, this.unlock);
     void this.ctx.resume().catch(() => undefined);

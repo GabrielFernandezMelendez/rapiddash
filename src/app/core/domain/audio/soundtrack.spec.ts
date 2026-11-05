@@ -1,9 +1,10 @@
-import { ENGINE, MUSIC, pickTrack } from './soundtrack';
+import { CUBE_SOUND, ENGINE, MUSIC, pickTrack } from './soundtrack';
 
 describe('Banda sonora', () => {
   it('tres canciones synthwave y el zumbido del motor', () => {
     expect(MUSIC.length).toBe(3);
     expect(ENGINE).toEqual({ file: 'engine/retro.mp3' });
+    expect(CUBE_SOUND.file).toBe('soundeffects/video-game-bonus-323603.mp3');
   });
 
   it('cada canción vuelve a un punto válido del bucle', () => {
