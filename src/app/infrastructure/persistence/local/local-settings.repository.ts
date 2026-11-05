@@ -13,7 +13,9 @@ const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 const GARAGE_KEY = 'rapiddash.garage';
 const DEBUG_KEY = 'rapiddash.debug';
 const WON_CARS_KEY = 'rapiddash.wonCars';
+const WON_FX_KEY = 'rapiddash.wonFx';
 const CUBE_DAY_KEY = 'rapiddash.cubeDay';
+const PATCH_SEEN_KEY = 'rapiddash.patchSeen';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -84,6 +86,16 @@ export class LocalSettingsRepository extends SettingsRepository {
     if (!won.includes(car)) writeJson(WON_CARS_KEY, [...won, car]);
   }
 
+  getWonFx(): number[] {
+    const value = readJson<unknown>(WON_FX_KEY);
+    return Array.isArray(value) ? value.filter((v): v is number => Number.isInteger(v)) : [];
+  }
+
+  addWonFx(fx: number): void {
+    const won = this.getWonFx();
+    if (!won.includes(fx)) writeJson(WON_FX_KEY, [...won, fx]);
+  }
+
   getCubeDay(): string | null {
     const value = readJson<unknown>(CUBE_DAY_KEY);
     return typeof value === 'string' ? value : null;
@@ -91,5 +103,14 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setCubeDay(key: string): void {
     writeJson(CUBE_DAY_KEY, key);
+  }
+
+  getPatchSeen(): string | null {
+    const value = readJson<unknown>(PATCH_SEEN_KEY);
+    return typeof value === 'string' ? value : null;
+  }
+
+  setPatchSeen(version: string): void {
+    writeJson(PATCH_SEEN_KEY, version);
   }
 }

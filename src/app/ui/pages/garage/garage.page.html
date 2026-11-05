@@ -1,4 +1,4 @@
-<div class="screen">
+<div class="screen" [class.prize-mode]="newPrize()">
   <header class="top">
     <button rdButton variant="ghost" type="button" (click)="back()">
       ← {{ 'garage.back' | t }}
@@ -11,7 +11,7 @@
   <div class="now" [class.locked]="current().locked">
     <span class="now-text">
       <b>{{ current().name | t }}</b>
-      <small>{{ current().desc | t }}</small>
+      <small>{{ (newPrize() ? 'garage.prizeHint' : current().desc) | t }}</small>
     </span>
     @if (current().locked) {
       <span class="state lock">
@@ -32,121 +32,154 @@
       </span>
     } @else if (current().selected) {
       <span class="state on">{{ 'garage.selected' | t }}</span>
+    } @else if (newPrize()) {
+      <span class="state new">{{ 'garage.new' | t }}</span>
     }
   </div>
 
-  <div class="tabs" role="tablist">
-    <button
-      type="button"
-      role="tab"
-      [attr.aria-selected]="tab() === 'cars'"
-      [class.active]="tab() === 'cars'"
-      (click)="tab.set('cars')"
-    >
-      {{ 'garage.cars' | t }}
-    </button>
-    <button
-      type="button"
-      role="tab"
-      [attr.aria-selected]="tab() === 'effects'"
-      [class.active]="tab() === 'effects'"
-      (click)="tab.set('effects')"
-    >
-      {{ 'garage.effects' | t }}
-    </button>
-  </div>
+  @if (!newPrize()) {
+    <div class="tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab() === 'cars'"
+        [class.active]="tab() === 'cars'"
+        (click)="tab.set('cars')"
+      >
+        {{ 'garage.cars' | t }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab() === 'effects'"
+        [class.active]="tab() === 'effects'"
+        (click)="tab.set('effects')"
+      >
+        {{ 'garage.effects' | t }}
+      </button>
+    </div>
 
-  <div class="list">
-    @if (tab() === 'cars') {
-      <div class="grid">
-        <button
-          type="button"
-          class="item"
-          [class.preview]="previewCar() === null"
-          [class.chosen]="garage.choice().car === null"
-          (click)="pickCar(null)"
-        >
-          <span class="num">★</span>
-          <span class="name">{{ 'garage.stock' | t }}</span>
-        </button>
-        @for (car of cars; track car.id) {
+    <div class="list">
+      @if (tab() === 'cars') {
+        <div class="grid">
           <button
             type="button"
             class="item"
-            [class.preview]="previewCar() === car.id"
-            [class.chosen]="garage.choice().car === car.id"
-            [class.locked]="!garage.carUnlocked(car.id)"
-            (click)="pickCar(car.id)"
+            [class.preview]="previewCar() === null"
+            [class.chosen]="garage.choice().car === null"
+            (click)="pickCar(null)"
           >
-            <span class="num">{{ car.id }}</span>
-            <span class="name">{{ 'garage.car.' + car.id | t }}</span>
-            @if (!garage.carUnlocked(car.id)) {
-              <svg
-                class="padlock"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                aria-label="{{ 'garage.locked' | t }}"
-              >
-                <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
-              </svg>
-            }
+            <span class="num">★</span>
+            <span class="name">{{ 'garage.stock' | t }}</span>
           </button>
-        }
-      </div>
-    } @else {
-      <div class="grid">
-        @for (fx of effects; track fx.id) {
-          <button
-            type="button"
-            class="item"
-            [class.preview]="previewFx() === fx.id"
-            [class.chosen]="garage.choice().fx === fx.id"
-            [class.locked]="!garage.fxUnlocked(fx.id)"
-            (click)="pickFx(fx.id)"
-          >
-            <span class="num">{{ fx.id }}</span>
-            <span class="name">{{ 'garage.fx.' + fx.id | t }}</span>
-            @if (!garage.fxUnlocked(fx.id)) {
-              <svg
-                class="padlock"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                aria-label="{{ 'garage.locked' | t }}"
-              >
-                <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
-              </svg>
-            }
-          </button>
-        }
-      </div>
-    }
-  </div>
+          @for (car of cars; track car.id) {
+            <button
+              type="button"
+              class="item"
+              [class.preview]="previewCar() === car.id"
+              [class.chosen]="garage.choice().car === car.id"
+              [class.locked]="!garage.carUnlocked(car.id)"
+              (click)="pickCar(car.id)"
+            >
+              <span class="num">{{ car.id }}</span>
+              <span class="name">{{ 'garage.car.' + car.id | t }}</span>
+              @if (!garage.carUnlocked(car.id)) {
+                <svg
+                  class="padlock"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  aria-label="{{ 'garage.locked' | t }}"
+                >
+                  <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                </svg>
+              }
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="grid">
+          @for (fx of effects; track fx.id) {
+            <button
+              type="button"
+              class="item"
+              [class.preview]="previewFx() === fx.id"
+              [class.chosen]="garage.choice().fx === fx.id"
+              [class.locked]="!garage.fxUnlocked(fx.id)"
+              (click)="pickFx(fx.id)"
+            >
+              <span class="num">{{ fx.id }}</span>
+              <span class="name">{{ 'garage.fx.' + fx.id | t }}</span>
+              @if (!garage.fxUnlocked(fx.id)) {
+                <svg
+                  class="padlock"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  aria-label="{{ 'garage.locked' | t }}"
+                >
+                  <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                </svg>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
 
   <footer class="bottom">
-    <button
-      rdButton
-      type="button"
-      [block]="true"
-      class="hold"
-      (pointerdown)="hold(true)"
-      (pointerup)="hold(false)"
-      (pointerleave)="hold(false)"
-      (pointercancel)="hold(false)"
-      (contextmenu)="$event.preventDefault()"
-    >
-      {{ 'garage.hold' | t }}
-    </button>
+    @if (newPrize(); as prize) {
+      @if (prize.kind === 'fx') {
+        <button
+          rdButton
+          type="button"
+          [block]="true"
+          variant="secondary"
+          class="hold"
+          (pointerdown)="hold(true)"
+          (pointerup)="hold(false)"
+          (pointerleave)="hold(false)"
+          (pointercancel)="hold(false)"
+          (contextmenu)="$event.preventDefault()"
+        >
+          {{ 'garage.hold' | t }}
+        </button>
+      }
+      <button rdButton type="button" [block]="true" [disabled]="prizeChosen()" (click)="choosePrize()">
+        @if (prizeChosen()) {
+          {{ 'garage.picked' | t }}
+        } @else {
+          {{ (prize.kind === 'car' ? 'garage.pickCar' : 'garage.pickFx') | t }}
+        }
+      </button>
+      <button rdButton variant="ghost" type="button" [block]="true" (click)="back()">
+        {{ (prizeChosen() ? 'garage.back' : 'garage.notNow') | t }}
+      </button>
+    } @else {
+      <button
+        rdButton
+        type="button"
+        [block]="true"
+        class="hold"
+        (pointerdown)="hold(true)"
+        (pointerup)="hold(false)"
+        (pointerleave)="hold(false)"
+        (pointercancel)="hold(false)"
+        (contextmenu)="$event.preventDefault()"
+      >
+        {{ 'garage.hold' | t }}
+      </button>
+    }
   </footer>
 </div>

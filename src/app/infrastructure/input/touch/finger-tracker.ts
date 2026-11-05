@@ -1,5 +1,4 @@
-import { Swipe } from '../../../core/domain/car/car';
-import { SwipeDetector } from './swipe-detector';
+import { Gesture, SwipeDetector } from './swipe-detector';
 
 /** Dedos que se siguen a la vez: uno para acelerar y otro para los swipes. */
 export const MAX_FINGERS = 2;
@@ -21,7 +20,7 @@ export class FingerTracker {
     return true;
   }
 
-  move(id: number, x: number, y: number, timeStamp: number): Swipe | null {
+  move(id: number, x: number, y: number, timeStamp: number): Gesture | null {
     return this.fingers.get(id)?.move(x, y, timeStamp) ?? null;
   }
 

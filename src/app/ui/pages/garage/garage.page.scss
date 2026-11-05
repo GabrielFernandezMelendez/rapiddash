@@ -33,6 +33,16 @@ h1 {
   color: var(--rd-chalk);
 }
 
+// Viendo un premio recién ganado no hay pestañas ni lista. La escena mantiene su altura (más alta,
+// la cámara cortaría el coche por los lados) y el nombre baja junto a los botones
+.screen.prize-mode {
+  grid-template-rows: auto minmax(220px, 40vh) 1fr auto;
+}
+
+.screen.prize-mode .now {
+  align-self: end;
+}
+
 // La escena ocupa todo el ancho (sale del margen) para que el coche se vea grande
 .stage {
   margin: 0 -16px;
@@ -90,6 +100,11 @@ h1 {
 .state.on {
   background: color-mix(in srgb, var(--rd-go) 18%, transparent);
   color: var(--rd-go);
+}
+
+.state.new {
+  background: var(--rd-neon-cyan);
+  color: var(--rd-asphalt);
 }
 
 .state.lock {
@@ -195,6 +210,11 @@ h1 {
   flex: none;
   margin-left: auto;
   color: var(--rd-muted);
+}
+
+.bottom {
+  display: grid;
+  gap: 8px;
 }
 
 .hold {

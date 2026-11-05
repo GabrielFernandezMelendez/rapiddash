@@ -1,4 +1,32 @@
-import { SwipeDetector, SWIPE_REST_MS, SWIPE_THRESHOLD } from './swipe-detector';
+import {
+  Gesture,
+  RESTART_SWIPE_MS,
+  RESTART_SWIPE_PX,
+  SwipeDetector,
+  SWIPE_REST_MS,
+  SWIPE_THRESHOLD,
+} from './swipe-detector';
+
+/** Desliza hasta (x, y) en pasos de 16 ms y devuelve los gestos que salen. */
+function slide(
+  d: SwipeDetector,
+  x: number,
+  y: number,
+  ms: number,
+  from = { x: 0, y: 0, t: 0 },
+): Gesture[] {
+  const steps = Math.max(1, Math.round(ms / 16));
+  const gestures: Gesture[] = [];
+  for (let i = 1; i <= steps; i++) {
+    const g = d.move(
+      from.x + ((x - from.x) * i) / steps,
+      from.y + ((y - from.y) * i) / steps,
+      from.t + (ms * i) / steps,
+    );
+    if (g) gestures.push(g);
+  }
+  return gestures;
+}
 
 describe('SwipeDetector', () => {
   it('no emite nada por debajo del umbral', () => {
@@ -47,5 +75,52 @@ describe('SwipeDetector', () => {
     d.down(0, 0);
     expect(d.move(0, 60, 0)).toBeNull();
     expect(d.move(0, -60, 0)).toBeNull();
+  });
+
+  describe('swipe de reinicio', () => {
+    it('un swipe largo y rápido hacia abajo pide reiniciar una sola vez', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX * 2, 300)).toEqual(['restart']);
+    });
+
+    it('un swipe corto hacia abajo no hace nada', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX - 10, 200)).toEqual([]);
+    });
+
+    it('un dedo que resbala despacio no reinicia', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX * 2, RESTART_SWIPE_MS * 4)).toEqual([]);
+    });
+
+    it('hacia arriba no reinicia', () => {
+      const d = new SwipeDetector();
+      d.down(0, 400);
+      expect(slide(d, 0, 0, 200, { x: 0, y: 400, t: 0 })).toEqual([]);
+    });
+
+    it('una diagonal abierta cambia de carril y no reinicia', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 300, 200, 200)).toEqual(['right']);
+    });
+
+    it('funciona tras mantener el dedo quieto acelerando', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX + 20, 250, { x: 0, y: 0, t: 5000 })).toEqual(['restart']);
+    });
+
+    it('al poner el dedo otra vez se puede volver a reiniciar', () => {
+      const d = new SwipeDetector();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX + 20, 200)).toEqual(['restart']);
+      d.up();
+      d.down(0, 0);
+      expect(slide(d, 0, RESTART_SWIPE_PX + 20, 200, { x: 0, y: 0, t: 1000 })).toEqual(['restart']);
+    });
   });
 });

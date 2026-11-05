@@ -4,7 +4,9 @@ import {
   GarageChoice,
   isCarUnlocked,
   isFxUnlocked,
+  lockedPrizes,
   pickPrize,
+  Prize,
   usableGarage,
 } from '../../core/domain/garage/garage';
 
@@ -18,33 +20,45 @@ export class GarageService {
   private readonly stored = signal<unknown>(this.settings.getGarage());
   /** Coches ganados con el cubo del mapa del día. */
   readonly won = signal<readonly number[]>(this.settings.getWonCars());
+  /** Efectos ganados con el cubo del mapa del día. */
+  readonly wonFx = signal<readonly number[]>(this.settings.getWonFx());
   /** Lo que lleva el jugador (lo cerrado vuelve a lo de serie). */
   readonly choice = computed<GarageChoice>(() =>
-    usableGarage(this.stored(), this.debug(), this.won()),
+    usableGarage(this.stored(), this.debug(), this.won(), this.wonFx()),
   );
 
   carUnlocked(car: number | null): boolean {
     return isCarUnlocked(car, this.debug(), this.won());
   }
 
-  /** ¿Hay cubo hoy? Solo si no se cogió ya y queda algún coche por ganar. */
+  /** ¿Hay cubo hoy? Solo si no se cogió ya y queda algo por ganar. */
   cubeAvailable(dayKey: string): boolean {
-    return this.settings.getCubeDay() !== dayKey && pickPrize(this.won()) !== null;
+    return this.settings.getCubeDay() !== dayKey && this.lockedPrizes().length > 0;
   }
 
-  /** Cubo cogido: regala un coche cerrado al azar (y no vuelve a salir ese día). */
-  claimCube(dayKey: string): number | null {
+  /** Coches y efectos que aún se pueden ganar. */
+  lockedPrizes(): Prize[] {
+    return lockedPrizes(this.won(), this.wonFx());
+  }
+
+  /** Cubo cogido: regala un coche o efecto cerrado al azar (y no vuelve a salir ese día). */
+  claimCube(dayKey: string): Prize | null {
     if (!this.cubeAvailable(dayKey)) return null;
-    const car = pickPrize(this.won());
+    const prize = pickPrize(this.won(), this.wonFx());
     this.settings.setCubeDay(dayKey);
-    if (car === null) return null;
-    this.settings.addWonCar(car);
-    this.won.set(this.settings.getWonCars());
-    return car;
+    if (!prize) return null;
+    if (prize.kind === 'car') {
+      this.settings.addWonCar(prize.id);
+      this.won.set(this.settings.getWonCars());
+    } else {
+      this.settings.addWonFx(prize.id);
+      this.wonFx.set(this.settings.getWonFx());
+    }
+    return prize;
   }
 
   fxUnlocked(fx: number): boolean {
-    return isFxUnlocked(fx, this.debug());
+    return isFxUnlocked(fx, this.debug(), this.wonFx());
   }
 
   selectCar(car: number | null): void {

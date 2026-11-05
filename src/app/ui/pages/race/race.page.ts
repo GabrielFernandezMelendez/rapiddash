@@ -44,7 +44,9 @@ import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
-import { CarUnlocked } from '../../organisms/car-unlocked/car-unlocked';
+import { PrizeRoulette } from '../../organisms/prize-roulette/prize-roulette';
+import { Prize, prizeKey } from '../../../core/domain/garage/garage';
+import { prizeReel } from '../../../core/domain/garage/prize-reel';
 import { dailyCube } from '../../../core/domain/daily/daily-cube';
 
 /** Milisegundos que se ve «¡Meta!» antes de los resultados en un circuito. */
@@ -52,7 +54,7 @@ const FINISH_BANNER_MS = 1300;
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, CarUnlocked, TranslatePipe],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -81,8 +83,14 @@ const FINISH_BANNER_MS = 1300;
             (retry)="retry()"
             (maps)="exit()"
           />
-          @if (wonCar(); as car) {
-            <rd-car-unlocked [carName]="'garage.car.' + car | t" (closed)="wonCar.set(null)" />
+          @if (won(); as w) {
+            <rd-prize-roulette
+              [prize]="w.prize"
+              [reel]="w.reel"
+              (tick)="audio.prizeTick()"
+              (revealed)="audio.prizeReveal()"
+              (finished)="openPrize(w.prize)"
+            />
           }
         }
       }
@@ -121,7 +129,7 @@ export class RacePage {
   private readonly controls = inject(InputPort);
   private readonly loop = inject(GameLoopPort);
   private readonly bestRuns = inject(BestRunRepository);
-  private readonly audio = inject(AudioPort);
+  protected readonly audio = inject(AudioPort);
   private readonly cloudRecords = inject(CloudRecordsService);
   private readonly ranking = inject(RankingService);
   private readonly account = inject(AccountService);
@@ -149,8 +157,8 @@ export class RacePage {
   private lastResult: unknown = null;
   /** En un circuito, «¡Meta!» se ve un momento antes de la ventana de resultados. */
   protected readonly finishBanner = signal(false);
-  /** Coche ganado con el cubo azul en esta carrera: se anuncia con los resultados. */
-  protected readonly wonCar = signal<number | null>(null);
+  /** Premio del cubo azul en esta carrera: la ruleta sale al acabar, sobre los resultados. */
+  protected readonly won = signal<{ prize: Prize; reel: readonly Prize[] } | null>(null);
   /** Día del mapa del día que se está corriendo (null fuera de él). */
   private dailyKey: string | null = null;
   protected readonly dailyService = inject(DailyService);
@@ -210,6 +218,23 @@ export class RacePage {
     }
     this.standing.set(null);
     this.session?.restart();
+  }
+
+  /**
+   * Swipe largo hacia abajo en carrera: empieza otra vez contra el mismo rival. En el mapa del día
+   * gasta un intento como cualquier salida; sin intentos no hace nada y la carrera sigue.
+   */
+  private quickRestart(): void {
+    if (!this.tournamentCode && this.isDaily() && !this.dailyService.startAttempt()) return;
+    this.session?.restart();
+  }
+
+  /** Tras la ruleta, al garaje. `replaceUrl`: volver atrás no repite la carrera ni gasta un intento. */
+  protected openPrize(prize: Prize): void {
+    void this.router.navigate(['/garage'], {
+      queryParams: { prize: prizeKey(prize) },
+      replaceUrl: true,
+    });
   }
 
   protected exit(): void {
@@ -294,11 +319,16 @@ export class RacePage {
     // Cubo azul del mapa del día: en su carril hasta que se coja (una vez al día)
     const key = this.dailyKey;
     if (key && this.garage.cubeAvailable(key)) {
-      this.session.useCube(dailyCube(key, track.circuit?.lapTrack ?? track), () =>
-        this.wonCar.set(this.garage.claimCube(key)),
-      );
+      this.session.useCube(dailyCube(key, track.circuit?.lapTrack ?? track), () => {
+        const locked = this.garage.lockedPrizes();
+        const prize = this.garage.claimCube(key);
+        if (prize) this.won.set({ prize, reel: prizeReel(prize, locked) });
+      });
     }
-    await this.session.start((s) => this.onState(s));
+    await this.session.start(
+      (s) => this.onState(s),
+      () => this.quickRestart(),
+    );
   }
 
   /**

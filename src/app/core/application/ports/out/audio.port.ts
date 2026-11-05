@@ -27,5 +27,9 @@ export abstract class AudioPort {
   abstract stopRace(): void;
   /** Música de los menús (si ya suena, no hace nada). */
   abstract playMenu(): void;
+  /** Clic de la ruleta del cubo azul al pasar cada premio. */
+  abstract prizeTick(): void;
+  /** Fanfarria corta al revelar el premio. */
+  abstract prizeReveal(): void;
   abstract dispose(): void;
 }

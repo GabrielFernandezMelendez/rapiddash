@@ -9,6 +9,8 @@ export interface DriveInput {
   readonly throttle: boolean;
   /** Swipes ocurridos desde el último tick, en orden. */
   readonly swipes: readonly Swipe[];
+  /** Swipe largo hacia abajo: pide reiniciar la carrera (no afecta a la física). */
+  readonly restart?: boolean;
 }
 
 /**

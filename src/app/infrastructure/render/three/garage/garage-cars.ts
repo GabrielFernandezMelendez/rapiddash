@@ -20,6 +20,31 @@ import {
   SpriteMaterial,
   TorusGeometry,
 } from 'three';
+import {
+  COMET_GLASS,
+  COMET_PROFILE,
+  DRIFT_GLASS,
+  DRIFT_PROFILE,
+  MIRAGE_GLASS,
+  MIRAGE_PROFILE,
+  MOON_GLASS,
+  MOON_PROFILE,
+  OUTLAW_GLASS,
+  OUTLAW_PROFILE,
+  RETRO_BODY_COLORS,
+  RETRO_GLASS,
+  RETRO_PROFILE,
+  SHADE_GLASS,
+  SHADE_PROFILE,
+  SOLARIS_GLASS,
+  SOLARIS_PROFILE,
+  VAN_GLASS,
+  VAN_PROFILE,
+  VENOM_GLASS,
+  VENOM_PROFILE,
+  VORTEX_GLASS,
+  VORTEX_PROFILE,
+} from '../../../../core/domain/garage/car-looks';
 
 /**
  * Coches del garaje.
@@ -355,38 +380,6 @@ function wing(
 // 1-10. Recoloreados del deportivo retro original
 // ---------------------------------------------------------------------------
 
-const RETRO_PROFILE: Profile = [
-  [-1.32, 0.2],
-  [-1.36, 0.56],
-  [-1.1, 0.64],
-  [-0.42, 0.98],
-  [0.2, 0.98],
-  [0.82, 0.62],
-  [1.36, 0.5],
-  [1.4, 0.3],
-  [1.26, 0.18],
-];
-
-const RETRO_GLASS: Profile = [
-  [-0.36, 0.68],
-  [-0.32, 0.94],
-  [0.16, 0.94],
-  [0.66, 0.66],
-];
-
-const RETRO_BODY_COLORS: Record<number, number> = {
-  1: 0x8a78cf, // Morado original
-  2: 0x22ccff, // Cian eléctrico
-  3: 0xff2255, // Rosa neón
-  4: 0x22ff88, // Verde ácido
-  5: 0xffcc00, // Amarillo solar
-  6: 0x8822ff, // Púrpura profundo
-  7: 0xffffff, // Blanco hielo
-  8: 0x111111, // Negro medianoche
-  9: 0x4466aa, // Azul marino
-  10: 0xff8800, // Naranja atardecer
-};
-
 function retroVariant(bodyColor: number): Group {
   const paint: Paint = {
     body: bodyColor,
@@ -416,26 +409,6 @@ function retroVariant(bodyColor: number): Group {
 // ---------------------------------------------------------------------------
 // 11. Comet GT: deportivo de homologación, ancho y con alerón de competición
 // ---------------------------------------------------------------------------
-
-const COMET_PROFILE: Profile = [
-  [-1.38, 0.18],
-  [-1.42, 0.62],
-  [-1.12, 0.76],
-  [-0.55, 1.0],
-  [0.05, 1.0],
-  [0.55, 0.72],
-  [1.05, 0.58],
-  [1.45, 0.5],
-  [1.5, 0.3],
-  [1.35, 0.15],
-];
-
-const COMET_GLASS: Profile = [
-  [-0.5, 0.76],
-  [-0.45, 0.98],
-  [0.05, 0.98],
-  [0.55, 0.7],
-];
 
 function cometGt(): Group {
   const paint: Paint = {
@@ -481,27 +454,6 @@ function cometGt(): Group {
 // ---------------------------------------------------------------------------
 // 12. Night Shade: muscle car negro con neón violeta y escapes laterales
 // ---------------------------------------------------------------------------
-
-const SHADE_PROFILE: Profile = [
-  [-1.5, 0.2],
-  [-1.52, 0.55],
-  [-1.25, 0.66],
-  [-0.55, 0.92],
-  [0.05, 0.92],
-  [0.45, 0.66],
-  [0.95, 0.6],
-  [1.35, 0.58],
-  [1.56, 0.44],
-  [1.5, 0.24],
-  [1.3, 0.18],
-];
-
-const SHADE_GLASS: Profile = [
-  [-0.55, 0.66],
-  [-0.45, 0.9],
-  [0.05, 0.9],
-  [0.5, 0.68],
-];
 
 function nightShade(): Group {
   const paint: Paint = {
@@ -553,26 +505,6 @@ function nightShade(): Group {
 // ---------------------------------------------------------------------------
 // 13. Mirage Turbo: rally de grupo B, blanco con faros en el techo
 // ---------------------------------------------------------------------------
-
-const MIRAGE_PROFILE: Profile = [
-  [-1.35, 0.2],
-  [-1.42, 0.78],
-  [-1.28, 0.98],
-  [-0.85, 1.06],
-  [-0.15, 1.06],
-  [0.35, 0.88],
-  [0.9, 0.62],
-  [1.32, 0.52],
-  [1.4, 0.3],
-  [1.22, 0.18],
-];
-
-const MIRAGE_GLASS: Profile = [
-  [-1.0, 0.8],
-  [-0.9, 0.97],
-  [-0.2, 0.97],
-  [0.3, 0.84],
-];
 
 function mirageTurbo(): Group {
   const paint: Paint = {
@@ -641,26 +573,6 @@ function mirageTurbo(): Group {
 // 14. Vortex LM: prototipo de resistencia, bajo, con aleta de tiburón
 // ---------------------------------------------------------------------------
 
-const VORTEX_PROFILE: Profile = [
-  [-1.55, 0.14],
-  [-1.52, 0.36],
-  [-1.05, 0.55],
-  [-0.4, 0.76],
-  [0.15, 0.76],
-  [0.55, 0.52],
-  [1.15, 0.36],
-  [1.6, 0.3],
-  [1.68, 0.18],
-  [1.5, 0.1],
-];
-
-const VORTEX_GLASS: Profile = [
-  [-0.55, 0.56],
-  [-0.45, 0.78],
-  [0.15, 0.78],
-  [0.55, 0.52],
-];
-
 function vortexLm(): Group {
   const paint: Paint = {
     body: 0x0a1a3a,
@@ -713,26 +625,6 @@ function vortexLm(): Group {
 // ---------------------------------------------------------------------------
 // 15. Sunset Van: furgoneta de los 80 con franjas de atardecer
 // ---------------------------------------------------------------------------
-
-const VAN_PROFILE: Profile = [
-  [-1.35, 0.2],
-  [-1.42, 1.02],
-  [-1.28, 1.12],
-  [-0.3, 1.12],
-  [0.25, 1.08],
-  [0.65, 0.92],
-  [1.05, 0.72],
-  [1.35, 0.52],
-  [1.42, 0.3],
-  [1.25, 0.18],
-];
-
-const VAN_GLASS: Profile = [
-  [-1.05, 0.74],
-  [-1.0, 0.98],
-  [-0.25, 0.98],
-  [0.15, 0.86],
-];
 
 function sunsetVan(): Group {
   const paint: Paint = {
@@ -796,27 +688,6 @@ function sunsetVan(): Group {
 // ---------------------------------------------------------------------------
 // 16. Outlaw 4x4: pickup cuadrado, elevado y con barra antivuelco
 // ---------------------------------------------------------------------------
-
-const OUTLAW_PROFILE: Profile = [
-  [-1.45, 0.25],
-  [-1.5, 0.92],
-  [-1.3, 1.0],
-  [-0.3, 1.0],
-  [0.1, 0.92],
-  [0.35, 0.72],
-  [0.85, 0.66],
-  [1.3, 0.6],
-  [1.45, 0.48],
-  [1.45, 0.3],
-  [1.3, 0.22],
-];
-
-const OUTLAW_GLASS: Profile = [
-  [-0.45, 0.72],
-  [-0.4, 0.98],
-  [0.05, 0.98],
-  [0.45, 0.72],
-];
 
 function outlaw4x4(): Group {
   const paint: Paint = {
@@ -884,26 +755,6 @@ function outlaw4x4(): Group {
 // 17. Venom '88: hiperdeportivo en cuña con alerón y escapes cuádruples
 // ---------------------------------------------------------------------------
 
-const VENOM_PROFILE: Profile = [
-  [-1.45, 0.16],
-  [-1.5, 0.52],
-  [-1.2, 0.68],
-  [-0.5, 0.88],
-  [0.1, 0.88],
-  [0.55, 0.62],
-  [1.15, 0.45],
-  [1.55, 0.35],
-  [1.62, 0.2],
-  [1.45, 0.12],
-];
-
-const VENOM_GLASS: Profile = [
-  [-0.55, 0.64],
-  [-0.5, 0.88],
-  [0.0, 0.88],
-  [0.45, 0.62],
-];
-
 function venom88(): Group {
   const paint: Paint = {
     body: 0xff2255,
@@ -955,26 +806,6 @@ function venom88(): Group {
 // ---------------------------------------------------------------------------
 // 18. Chrome Drift: coupé JDM plateado, ensanchado y con alerón GT
 // ---------------------------------------------------------------------------
-
-const DRIFT_PROFILE: Profile = [
-  [-1.4, 0.18],
-  [-1.45, 0.55],
-  [-1.15, 0.65],
-  [-0.5, 0.95],
-  [0.15, 0.95],
-  [0.6, 0.7],
-  [1.15, 0.55],
-  [1.45, 0.45],
-  [1.48, 0.28],
-  [1.3, 0.16],
-];
-
-const DRIFT_GLASS: Profile = [
-  [-0.5, 0.7],
-  [-0.45, 0.94],
-  [0.05, 0.94],
-  [0.5, 0.72],
-];
 
 function chromeDrift(): Group {
   const paint: Paint = {
@@ -1034,26 +865,6 @@ function chromeDrift(): Group {
 // 19. Moon Runner: shooting brake largo, con baca y piloto corrido
 // ---------------------------------------------------------------------------
 
-const MOON_PROFILE: Profile = [
-  [-1.45, 0.2],
-  [-1.5, 0.8],
-  [-1.4, 1.0],
-  [-0.9, 1.06],
-  [-0.1, 1.06],
-  [0.35, 0.94],
-  [0.9, 0.66],
-  [1.35, 0.5],
-  [1.4, 0.3],
-  [1.25, 0.18],
-];
-
-const MOON_GLASS: Profile = [
-  [-1.15, 0.78],
-  [-1.05, 1.04],
-  [-0.2, 1.04],
-  [0.3, 0.9],
-];
-
 function moonRunner(): Group {
   const paint: Paint = {
     body: 0x3a2a6a,
@@ -1109,26 +920,6 @@ function moonRunner(): Group {
 // ---------------------------------------------------------------------------
 // 20. Solaris X: concept car dorado, con cabina de burbuja y aletas
 // ---------------------------------------------------------------------------
-
-const SOLARIS_PROFILE: Profile = [
-  [-1.5, 0.14],
-  [-1.55, 0.44],
-  [-1.2, 0.62],
-  [-0.4, 0.9],
-  [0.2, 0.9],
-  [0.65, 0.6],
-  [1.25, 0.4],
-  [1.6, 0.28],
-  [1.65, 0.15],
-  [1.45, 0.1],
-];
-
-const SOLARIS_GLASS: Profile = [
-  [-0.6, 0.6],
-  [-0.5, 0.88],
-  [0.1, 0.88],
-  [0.6, 0.55],
-];
 
 function solarisX(): Group {
   const paint: Paint = {

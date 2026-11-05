@@ -5,6 +5,27 @@
   gap: 10px;
 }
 
+.top-actions {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.patch {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font-family: var(--rd-font-hud-text);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--rd-neon-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-shadow: 0 1px 0 #1d0428;
+  cursor: pointer;
+}
+
 .chip {
   min-width: 0;
   margin-right: auto;

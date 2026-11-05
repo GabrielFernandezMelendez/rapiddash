@@ -5,13 +5,15 @@ import {
   effect,
   ElementRef,
   inject,
+  input,
   OnDestroy,
+  OnInit,
   signal,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { GarageScenePort } from '../../../core/application/ports/out/garage-scene.port';
-import { GARAGE_CARS, GARAGE_FX } from '../../../core/domain/garage/garage';
+import { GARAGE_CARS, GARAGE_FX, parsePrize, Prize } from '../../../core/domain/garage/garage';
 import { provideGarageAdapters } from '../../../infrastructure/di/garage.providers';
 import { GarageService } from '../../../shared/garage/garage.service';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -36,7 +38,11 @@ type Tab = 'cars' | 'effects';
   templateUrl: './garage.page.html',
   styleUrl: './garage.page.scss',
 })
-export class GaragePage implements OnDestroy {
+export class GaragePage implements OnInit, OnDestroy {
+  /** ?prize=car-14: se llega desde la ruleta del cubo azul a ver ese premio y decidir si llevarlo. */
+  readonly prize = input<string | undefined>();
+  /** Premio recién ganado (null: el garaje normal). */
+  protected readonly newPrize = signal<Prize | null>(null);
   private readonly router = inject(Router);
   private readonly scene = inject(GarageScenePort);
   protected readonly garage = inject(GarageService);
@@ -70,6 +76,36 @@ export class GaragePage implements OnDestroy {
     };
   });
 
+  ngOnInit(): void {
+    const prize = parsePrize(this.prize());
+    if (!prize) return;
+    const open =
+      prize.kind === 'car' ? this.garage.carUnlocked(prize.id) : this.garage.fxUnlocked(prize.id);
+    if (!open) return;
+    this.newPrize.set(prize);
+    // Se enseña, pero no se elige solo: eso lo decide el jugador con el botón
+    if (prize.kind === 'car') {
+      this.previewCar.set(prize.id);
+    } else {
+      this.tab.set('effects');
+      this.previewFx.set(prize.id);
+      this.demoFx();
+    }
+  }
+
+  /** El premio ya es lo que lleva el jugador. */
+  protected readonly prizeChosen = computed(() => {
+    const prize = this.newPrize();
+    const choice = this.garage.choice();
+    return prize !== null && (prize.kind === 'car' ? choice.car : choice.fx) === prize.id;
+  });
+
+  protected choosePrize(): void {
+    const prize = this.newPrize();
+    if (prize?.kind === 'car') this.garage.selectCar(prize.id);
+    else if (prize) this.garage.selectFx(prize.id);
+  }
+
   constructor() {
     // La escena se monta en cuanto existe el hueco y sigue a lo que se está viendo
     let attached = false;
@@ -97,7 +133,11 @@ export class GaragePage implements OnDestroy {
   protected pickFx(fx: number): void {
     this.previewFx.set(fx);
     this.garage.selectFx(fx);
-    // Al elegir un efecto se ve un momento acelerando
+    this.demoFx();
+  }
+
+  /** Al ver un efecto se ve un momento acelerando. */
+  private demoFx(): void {
     this.accelerating.set(true);
     clearTimeout(this.demo);
     this.demo = setTimeout(() => this.accelerating.set(false), 1600);
@@ -113,8 +153,9 @@ export class GaragePage implements OnDestroy {
     this.hold(on);
   }
 
+  /** Desde un premio se vuelve al mapa del día, donde está el puesto de esa carrera. */
   protected back(): void {
-    void this.router.navigate(['/']);
+    void this.router.navigate([this.newPrize() ? '/daily' : '/']);
   }
 
   private demo: ReturnType<typeof setTimeout> | undefined;
