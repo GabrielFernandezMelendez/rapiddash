@@ -25,6 +25,7 @@ import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
 import { applyTerrain } from './terrain-mesh';
+import { WorldBend } from './world-curve';
 import { buildTerrain, FLAT, Terrain, TerrainSpec } from '../../../core/domain/track/terrain';
 import { buildGarageCar } from './garage/garage-cars';
 import { GarageFx } from './garage/garage-fx';
@@ -80,6 +81,8 @@ export class ThreeRendererAdapter extends RendererPort {
   private fxId: number = CLASSIC_EXHAUST;
   /** Relieve del circuito (llano en los mapas sin colinas). */
   private terrain: Terrain = FLAT;
+  /** Mundo curvado (planeta o tubo); null en el resto. */
+  private bend: WorldBend | null = null;
   private cameraGround = Number.NaN;
 
   attach(
@@ -155,6 +158,9 @@ export class ThreeRendererAdapter extends RendererPort {
     this.scrape = new ScrapeFx(this.car, this.scene);
     this.cameraHeading = null;
     this.cameraGround = Number.NaN;
+    // Planeta o tubo: se dobla todo menos el cielo (también el coche y el fantasma)
+    this.bend = terrainSpec?.curve ? new WorldBend(terrainSpec.curve) : null;
+    this.bend?.apply(this.scene);
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -248,6 +254,10 @@ export class ThreeRendererAdapter extends RendererPort {
     this.camera.lookAt(aheadX, this.terrain.height(aheadX, aheadZ) + 0.6, aheadZ);
     this.sky?.follow(this.camera.position.x, this.camera.position.z);
 
+    if (this.bend) {
+      this.camera.updateMatrixWorld();
+      this.bend.update(this.camera);
+    }
     renderer.render(this.scene, this.camera);
   }
 
@@ -269,6 +279,7 @@ export class ThreeRendererAdapter extends RendererPort {
   }
 
   dispose(): void {
+    this.bend = null;
     this.billboards = null;
     this.photoGantries = [];
     this.garageFx?.dispose();

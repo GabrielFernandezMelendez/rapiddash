@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CIRCUIT_MAPS, trackOf } from './race-map';
+import { CIRCUIT_MAPS, EXPERIMENTAL_MAPS, trackOf } from './race-map';
 import { buildTerrain, roadHeight } from './terrain';
 
 const hilly = CIRCUIT_MAPS.filter((m) => m.terrain);
@@ -13,6 +13,34 @@ describe('relieve de los circuitos entre colinas', () => {
     const spec = { amplitude: 6, seed: 2 };
     expect(roadHeight(0, 300, spec)).toBeCloseTo(roadHeight(300, 300, spec), 6);
     for (let p = 0; p < 300; p += 3) expect(roadHeight(p, 300, spec)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('la montaña rusa cierra en la salida y es mucho más empinada (30-40 m)', () => {
+    const coaster = EXPERIMENTAL_MAPS.find((m) => m.id === 'summit-gp-coaster')!;
+    const lap = trackOf(coaster).circuit!.lapTrack;
+    const length = lap.legs.reduce((sum, l) => sum + l.length, 0);
+    const spec = coaster.terrain!;
+    expect(roadHeight(0, length, spec)).toBeCloseTo(roadHeight(length, length, spec), 6);
+    let lo = Infinity;
+    let hi = -Infinity;
+    let steepest = 0;
+    for (let p = 0; p < length; p += 2) {
+      const h = roadHeight(p, length, spec);
+      lo = Math.min(lo, h);
+      hi = Math.max(hi, h);
+      steepest = Math.max(steepest, Math.abs(roadHeight(p + 2, length, spec) - h) / 2);
+    }
+    expect(hi - lo).toBeGreaterThan(28);
+    expect(hi - lo).toBeLessThanOrEqual(40);
+    // Más del triple que las colinas, pero sin paredes
+    expect(steepest).toBeGreaterThan(0.2);
+    expect(steepest).toBeLessThan(0.6);
+  });
+
+  it('planeta y tubo: mundo curvado sin relieve en la carretera', () => {
+    const curved = EXPERIMENTAL_MAPS.filter((m) => m.terrain?.curve);
+    expect(curved.map((m) => m.terrain!.curve!.kind)).toEqual(['planet', 'tube']);
+    for (const m of curved) expect(m.terrain!.amplitude).toBe(0);
   });
 
   for (const map of hilly) {

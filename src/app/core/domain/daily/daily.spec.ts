@@ -97,4 +97,12 @@ describe('circuitos nuevos en el mapa del día', () => {
     expect(dailyPool('2026-11-05', maps).map((m) => m.id)).toEqual(['a']);
     expect(dailyPool('2026-11-06', maps).map((m) => m.id)).toEqual(['a', 'b']);
   });
+
+  it('los mapas de prueba nunca salen como mapa del día', () => {
+    const maps = [
+      { id: 'a', layout: 'laps' },
+      { id: 'planet', layout: 'laps', experimental: true },
+    ];
+    expect(dailyPool('2027-01-01', maps).map((m) => m.id)).toEqual(['a']);
+  });
 });

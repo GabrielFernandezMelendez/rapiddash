@@ -31,7 +31,10 @@ export type MapId =
   | 'summit-stairs'
   | 'canyon-ring-hills'
   | 'summit-gp-hills'
-  | 'lighthouse-oval-hills';
+  | 'lighthouse-oval-hills'
+  | 'canyon-ring-planet'
+  | 'lighthouse-oval-tube'
+  | 'summit-gp-coaster';
 export type MapTheme = 'bay' | 'canyon' | 'summit';
 
 /**
@@ -54,6 +57,8 @@ export interface RaceMap {
   readonly terrain?: TerrainSpec;
   /** Día (AAAA-MM-DD) desde el que puede salir como mapa del día (así no cambia el de hoy). */
   readonly dailyFrom?: string;
+  /** Mapa de prueba: solo en «Todos los mapas» (debug); ni mapa del día ni torneos. */
+  readonly experimental?: boolean;
 }
 
 // Los mapas avanzan en "escalera" (norte, este u oeste, nunca hacia atrás) para que la pista
@@ -567,7 +572,39 @@ const HILL_MAPS: readonly RaceMap[] = [
 
 export const CIRCUIT_MAPS: readonly RaceMap[] = [...CIRCUIT_BASE, ...HILL_MAPS];
 
-export const ALL_MAPS: readonly RaceMap[] = [...RACE_MAPS, ...ZIGZAG_MAPS, ...CIRCUIT_MAPS];
+/**
+ * Pruebas de estímulo visual sobre circuitos que ya existen (misma física y trazado, ranking
+ * propio): mini planeta, tubo y montaña rusa. Se elige cuál se queda.
+ */
+function experiment(id: MapId, nameKey: string, baseId: MapId, spec: TerrainSpec): RaceMap {
+  const base = CIRCUIT_BASE.find((m) => m.id === baseId)!;
+  return { ...base, id, nameKey, terrain: spec, experimental: true };
+}
+
+export const EXPERIMENTAL_MAPS: readonly RaceMap[] = [
+  experiment('canyon-ring-planet', 'maps.canyonRingPlanet', 'canyon-ring', {
+    amplitude: 0,
+    seed: 4,
+    curve: { kind: 'planet', radius: 110 },
+  }),
+  experiment('lighthouse-oval-tube', 'maps.lighthouseOvalTube', 'lighthouse-oval', {
+    amplitude: 0,
+    seed: 5,
+    curve: { kind: 'tube', radius: 55 },
+  }),
+  experiment('summit-gp-coaster', 'maps.summitGpCoaster', 'summit-gp', {
+    amplitude: 36,
+    seed: 6,
+    waves: [1, 2],
+  }),
+];
+
+export const ALL_MAPS: readonly RaceMap[] = [
+  ...RACE_MAPS,
+  ...ZIGZAG_MAPS,
+  ...CIRCUIT_MAPS,
+  ...EXPERIMENTAL_MAPS,
+];
 
 export const isCircuit = (map: RaceMap): boolean => map.layout === 'laps';
 
