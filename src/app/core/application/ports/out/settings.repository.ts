@@ -24,4 +24,10 @@ export abstract class SettingsRepository {
   /** Modo debug (7 toques en la versión): abre todo el contenido y todos los mapas. */
   abstract getDebug(): boolean;
   abstract setDebug(on: boolean): void;
+  /** Coches ganados con el cubo azul del mapa del día. */
+  abstract getWonCars(): number[];
+  abstract addWonCar(car: number): void;
+  /** Último día (AAAA-MM-DD) en que se cogió el cubo: uno al día. */
+  abstract getCubeDay(): string | null;
+  abstract setCubeDay(key: string): void;
 }

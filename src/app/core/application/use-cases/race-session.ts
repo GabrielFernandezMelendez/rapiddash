@@ -19,6 +19,7 @@ import { BestRunRepository } from '../ports/out/best-run.repository';
 import { GameLoopPort } from '../ports/out/game-loop.port';
 import { InputPort } from '../ports/out/input.port';
 import { RendererPort } from '../ports/out/renderer.port';
+import { DailyCube, touchesCube } from '../../domain/daily/daily-cube';
 
 /** Segundos que se muestra el aviso de choque. */
 const CRASH_FLASH_TIME = 0.7;
@@ -88,6 +89,8 @@ export class RaceSession {
   private result: RaceResult | null = null;
   private lastCrashAt = -Infinity;
   private listener: (state: RaceViewState) => void = () => {};
+  /** Cubo azul del mapa del día: se coge una vez (ya no vuelve al repetir). */
+  private cube: { readonly cube: DailyCube; readonly onCollect: () => void } | null = null;
 
   constructor(
     private readonly map: RaceMap,
@@ -108,6 +111,12 @@ export class RaceSession {
   /** Rival de la próxima salida (start o restart); null = mi mejor vuelta. */
   useRival(rival: RivalGhost | null): void {
     this.rival = rival;
+  }
+
+  /** Cubo de hoy y qué hacer al cogerlo; null = sin cubo. Se ve desde la próxima salida. */
+  useCube(cube: DailyCube | null, onCollect: () => void = () => {}): void {
+    this.cube = cube ? { cube, onCollect } : null;
+    this.ports.renderer.showCube(cube);
   }
 
   restart(): void {
@@ -153,6 +162,16 @@ export class RaceSession {
       );
     }
     if (events.includes('finish')) void this.finish();
+    const cube = this.cube;
+    if (
+      cube &&
+      race.phase === 'racing' &&
+      touchesCube(cube.cube, progress, car.lateral, this.track.circuit?.lapLength ?? null)
+    ) {
+      this.cube = null;
+      this.ports.renderer.collectCube();
+      cube.onCollect();
+    }
 
     this.ports.renderer.render(
       {

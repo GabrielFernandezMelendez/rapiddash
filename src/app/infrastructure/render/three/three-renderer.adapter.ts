@@ -24,6 +24,8 @@ import {
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
+import { CubeMesh } from './cube-mesh';
+import { DailyCube } from '../../../core/domain/daily/daily-cube';
 import { applyTerrain } from './terrain-mesh';
 import { WorldBend } from './world-curve';
 import { buildTerrain, FLAT, Terrain, TerrainSpec } from '../../../core/domain/track/terrain';
@@ -79,6 +81,8 @@ export class ThreeRendererAdapter extends RendererPort {
   private garageFx: GarageFx | null = null;
   private fxAnchor: Group | null = null;
   private fxId: number = CLASSIC_EXHAUST;
+  /** Cubo azul del mapa del día (se crea al pedirlo). */
+  private cube: CubeMesh | null = null;
   /** Relieve del circuito (llano en los mapas sin colinas). */
   private terrain: Terrain = FLAT;
   /** Mundo curvado (planeta o tubo); null en el resto. */
@@ -219,6 +223,7 @@ export class ThreeRendererAdapter extends RendererPort {
       this.garageFx.update(dt, frame.car.accelerating, this.fxId, Math.min(moved, 80));
     }
     this.scrape?.update(dt, frame.car.scrapeSide, Math.min(1, moved / 26));
+    this.cube?.update(dt);
     // El roce hace vibrar la cámara un poco, mucho menos que un choque
     if (frame.car.scrapeSide !== 0) this.shake = Math.max(this.shake, 0.12);
 
@@ -274,6 +279,28 @@ export class ThreeRendererAdapter extends RendererPort {
     this.billboards?.set(content);
   }
 
+  showCube(cube: DailyCube | null): void {
+    const track = this.track;
+    if (!cube || !track) {
+      this.cube?.hide();
+      return;
+    }
+    if (!this.cube) {
+      this.cube = new CubeMesh();
+      this.scene.add(this.cube.group);
+    }
+    // En un circuito, el mismo sitio en cada vuelta: se busca en la vuelta dibujada
+    const lap = track.circuit?.lapTrack ?? track;
+    const leg =
+      lap.legs.find((l) => cube.progress < l.startProgress + l.length) ?? lap.legs[lap.legs.length - 1];
+    const p = lap.worldAt(leg.index, cube.progress - leg.startProgress, cube.lateral);
+    this.cube.place(p.x, this.terrain.height(p.x, p.z), p.z, p.heading);
+  }
+
+  collectCube(): void {
+    this.cube?.collect();
+  }
+
   setLeaderPhoto(content: LeaderPhotoContent | null): void {
     for (const g of this.photoGantries) g.set(content);
   }
@@ -286,6 +313,7 @@ export class ThreeRendererAdapter extends RendererPort {
     this.garageFx = null;
     this.fxAnchor = null;
     this.exhaust = null;
+    this.cube = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.scene.traverse((obj) => {

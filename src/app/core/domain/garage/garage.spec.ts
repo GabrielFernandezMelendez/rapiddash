@@ -5,6 +5,8 @@ import {
   DEFAULT_GARAGE,
   isCarUnlocked,
   isFxUnlocked,
+  lockedCars,
+  pickPrize,
   usableGarage,
 } from './garage';
 
@@ -42,5 +44,27 @@ describe('garaje', () => {
     expect(debugTap(state, DEBUG_TAPS * 300).unlocked).toBe(true);
     // Con una pausa de 2 s la cuenta vuelve a 1
     expect(debugTap(state, DEBUG_TAPS * 300 + 2000)).toMatchObject({ count: 1, unlocked: false });
+  });
+});
+
+describe('coches ganados con el cubo del día', () => {
+  it('un coche ganado queda abierto sin debug y se puede llevar', () => {
+    expect(isCarUnlocked(14, false, [14])).toBe(true);
+    expect(isCarUnlocked(15, false, [14])).toBe(false);
+    expect(usableGarage({ car: 14, fx: 1 }, false, [14])).toEqual({ car: 14, fx: 1 });
+  });
+
+  it('el premio es uno de los cerrados, al azar, y nunca repite', () => {
+    expect(lockedCars([])).toHaveLength(19);
+    expect(lockedCars([2, 3])).not.toContain(2);
+    expect(pickPrize([], () => 0)).toBe(2);
+    expect(pickPrize([], () => 0.999)).toBe(20);
+    expect(pickPrize([2], () => 0)).toBe(3);
+  });
+
+  it('con todos ganados no hay premio', () => {
+    const all = Array.from({ length: 19 }, (_, i) => i + 2);
+    expect(lockedCars(all)).toEqual([]);
+    expect(pickPrize(all)).toBeNull();
   });
 });

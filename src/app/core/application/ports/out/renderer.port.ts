@@ -4,6 +4,7 @@ import { CarPose } from '../../../domain/race/ghost';
 import { BillboardContent, LeaderPhotoContent } from '../../../domain/track/billboards';
 import { MapTheme } from '../../../domain/track/race-map';
 import { Track } from '../../../domain/track/track';
+import { DailyCube } from '../../../domain/daily/daily-cube';
 
 export interface RenderFrame {
   readonly car: CarPose & {
@@ -44,5 +45,9 @@ export abstract class RendererPort {
   abstract setBillboards(content: BillboardContent | null): void;
   /** Cartel con la foto del líder del torneo; null lo oculta. */
   abstract setLeaderPhoto(content: LeaderPhotoContent | null): void;
+  /** Cubo azul del mapa del día (null = no hay). */
+  abstract showCube(cube: DailyCube | null): void;
+  /** El coche lo ha cogido: destello y desaparece. */
+  abstract collectCube(): void;
   abstract dispose(): void;
 }
