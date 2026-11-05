@@ -2,7 +2,7 @@ import { arc, narrow, right, straight } from '../track/track-segment';
 import { Track } from '../track/track';
 import { CarEvent, CarState, createCar, DriveInput, Swipe, stepCar } from './car';
 import { LANE_COUNT, laneCenter } from '../track/track-constants';
-import { CAR_TUNING, QUARTER_TURN, WALL_LIMIT } from './car-tuning';
+import { CAR_TUNING, QUARTER_TURN, setActiveTuning, WALL_LIMIT } from './car-tuning';
 
 const DT = 1 / 60;
 const hold: DriveInput = { throttle: true, swipes: [] };
@@ -264,11 +264,98 @@ describe('Car', () => {
       expect(Math.abs(car.lateral)).toBeLessThan(0.5);
     });
 
-    it('acelerando en un arco cerrado salta de carril hacia el muro exterior', () => {
-      const tight = Track.fromSegments([straight(10), arc(60, 40), straight(10)]);
-      const car = run({ ...createCar(tight), speed: 20 }, tight, 1.5);
-      // Curva a la derecha: el exterior es la izquierda (lateral negativo)
-      expect(car.lateral).toBeLessThan(-1);
+    it('modelo antiguo (imán): acelerando en un arco cerrado salta de carril hacia el muro', () => {
+      setActiveTuning({ curveModel: 'magnet' });
+      try {
+        const tight = Track.fromSegments([straight(10), arc(60, 40), straight(10)]);
+        const car = run({ ...createCar(tight), speed: 20 }, tight, 1.5);
+        // Curva a la derecha: el exterior es la izquierda (lateral negativo)
+        expect(car.lateral).toBeLessThan(-1);
+      } finally {
+        setActiveTuning(null);
+      }
+    });
+  });
+
+  describe('agarre en las curvas (modelo de serie)', () => {
+    const tight = Track.fromSegments([straight(10), arc(90, 30), straight(60)]);
+    const fast = (): CarState => ({ ...createCar(tight), speed: CAR_TUNING.maxSpeed });
+
+    it('en recta, a tope, el coche va recto y no se mueve de su carril', () => {
+      const line = Track.fromSegments([straight(300)]);
+      const car = run({ ...createCar(line), speed: CAR_TUNING.maxSpeed }, line, 4);
+      expect(car.lateral).toBe(0);
+    });
+
+    it('por debajo del agarre sigue la curva en su carril', () => {
+      // 15 m/s en radio 30: pide 7,5 m/s², por debajo del agarre
+      const car = run({ ...createCar(tight), speed: 15 }, tight, 1, {
+        throttle: false,
+        swipes: [],
+      });
+      expect(Math.abs(car.lateral)).toBeLessThan(0.01);
+    });
+
+    it('a tope y acelerando se abre de forma continua hacia fuera, sin saltos de carril', () => {
+      let car = fast();
+      let prev = car.lateral;
+      let maxStep = 0;
+      for (let t = 0; t < 1.2 && car.scrapeSide === 0; t += DT) {
+        car = stepCar(car, hold, tight, DT).car;
+        // Curva a la derecha: hacia fuera es la izquierda; nunca vuelve hacia dentro
+        expect(car.lateral).toBeLessThanOrEqual(prev + 1e-9);
+        maxStep = Math.max(maxStep, prev - car.lateral);
+        prev = car.lateral;
+      }
+      expect(car.lateral).toBeLessThan(-2);
+      // Sin saltos: nunca más de 30 cm por fotograma
+      expect(maxStep).toBeLessThan(0.3);
+    });
+
+    it('al soltar, recupera el agarre y el imán lo deja centrado en un carril', () => {
+      let car = run(fast(), tight, 0.5);
+      expect(car.lateral).toBeLessThan(-0.5);
+      car = run(car, tight, 2, idle);
+      const lanes = Array.from({ length: LANE_COUNT }, (_, i) => laneCenter(i));
+      expect(lanes.some((c) => Math.abs(c - car.lateral) < 0.01)).toBe(true);
+    });
+  });
+
+  describe('cambio al carril exterior', () => {
+    it('dos swipes seguidos a tope hasta el exterior: sin golpecito ni pérdida de velocidad', () => {
+      const line = Track.fromSegments([straight(400)]);
+      let car: CarState = { ...createCar(line), speed: CAR_TUNING.maxSpeed };
+      let pending = 2;
+      const events: CarEvent[] = [];
+      for (let i = 0; i < 180; i++) {
+        const free =
+          car.laneTarget === null ||
+          Math.abs(car.laneTarget - car.lateral) <= CAR_TUNING.laneChangeRetarget;
+        const swipes: Swipe[] = pending > 0 && free ? ['right'] : [];
+        if (swipes.length) pending--;
+        const r = stepCar(car, { throttle: true, swipes }, line, DT);
+        car = r.car;
+        events.push(...r.events);
+        expect(car.lateral).toBeLessThan(WALL_LIMIT);
+      }
+      expect(events).not.toContain('bump');
+      expect(car.lateral).toBeCloseTo(laneCenter(LANE_COUNT - 1), 2);
+      expect(car.speed).toBeCloseTo(CAR_TUNING.maxSpeed, 6);
+    });
+
+    it('swipe hacia el muro desde el carril exterior: golpecito como siempre', () => {
+      const line = Track.fromSegments([straight(400)]);
+      const outer = laneCenter(LANE_COUNT - 1);
+      let car: CarState = { ...createCar(line), speed: 20, lateral: outer, lane: outer };
+      const r0 = stepCar(car, { throttle: false, swipes: ['right'] }, line, DT);
+      car = r0.car;
+      const events: CarEvent[] = [];
+      for (let i = 0; i < 60; i++) {
+        const r = stepCar(car, idle, line, DT);
+        car = r.car;
+        events.push(...r.events);
+      }
+      expect(events).toContain('bump');
     });
   });
 

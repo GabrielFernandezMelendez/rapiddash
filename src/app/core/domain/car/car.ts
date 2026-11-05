@@ -1,6 +1,6 @@
 import { LANE_WIDTH, nearestLaneCenter, TRACK_HALF_WIDTH } from '../track/track-constants';
 import { Leg, Track } from '../track/track';
-import { CAR_TUNING, QUARTER_TURN } from './car-tuning';
+import { QUARTER_TURN, tuning } from './car-tuning';
 
 export type Swipe = 'left' | 'right';
 
@@ -90,7 +90,7 @@ function approach(value: number, target: number, maxDelta: number): number {
 
 /** Desplazamiento lateral máximo antes de tocar el muro en ese punto (depende del ancho). */
 const wallLimitAt = (track: Track, leg: number, distance: number) =>
-  track.halfWidthAt(leg, distance) - CAR_TUNING.carHalfWidth;
+  track.halfWidthAt(leg, distance) - tuning().carHalfWidth;
 
 /** Carril disponible (el coche cabe en él) más cercano a un desplazamiento lateral. */
 const nearestOpenLane = (lateral: number, wallLimit: number) =>
@@ -108,7 +108,7 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg, track: Track): CarSta
   if (car.yawTarget !== 0) return car;
   const side = directionOf(swipe);
   const junction = leg.junction;
-  const inTurnZone = !!junction && car.distance > leg.length - CAR_TUNING.junctionEarlyEntry;
+  const inTurnZone = !!junction && car.distance > leg.length - tuning().junctionEarlyEntry;
   if (inTurnZone && side === junction.direction) {
     return { ...car, yawTarget: side * QUARTER_TURN, laneTarget: null };
   }
@@ -116,7 +116,7 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg, track: Track): CarSta
   // en el rebote final, cuando el coche ya está prácticamente en su carril)
   if (
     car.laneTarget !== null &&
-    Math.abs(car.laneTarget - car.lateral) > CAR_TUNING.laneChangeRetarget
+    Math.abs(car.laneTarget - car.lateral) > tuning().laneChangeRetarget
   ) {
     return car;
   }
@@ -124,15 +124,15 @@ function applySwipe(car: CarState, swipe: Swipe, leg: Leg, track: Track): CarSta
   const target = car.lane + side * LANE_WIDTH;
   if (Math.abs(target) > wallLimit + 0.01) {
     // Hacia el muro: apunta más allá para que llegue con impulso y rebote
-    return { ...car, laneTarget: side * (wallLimit + CAR_TUNING.carHalfWidth) };
+    return { ...car, laneTarget: side * (wallLimit + tuning().carHalfWidth) };
   }
   return { ...car, laneTarget: target, lane: target };
 }
 
 /** Lo que sobresale el morro del coche hacia delante según su giro. */
 const noseReach = (yaw: number) =>
-  CAR_TUNING.carHalfLength * Math.abs(Math.cos(yaw)) +
-  CAR_TUNING.carHalfWidth * Math.abs(Math.sin(yaw));
+  tuning().carHalfLength * Math.abs(Math.cos(yaw)) +
+  tuning().carHalfWidth * Math.abs(Math.sin(yaw));
 
 /** Paso al tramo siguiente al salir por el lado abierto del cruce (de lado `2 × H`). */
 function exitJunction(
@@ -148,7 +148,7 @@ function exitJunction(
     leg: car.leg + 1,
     distance: d * lateral - H,
     lateral: next,
-    lane: nearestOpenLane(next, H - CAR_TUNING.carHalfWidth),
+    lane: nearestOpenLane(next, H - tuning().carHalfWidth),
     yaw: yaw - d * QUARTER_TURN,
     laneTarget: null,
     lateralVelocity: 0,
@@ -164,7 +164,7 @@ function startExitRecovery(car: CarState, events: CarEvent[]) {
       ...car,
       ...NO_SCRAPE,
       mode: 'recovering' as const,
-      speed: CAR_TUNING.frontRecoverySpeed,
+      speed: tuning().frontRecoverySpeed,
       laneTarget: null,
       lateralVelocity: 0,
       accelerating: false,
@@ -182,12 +182,12 @@ function stepRecovery(car: CarState, track: Track, dt: number) {
   const junction = leg.junction;
   const elapsed = rec.elapsed + dt;
   const H = junction?.halfWidth ?? TRACK_HALF_WIDTH;
-  const wallLimit = H - CAR_TUNING.carHalfWidth;
+  const wallLimit = H - tuning().carHalfWidth;
 
   const d = junction?.direction ?? 1;
-  const k = ease(Math.min(1, elapsed / CAR_TUNING.frontRecoveryTime));
+  const k = ease(Math.min(1, elapsed / tuning().frontRecoveryTime));
   const yaw = rec.fromYaw + (d * QUARTER_TURN - rec.fromYaw) * k;
-  const speed = CAR_TUNING.frontRecoverySpeed;
+  const speed = tuning().frontRecoverySpeed;
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
   // El morro no atraviesa el muro frontal ni el lado cerrado mientras gira
@@ -237,15 +237,15 @@ export function stepCar(
   let car = state;
   for (const swipe of input.swipes) car = applySwipe(car, swipe, leg, track);
 
-  const yaw = approach(car.yaw, car.yawTarget, CAR_TUNING.turnRate * dt);
+  const yaw = approach(car.yaw, car.yawTarget, tuning().turnRate * dt);
   const facingForward = car.yawTarget === 0 && Math.abs(yaw) < 0.05;
   const accelerating = input.throttle && facingForward;
 
   let speed = car.speed;
-  if (accelerating) speed = Math.min(CAR_TUNING.maxSpeed, speed + CAR_TUNING.acceleration * dt);
-  else speed = Math.max(0, speed - CAR_TUNING.coastDrag * dt);
+  if (accelerating) speed = Math.min(tuning().maxSpeed, speed + tuning().acceleration * dt);
+  else speed = Math.max(0, speed - tuning().coastDrag * dt);
   // Girado el coche nunca se detiene del todo
-  if (car.yawTarget !== 0) speed = Math.max(speed, CAR_TUNING.crawlSpeed);
+  if (car.yawTarget !== 0) speed = Math.max(speed, tuning().crawlSpeed);
 
   let distance = car.distance + speed * Math.cos(yaw) * dt;
   let lateral = car.lateral + speed * Math.sin(yaw) * dt;
@@ -257,19 +257,26 @@ export function stepCar(
   let laneTarget = car.laneTarget;
   let lateralVelocity = car.lateralVelocity;
   if (laneTarget !== null && facingForward) {
-    const w = CAR_TUNING.laneChangeFrequency;
+    const w = tuning().laneChangeFrequency;
     const force =
-      w * w * (laneTarget - lateral) - 2 * CAR_TUNING.laneChangeDamping * w * lateralVelocity;
+      w * w * (laneTarget - lateral) - 2 * tuning().laneChangeDamping * w * lateralVelocity;
     lateralVelocity += force * dt;
     lateral += lateralVelocity * dt;
 
-    if (Math.abs(lateral) >= wallLimit) {
-      // Golpecito contra el muro: pierde velocidad y rebota hacia el carril disponible
+    const aimedAtWall = Math.abs(laneTarget) > wallLimit + 0.01;
+    if (Math.abs(lateral) >= wallLimit && !aimedAtWall) {
+      // Cambio a un carril que existe (el exterior): el rebote del muelle se queda justo antes del
+      // muro, sin golpe ni pérdida de velocidad, y vuelve a su carril
+      lateral = Math.sign(lateral) * (wallLimit - 0.001);
+      if (lateralVelocity * Math.sign(lateral) > 0) lateralVelocity = 0;
+    } else if (Math.abs(lateral) >= wallLimit) {
+      // Golpecito contra el muro (swipe hacia el muro desde el carril pegado a él): pierde
+      // velocidad y rebota hacia el carril disponible
       const side = Math.sign(lateral);
       events.push('bump');
-      speed *= CAR_TUNING.bumpKeep;
+      speed *= tuning().bumpKeep;
       lateral = side * (wallLimit - 0.001);
-      lateralVelocity = -lateralVelocity * CAR_TUNING.bumpBounce;
+      lateralVelocity = -lateralVelocity * tuning().bumpBounce;
       laneTarget = nearestOpenLane(lateral, wallLimit);
       lane = laneTarget;
     } else if (Math.abs(laneTarget - lateral) < 0.01 && Math.abs(lateralVelocity) < 0.05) {
@@ -278,7 +285,7 @@ export function stepCar(
       laneTarget = null;
       lateralVelocity = 0;
     }
-  } else if (laneTarget === null) {
+  } else if (laneTarget === null && tuning().curveModel === 'magnet') {
     lateralVelocity = 0;
   }
   const next: CarState = { ...car, yaw, speed, accelerating, laneTarget, lateralVelocity, lane };
@@ -315,7 +322,33 @@ export function stepCar(
   }
 
   // ----- En un tramo -----
-  if (facingForward && laneTarget === null) {
+  if (facingForward && laneTarget === null && tuning().curveModel === 'grip') {
+    // Modelo de agarre: la curva pide v²·curvatura. Acelerando por encima del agarre, el coche no
+    // gira tanto como la carretera y se abre hacia fuera de forma continua (sin imán de carril);
+    // si no, recupera el agarre, el derrape se frena y el imán lo lleva a su carril
+    const sample = track.sampleAt(car.leg, car.distance);
+    const curvature = sample.kind === 'arc' ? sample.curvature : 0;
+    const demand = speed * speed * Math.abs(curvature);
+    const sliding = accelerating && demand > tuning().gripAccel;
+    if (sliding) {
+      lateralVelocity -= Math.sign(curvature) * (demand - tuning().gripAccel) * tuning().slideGain * dt;
+      lateral += lateralVelocity * dt;
+      lane = nearestOpenLane(lateral, wallLimit);
+    } else {
+      lateralVelocity *= Math.max(0, 1 - tuning().slideRecovery * dt);
+      lateral += lateralVelocity * dt;
+      const touching = Math.abs(lateral) >= wallLimit - 0.001;
+      if (!(accelerating && touching)) {
+        lane = nearestOpenLane(lateral, wallLimit);
+        const offset = lane - lateral;
+        const pull = Math.max(
+          -tuning().lanePull,
+          Math.min(tuning().lanePull, offset * tuning().laneSpring),
+        );
+        lateral += Math.abs(pull * dt) > Math.abs(offset) ? offset : pull * dt;
+      }
+    }
+  } else if (facingForward && laneTarget === null) {
     // Acelerando contra la pared (embudo o curva) el coche sigue en su carril y la pared lo
     // empuja. Si no, pertenece al carril disponible más cercano y el imán lo centra en él
     const touching = Math.abs(lateral) >= wallLimit - 0.001;
@@ -324,8 +357,8 @@ export function stepCar(
       // Imán de carril: con el morro recto el coche tiende al centro de su carril
       const offset = lane - lateral;
       const pull = Math.max(
-        -CAR_TUNING.lanePull,
-        Math.min(CAR_TUNING.lanePull, offset * CAR_TUNING.laneSpring),
+        -tuning().lanePull,
+        Math.min(tuning().lanePull, offset * tuning().laneSpring),
       );
       lateral += Math.abs(pull * dt) > Math.abs(offset) ? offset : pull * dt;
     }
@@ -334,10 +367,10 @@ export function stepCar(
     // carril y el coche salta de carril; sin acelerar el coche se queda pegado (y se despega
     // del muro si estaba rozando)
     const sample = track.sampleAt(car.leg, car.distance);
-    const excess = Math.abs(sample.curvature) - CAR_TUNING.magnetThreshold;
+    const excess = Math.abs(sample.curvature) - tuning().magnetThreshold;
     if (sample.kind === 'arc' && excess > 0) {
-      const grip = accelerating ? 1 : CAR_TUNING.coastMagnetFactor;
-      lateral -= Math.sign(sample.curvature) * excess * speed * CAR_TUNING.magnetGain * grip * dt;
+      const grip = accelerating ? 1 : tuning().coastMagnetFactor;
+      lateral -= Math.sign(sample.curvature) * excess * speed * tuning().magnetGain * grip * dt;
     }
   }
 
@@ -350,25 +383,27 @@ export function stepCar(
       car.yawTarget !== 0 &&
       side === junction.direction &&
       movingIntoWall &&
-      distance > leg.length - CAR_TUNING.junctionEarlyEntry
+      distance > leg.length - tuning().junctionEarlyEntry
     ) {
       return { car: { ...next, ...NO_SCRAPE, distance: leg.length + 0.01, lateral }, events };
     }
     lateral = side * wallLimit;
+    const stopped = { lateralVelocity: lateralVelocity * side > 0 ? 0 : lateralVelocity };
 
     // Roce: frena cada vez más mientras dure. En un tramo estrecho (embudo) la pared entra en
     // ángulo y roza más fuerte
     const narrowed = track.halfWidthAt(car.leg, distance) < TRACK_HALF_WIDTH - 0.01;
     const [start, max] = narrowed
-      ? [CAR_TUNING.taperFrictionStart, CAR_TUNING.taperFrictionMax]
-      : [CAR_TUNING.scrapeFrictionStart, CAR_TUNING.scrapeFrictionMax];
+      ? [tuning().taperFrictionStart, tuning().taperFrictionMax]
+      : [tuning().scrapeFrictionStart, tuning().scrapeFrictionMax];
     const scrapeTime = car.scrapeTime + dt;
-    const ramp = Math.min(1, scrapeTime / CAR_TUNING.scrapeRampTime);
+    const ramp = Math.min(1, scrapeTime / tuning().scrapeRampTime);
     const friction = start + (max - start) * ramp;
     if (!junction) distance = Math.min(distance, leg.length);
     return {
       car: {
         ...next,
+        ...stopped,
         distance,
         lateral,
         lane,
@@ -382,5 +417,5 @@ export function stepCar(
 
   // Sin cruce (último tramo) la pista termina
   if (!junction) distance = Math.min(distance, leg.length);
-  return { car: { ...next, ...NO_SCRAPE, distance, lateral, lane }, events };
+  return { car: { ...next, ...NO_SCRAPE, distance, lateral, lane, lateralVelocity }, events };
 }

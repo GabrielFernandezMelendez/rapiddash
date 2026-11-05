@@ -1,3 +1,4 @@
+import { PHYSICS_EXPERIMENT } from '../../core/domain/race/physics-version';
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { BestRunRepository } from '../../core/application/ports/out/best-run.repository';
 import { CloudRecordRepository } from '../../core/application/ports/out/cloud-record.repository';
@@ -47,6 +48,8 @@ export class CloudRecordsService implements RecordSink {
 
   /** La promesa acaba cuando ya está subido (o ha fallado): nunca lanza. */
   async publish(run: BestRun): Promise<void> {
+    // Rama de pruebas de física: nada a la nube
+    if (PHYSICS_EXPERIMENT) return;
     try {
       await this.records.publish(run, this.account.profile());
     } catch (e) {
@@ -78,7 +81,7 @@ export class CloudRecordsService implements RecordSink {
 
   private async sync(): Promise<void> {
     const profile = this.account.profile();
-    if (!profile || globalThis.navigator?.onLine === false) return;
+    if (!profile || globalThis.navigator?.onLine === false || PHYSICS_EXPERIMENT) return;
     // Los mapas se cargan aquí para no meterlos en el arranque
     const { ALL_MAPS } = await import('../../core/domain/track/race-map');
     await this.records.syncLocalBests(
