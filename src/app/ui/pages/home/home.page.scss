@@ -40,6 +40,22 @@
   margin-top: clamp(16px, 4vh, 40px);
 }
 
+// Móviles bajos: con tres modos debajo, el logo se encoge para que quepa entero y sin scroll
+@media (max-height: 760px) {
+  .tagline {
+    display: none;
+  }
+  rd-logo {
+    zoom: 0.7;
+  }
+}
+
+@media (max-height: 600px) {
+  rd-logo {
+    zoom: 0.5;
+  }
+}
+
 .backdrop {
   position: absolute;
   inset: 0;

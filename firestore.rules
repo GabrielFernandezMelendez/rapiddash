@@ -141,6 +141,96 @@ service cloud.firestore {
       }
     }
 
+    // 1 vs 1 Turbo Race (id = código): el rival entra una vez y cada uno gasta sus 3 intentos en
+    // 24 horas (core/domain/duel/duel.ts). Cada piloto solo toca su propia ficha en `players`.
+    match /duels/{code} {
+      function playerKeys() {
+        return ['attempts', 'lastStartAt', 'done', 'car', 'fx'];
+      }
+
+      function validGarage(player) {
+        return (player.car == null || player.car is int) && player.fx is int;
+      }
+
+      function freshPlayer(player) {
+        return player.keys().hasOnly(playerKeys())
+          && player.attempts == 0
+          && player.lastStartAt == null
+          && player.done == false
+          && validGarage(player);
+      }
+
+      // Solo cambia mi ficha dentro de `players`, y nada más del duelo
+      function onlyMyPlayerChanges() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+          && request.resource.data.players.diff(resource.data.players).affectedKeys()
+            .hasOnly([request.auth.uid]);
+      }
+
+      function spendsAttempt() {
+        let next = request.resource.data.players[request.auth.uid];
+        return next.keys().hasOnly(playerKeys())
+          && next.attempts == resource.data.players[request.auth.uid].attempts + 1
+          && next.attempts <= 3
+          && next.lastStartAt == request.time
+          && next.done == false
+          && validGarage(next);
+      }
+
+      // Aviso de que ya acabé: todo lo demás de mi ficha sigue igual
+      function marksDone() {
+        let next = request.resource.data.players[request.auth.uid];
+        let current = resource.data.players[request.auth.uid];
+        return next.diff(current).affectedKeys().hasOnly(['done'])
+          && next.done == true
+          && current.attempts == 3;
+      }
+
+      allow get: if signedIn();
+      // «Mis duelos»: solo se pueden listar aquellos en los que estoy
+      allow list: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow create: if signedIn()
+        && code.matches('^[A-HJKMNP-Z2-9]{6}$')
+        && request.resource.data.keys().hasOnly(
+          ['ownerUid', 'members', 'memberUids', 'players', 'startedAt', 'mapId', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.members.size() == 1
+        && request.resource.data.members[0].uid == request.auth.uid
+        && request.resource.data.players.keys().hasOnly([request.auth.uid])
+        && freshPlayer(request.resource.data.players[request.auth.uid])
+        && request.resource.data.startedAt == null
+        && request.resource.data.mapId is string
+        && request.resource.data.mapId.matches('^[A-Za-z0-9-]{1,40}$')
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && (
+        // Entrar: solo si falta el rival; yo me añado y empieza el plazo a la hora del servidor
+        (resource.data.startedAt == null
+          && !(request.auth.uid in resource.data.memberUids)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['members', 'memberUids', 'players', 'startedAt'])
+          && request.resource.data.memberUids == resource.data.memberUids.concat([request.auth.uid])
+          && request.resource.data.members.size() == 2
+          && request.resource.data.members[0] == resource.data.members[0]
+          && request.resource.data.members[1].uid == request.auth.uid
+          && request.resource.data.players.diff(resource.data.players).affectedKeys()
+            .hasOnly([request.auth.uid])
+          && freshPlayer(request.resource.data.players[request.auth.uid])
+          && request.resource.data.startedAt == request.time)
+        // Gastar un intento: dentro del plazo
+        || (request.auth.uid in resource.data.memberUids
+          && resource.data.startedAt != null
+          && request.time < resource.data.startedAt + duration.value(24, 'h')
+          && onlyMyPlayerChanges()
+          && spendsAttempt())
+        // Avisar de que ya acabé
+        || (request.auth.uid in resource.data.memberUids
+          && onlyMyPlayerChanges()
+          && marksDone()));
+      // Eliminar: solo el creador, en cualquier momento (como los torneos)
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
     // Reserva de apodos únicos: el id es el apodo sin mayúsculas ni tildes.
     match /nicknames/{key} {
       allow get: if signedIn();

@@ -45,11 +45,14 @@ export class CloudRecordsService implements RecordSink {
     });
   }
 
-  publish(run: BestRun): void {
-    void this.records.publish(run, this.account.profile()).catch((e) => {
+  /** La promesa acaba cuando ya está subido (o ha fallado): nunca lanza. */
+  async publish(run: BestRun): Promise<void> {
+    try {
+      await this.records.publish(run, this.account.profile());
+    } catch (e) {
       // Sin red, Firestore deja la escritura en cola; otros errores se reintentan al arrancar
       console.warn('[récords] no se pudo subir', e);
-    });
+    }
   }
 
   /**

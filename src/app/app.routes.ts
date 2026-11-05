@@ -13,6 +13,8 @@ const welcomeAllowed: CanMatchFn = (_route, segments: UrlSegment[]) =>
 const joinTournament = () =>
   import('./ui/pages/tournaments/join-tournament.page').then((m) => m.JoinTournamentPage);
 
+const joinDuel = () => import('./ui/pages/duels/join-duel.page').then((m) => m.JoinDuelPage);
+
 const welcome = () => import('./ui/pages/welcome/welcome.page').then((m) => m.WelcomePage);
 
 // Páginas con carga diferida: Three.js solo se descarga al entrar en una carrera
@@ -63,6 +65,24 @@ export const routes: Routes = [
   },
   // Enlace de invitación corto: /t/K7RQ2M
   { path: 't/:code', canMatch: [hasPilot], loadComponent: joinTournament },
+  {
+    path: 'duels',
+    canMatch: [hasPilot],
+    loadComponent: () => import('./ui/pages/duels/duels.page').then((m) => m.DuelsPage),
+  },
+  { path: 'duels/join', canMatch: [hasPilot], loadComponent: joinDuel },
+  {
+    path: 'duels/:code',
+    canMatch: [hasPilot],
+    loadComponent: () => import('./ui/pages/duels/duel.page').then((m) => m.DuelPage),
+  },
+  {
+    path: 'duels/:code/victory',
+    canMatch: [hasPilot],
+    loadComponent: () => import('./ui/pages/duels/duel-victory.page').then((m) => m.DuelVictoryPage),
+  },
+  // Enlace de reto corto: /d/K7RQ2M
+  { path: 'd/:code', canMatch: [hasPilot], loadComponent: joinDuel },
   {
     path: 'profile',
     canMatch: [hasPilot],

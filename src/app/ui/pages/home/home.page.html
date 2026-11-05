@@ -65,6 +65,12 @@
         <span mode-badge class="badge">{{ tournamentsRunning() }} {{ 'tournament.liveShort' | t }}</span>
       }
     </rd-mode-button>
+    <rd-mode-button [title]="'duel.title' | t" [subtitle]="'duel.subtitle' | t" (pressed)="openDuels()">
+      <svg mode-icon viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M13 2 5 13h6l-1 9 8-11h-6z"></path>
+      </svg>
+    </rd-mode-button>
     <!-- Garaje: botón de media anchura (los mapas sueltos están en Ajustes → Debug) -->
     <button rdButton variant="secondary" type="button" class="garage" (click)="openGarage()">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
