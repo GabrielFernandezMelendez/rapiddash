@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Aesthetic } from '../../../core/domain/settings/aesthetic';
+import { APP_VERSION } from '../../../core/domain/settings/app-version';
 import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -56,6 +57,22 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
           </span>
         </button>
       </div>
+      @if (debug()) {
+        <div class="field debug">
+          <span class="label">{{ 'settings.debug' | t }}</span>
+          <small class="hint">{{ 'settings.debugHint' | t }}</small>
+          <button rdButton type="button" class="full" (click)="allMaps.emit()">
+            {{ 'settings.allMaps' | t }}
+          </button>
+          <button rdButton variant="ghost" type="button" class="full" (click)="debugOff.emit()">
+            {{ 'settings.debugOff' | t }}
+          </button>
+        </div>
+      }
+      <!-- Tocarla 7 veces seguidas activa el modo debug -->
+      <button type="button" class="version" (click)="versionTap.emit()">
+        RapidDash · {{ 'settings.version' | t }} {{ version }}
+      </button>
       <ng-container modal-actions>
         <button rdButton variant="secondary" type="button" class="full" (click)="closed.emit()">
           {{ 'settings.close' | t }}
@@ -111,6 +128,29 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
     .full {
       grid-column: 1 / -1;
     }
+    .debug {
+      padding: 12px;
+      border-radius: var(--rd-radius);
+      box-shadow: inset 0 0 0 2px var(--rd-kerb);
+    }
+    .debug .label {
+      color: var(--rd-kerb);
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--rd-muted);
+    }
+    .version {
+      justify-self: center;
+      padding: 6px 10px;
+      border: 0;
+      background: none;
+      font-size: 12px;
+      color: var(--rd-muted);
+      cursor: default;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
   `,
 })
 export class SettingsDialog {
@@ -124,6 +164,12 @@ export class SettingsDialog {
   readonly volumesChange = output<Volumes>();
   /** Al soltar un slider: que suene un ejemplo de ese canal. */
   readonly preview = output<VolumeChannel>();
+  /** Modo debug activado: se ve su sección. */
+  readonly debug = input(false);
+  readonly versionTap = output<void>();
+  readonly debugOff = output<void>();
+  readonly allMaps = output<void>();
+  protected readonly version = APP_VERSION;
 
   protected setVolume(channel: VolumeChannel, value: number): void {
     this.volumesChange.emit({ ...this.volumes(), [channel]: value });

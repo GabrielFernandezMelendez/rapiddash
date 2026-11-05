@@ -1,3 +1,4 @@
+import { GarageChoice } from '../../../domain/garage/garage';
 import { Aesthetic } from '../../../domain/settings/aesthetic';
 import { Language } from '../../../domain/settings/language';
 import { Volumes } from '../../../domain/settings/volume';
@@ -23,4 +24,10 @@ export abstract class SettingsRepository {
   /** «Ahora no» a poner la foto en el cartel de ese torneo: no se vuelve a ofrecer sola. */
   abstract getPhotoDeclined(code: string): boolean;
   abstract setPhotoDeclined(code: string): void;
+  /** Coche y efecto del garaje, tal cual se guardaron (se comprueban con `usableGarage`). */
+  abstract getGarage(): unknown;
+  abstract setGarage(choice: GarageChoice): void;
+  /** Modo debug (7 toques en la versión): abre todo el contenido y todos los mapas. */
+  abstract getDebug(): boolean;
+  abstract setDebug(on: boolean): void;
 }

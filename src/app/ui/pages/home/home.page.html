@@ -62,8 +62,14 @@
         <span mode-badge class="badge">{{ tournamentsRunning() }} {{ 'tournament.liveShort' | t }}</span>
       }
     </rd-mode-button>
-    <button rdButton type="button" [block]="true" class="start" (click)="start()">
-      {{ 'home.start' | t }}
+    <!-- Garaje: botón de media anchura (los mapas sueltos están en Ajustes → Debug) -->
+    <button rdButton variant="secondary" type="button" class="garage" (click)="openGarage()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 16v-3l2-5h14l2 5v3"></path><path d="M3 16h18v2H3z"></path>
+        <circle cx="7.5" cy="18" r="1.6"></circle><circle cx="16.5" cy="18" r="1.6"></circle>
+      </svg>
+      {{ 'home.garage' | t }}
     </button>
     <p class="controls">{{ 'home.controls' | t }}</p>
   </div>
@@ -80,6 +86,10 @@
     [volumes]="volumes()"
     (volumesChange)="setVolumes($event)"
     (preview)="previewSound($event)"
+    [debug]="garage.debug()"
+    (versionTap)="tapVersion()"
+    (debugOff)="garage.setDebug(false)"
+    (allMaps)="openAllMaps()"
   />
 }
 

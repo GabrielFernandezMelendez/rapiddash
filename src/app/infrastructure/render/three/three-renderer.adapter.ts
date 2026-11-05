@@ -1,4 +1,5 @@
 import {
+  Box3,
   DirectionalLight,
   Fog,
   Group,
@@ -23,6 +24,14 @@ import {
 import { MapTheme } from '../../../core/domain/track/race-map';
 import { Track } from '../../../core/domain/track/track';
 import { PhotoGantry } from './photo-gantry';
+import { buildGarageCar } from './garage/garage-cars';
+import { GarageFx } from './garage/garage-fx';
+import {
+  CLASSIC_EXHAUST,
+  DEFAULT_GARAGE,
+  GarageChoice,
+  garageCarFor,
+} from '../../../core/domain/garage/garage';
 import { CLASSIC_BILLBOARD, LeaderBillboards, SYNTH_BILLBOARD } from './billboards';
 import { buildCar, CarBounce, ExhaustFx, ScrapeFx } from './car-mesh';
 import { GhostLabel } from './ghost-label';
@@ -78,8 +87,17 @@ export class ThreeRendererAdapter extends RendererPort {
   private sky: SynthSky | null = null;
   private billboards: LeaderBillboards | null = null;
   private photoGantries: PhotoGantry[] = [];
+  private garageFx: GarageFx | null = null;
+  private fxAnchor: Group | null = null;
+  private fxId: number = CLASSIC_EXHAUST;
 
-  attach(host: HTMLElement, track: Track, theme: MapTheme, aesthetic: Aesthetic): void {
+  attach(
+    host: HTMLElement,
+    track: Track,
+    theme: MapTheme,
+    aesthetic: Aesthetic,
+    garage: GarageChoice = DEFAULT_GARAGE,
+  ): void {
     this.dispose();
     this.host = host;
     this.track = track;
@@ -97,7 +115,10 @@ export class ThreeRendererAdapter extends RendererPort {
     const circuit = !!track.circuit;
     if (isSynthwave(aesthetic)) this.buildSynthwave(drawn, theme, circuit);
     else this.buildClassic(drawn, theme, circuit);
-    this.billboards = new LeaderBillboards(drawn, isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD);
+    this.billboards = new LeaderBillboards(
+      drawn,
+      isSynthwave(aesthetic) ? SYNTH_BILLBOARD : CLASSIC_BILLBOARD,
+    );
     this.scene.add(this.billboards.group);
     // Carteles con la foto del líder del torneo (borde LED solo en la estética futurista): cuatro,
     // enormes y lejos de la carretera, al fondo de las rectas más largas
@@ -107,7 +128,9 @@ export class ThreeRendererAdapter extends RendererPort {
     );
     for (const g of this.photoGantries) this.scene.add(g.group);
     const vehicle = VEHICLES[aesthetic];
-    this.car = vehicle(false);
+    // Coche del garaje (en retro y futurista); el fantasma sigue siendo el de la estética
+    const garageCar = garageCarFor(garage, aesthetic);
+    this.car = garageCar === null ? vehicle(false) : buildGarageCar(garageCar);
     this.ghost = vehicle(true);
     this.carBounce = new CarBounce();
     this.ghostBounce = new CarBounce();
@@ -117,7 +140,22 @@ export class ThreeRendererAdapter extends RendererPort {
     // Color del fantasma de cada estética (--rd-ghost)
     this.ghostLabel = new GhostLabel(isSynthwave(aesthetic) ? '#2de2e6' : '#8fd3ff');
     this.scene.add(this.ghostLabel.sprite);
-    this.exhaust = new ExhaustFx(this.car, this.scene);
+    // Efecto al acelerar: el 1 es el escape de siempre; los demás siguen al coche desde fuera
+    // (en un grupo que copia su posición y giro, no los botes ni el aplastado)
+    this.fxId = garage.fx;
+    if (garage.fx === CLASSIC_EXHAUST) {
+      this.exhaust = new ExhaustFx(this.car, this.scene);
+    } else {
+      this.fxAnchor = new Group();
+      this.scene.add(this.fxAnchor);
+      const size = new Box3().setFromObject(this.car);
+      this.garageFx = new GarageFx(this.fxAnchor, {
+        rearZ: size.max.z,
+        halfWidth: Math.min(size.max.x, 0.85),
+        roofY: size.max.y,
+        exhaustY: 0.32,
+      });
+    }
     this.scrape = new ScrapeFx(this.car, this.scene);
     this.cameraHeading = null;
 
@@ -180,6 +218,12 @@ export class ThreeRendererAdapter extends RendererPort {
     // Velocidad aproximada para la intensidad de las chispas
     const moved = dt > 0 ? Math.abs(frame.car.distance - this.lastDistance) / dt : 0;
     this.lastDistance = frame.car.distance;
+    if (this.garageFx && this.fxAnchor) {
+      this.fxAnchor.position.set(this.car.position.x, 0, this.car.position.z);
+      this.fxAnchor.rotation.set(0, this.car.rotation.y, 0);
+      // Al cambiar de tramo la distancia vuelve a 0: ese fotograma no cuenta como velocidad
+      this.garageFx.update(dt, frame.car.accelerating, this.fxId, Math.min(moved, 80));
+    }
     this.scrape?.update(dt, frame.car.scrapeSide, Math.min(1, moved / 26));
     // El roce hace vibrar la cámara un poco, mucho menos que un choque
     if (frame.car.scrapeSide !== 0) this.shake = Math.max(this.shake, 0.12);
@@ -233,6 +277,10 @@ export class ThreeRendererAdapter extends RendererPort {
   dispose(): void {
     this.billboards = null;
     this.photoGantries = [];
+    this.garageFx?.dispose();
+    this.garageFx = null;
+    this.fxAnchor = null;
+    this.exhaust = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.scene.traverse((obj) => {

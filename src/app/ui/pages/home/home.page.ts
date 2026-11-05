@@ -39,6 +39,8 @@ import { SettingsDialog } from '../../organisms/settings-dialog/settings-dialog'
 import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { AestheticHint, HintAnchor } from '../../organisms/aesthetic-hint/aesthetic-hint';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
+import { debugTap } from '../../../core/domain/garage/garage';
+import { GarageService } from '../../../shared/garage/garage.service';
 import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
@@ -58,6 +60,7 @@ export class HomePage implements OnInit {
   protected readonly account = inject(AccountService);
   private readonly bestRuns = inject(BestRunRepository);
   protected readonly settingsOpen = signal(false);
+  protected readonly garage = inject(GarageService);
   private readonly daily = inject(DailyService);
   private readonly dailyToday = this.daily.today(ALL_MAPS);
   protected readonly dailyMap = this.dailyToday.map;
@@ -218,9 +221,25 @@ export class HomePage implements OnInit {
     }
   }
 
-  protected start(): void {
+  protected openGarage(): void {
+    void this.router.navigate(['/garage']);
+  }
+
+  /** Debug → «Todos los mapas»: la pantalla de elegir mapa (ya no tiene botón propio). */
+  protected openAllMaps(): void {
+    this.settingsOpen.set(false);
     void this.router.navigate(['/maps']);
   }
+
+  /** 7 toques seguidos en la versión activan el modo debug. */
+  protected tapVersion(): void {
+    if (this.garage.debug()) return;
+    const next = debugTap(this.taps, Date.now());
+    this.taps = next;
+    if (next.unlocked) this.garage.setDebug(true);
+  }
+
+  private taps = { count: 0, last: -Infinity };
 
   protected setLanguage(language: Language): void {
     this.i18n.setLanguage(language);

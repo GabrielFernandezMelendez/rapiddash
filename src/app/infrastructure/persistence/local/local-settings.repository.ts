@@ -3,6 +3,7 @@ import { Aesthetic, isAesthetic } from '../../../core/domain/settings/aesthetic'
 import { isLanguage, Language } from '../../../core/domain/settings/language';
 import { toVolumes, Volumes } from '../../../core/domain/settings/volume';
 import { RIVAL_CHOICES, RivalChoice } from '../../../core/domain/race/ranking';
+import { GarageChoice } from '../../../core/domain/garage/garage';
 import { readJson, writeJson } from './safe-storage';
 
 const LANGUAGE_KEY = 'rapiddash.language';
@@ -12,6 +13,8 @@ const TUTORIAL_KEY = 'rapiddash.tutorialSeen';
 const AESTHETIC_HINT_KEY = 'rapiddash.aestheticHintSeen';
 const VOLUMES_KEY = 'rapiddash.volumes';
 const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
+const GARAGE_KEY = 'rapiddash.garage';
+const DEBUG_KEY = 'rapiddash.debug';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -71,5 +74,21 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setPhotoDeclined(code: string): void {
     writeJson(PHOTO_DECLINED_KEY, { ...readJson<Record<string, unknown>>(PHOTO_DECLINED_KEY), [code]: true });
+  }
+
+  getGarage(): unknown {
+    return readJson<unknown>(GARAGE_KEY);
+  }
+
+  setGarage(choice: GarageChoice): void {
+    writeJson(GARAGE_KEY, choice);
+  }
+
+  getDebug(): boolean {
+    return readJson<unknown>(DEBUG_KEY) === true;
+  }
+
+  setDebug(on: boolean): void {
+    writeJson(DEBUG_KEY, on);
   }
 }

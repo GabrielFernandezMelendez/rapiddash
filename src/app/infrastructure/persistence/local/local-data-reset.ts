@@ -9,6 +9,8 @@ const KEPT_KEYS = new Set([
   'rapiddash.volumes',
   'rapiddash.tutorialSeen',
   'rapiddash.aestheticHintSeen',
+  'rapiddash.garage',
+  'rapiddash.debug',
 ]);
 /** Bases de IndexedDB de Firebase (sesión, caché de Firestore…). */
 const FIREBASE_DB = /^(firebase|firestore)/;

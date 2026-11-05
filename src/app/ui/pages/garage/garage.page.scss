@@ -1,0 +1,210 @@
+:host {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #0b0714;
+}
+
+.screen {
+  display: grid;
+  grid-template-rows: auto minmax(220px, 40vh) auto auto 1fr auto;
+  height: 100%;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px
+    calc(16px + env(safe-area-inset-bottom, 0px));
+  gap: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--rd-font-display);
+  font-style: var(--rd-display-style);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--rd-chalk);
+}
+
+// La escena ocupa todo el ancho (sale del margen) para que el coche se vea grande
+.stage {
+  margin: 0 -16px;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.now {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.now-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.now-text b {
+  font-family: var(--rd-font-display);
+  font-style: var(--rd-display-style);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--rd-chalk);
+}
+
+.now-text small {
+  font-size: 13px;
+  color: var(--rd-muted);
+}
+
+.now.locked .now-text b {
+  color: var(--rd-muted);
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.state.on {
+  background: color-mix(in srgb, var(--rd-go) 18%, transparent);
+  color: var(--rd-go);
+}
+
+.state.lock {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--rd-muted);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--rd-radius);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px var(--rd-line);
+}
+
+.tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: calc(var(--rd-radius) - 3px);
+  background: transparent;
+  color: var(--rd-muted);
+  font-family: var(--rd-font-display);
+  font-style: var(--rd-display-style);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: var(--rd-signal);
+  color: #1a1408;
+}
+
+.list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.note {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--rd-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--rd-radius);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px var(--rd-line);
+  color: var(--rd-chalk);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item .num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.06);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rd-signal);
+}
+
+.item .name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item.preview {
+  box-shadow: inset 0 0 0 2px var(--rd-ghost);
+}
+
+.item.chosen {
+  box-shadow: inset 0 0 0 2px var(--rd-signal);
+  background: color-mix(in srgb, var(--rd-signal) 12%, transparent);
+}
+
+.item.locked .name,
+.item.locked .num {
+  color: var(--rd-muted);
+}
+
+.padlock {
+  flex: none;
+  margin-left: auto;
+  color: var(--rd-muted);
+}
+
+.hold {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}

@@ -28,6 +28,7 @@ import { provideRaceAdapters } from '../../../infrastructure/di/race.providers';
 import { AccountService } from '../../../shared/account/account.service';
 import { CloudRecordsService } from '../../../shared/account/cloud-records.service';
 import { DailyService } from '../../../shared/account/daily.service';
+import { GarageService } from '../../../shared/garage/garage.service';
 import { RankingService } from '../../../shared/account/ranking.service';
 import { AestheticService } from '../../../shared/aesthetic/aesthetic.service';
 import { I18nService } from '../../../shared/i18n/i18n.service';
@@ -146,6 +147,7 @@ export class RacePage {
   /** En un circuito, «¡Meta!» se ve un momento antes de la ventana de resultados. */
   protected readonly finishBanner = signal(false);
   protected readonly dailyService = inject(DailyService);
+  private readonly garage = inject(GarageService);
   protected readonly askMore = signal(false);
   protected readonly adBusy = signal(false);
   /** Ranking donde cuenta esta carrera: el del mapa o el del día. */
@@ -254,7 +256,7 @@ export class RacePage {
     }
     const track = trackOf(map);
     const aesthetic = this.aesthetic.aesthetic();
-    this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic);
+    this.renderer.attach(this.scene().nativeElement, track, map.theme, aesthetic, this.garage.choice());
     this.controls.attach(this.surface().nativeElement as HTMLElement);
     // Los carteles se rellenan cuando llegan los datos, sin hacer esperar a la carrera
     void this.loadBillboards();
