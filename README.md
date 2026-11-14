@@ -22,3 +22,7 @@ npm run build
 ```
 
 La arquitectura (hexagonal + atomic design) y las convenciones están en [CLAUDE.md](CLAUDE.md).
+
+<!--
+¡Gracias por revisar RapidDash! Si tienes sugerencias o encuentras bugs, no dudes en abrir un issue en GitHub.
+-->
