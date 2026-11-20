@@ -1,16 +1,16 @@
 // Tokens de diseño globales: noche synthwave (asfalto violeta, neón y sol)
 :root {
-  --rd-asphalt: #0d0420;
+  --rd-asphalt: #0b0620;
   --rd-asphalt-2: #1a0838;
   --rd-asphalt-3: #26104a;
   --rd-line: #3b2766;
   --rd-chalk: #f4ecff;
   --rd-muted: #a99cc4;
   --rd-kerb: #ff2a6d;
-  --rd-signal: #ffd319;
+  --rd-signal: #ffdb4d;
   --rd-go: #5dff9a;
   --rd-boost: #ff901f;
-  --rd-ghost: #2de2e6;
+  --rd-ghost: #33e6ff;
 
   --rd-font-display: 'Kanit', 'Arial Narrow', system-ui, sans-serif;
   --rd-font-body: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -30,16 +30,24 @@
   --rd-dash-pill: rgb(20 7 46 / 0.7);
   --rd-dash-pill-ring: #2de2e6;
   /** Botones: fondo y relieve del principal; contorno del secundario. */
-  --rd-button-primary-bg: linear-gradient(#ffd319, #ff901f 55%, #ff2a6d);
-  --rd-button-primary-ink: #1a0420;
-  --rd-button-primary-shadow: 0 0 22px rgb(255 42 109 / 0.5), 0 4px 0 #8c1446;
-  --rd-button-secondary-shadow: inset 0 0 0 1.5px var(--rd-neon-cyan), 0 0 12px rgb(45 226 230 / 0.35);
-  --rd-button-secondary-ink: var(--rd-neon-cyan);
+  --rd-button-primary-bg: linear-gradient(100deg, #ff2eba 0%, #ff4f9a 45%, #c026d3 100%);
+  --rd-button-primary-ink: #fff4ff;
+  --rd-button-primary-ring: inset 0 2px 0 rgb(255 255 255 / 0.4), inset 0 -3px 0 rgb(74 10 79 / 0.5);
+  --rd-button-primary-text-shadow: 0 2px 0 #6b0f5e;
+  --rd-button-secondary-bg: linear-gradient(90deg, color-mix(in srgb, #33e6ff 16%, #0b0620), rgb(11 6 32 / 0.85));
+  --rd-button-secondary-shadow: inset 0 0 0 2px var(--rd-neon-cyan), inset 0 0 16px rgb(51 230 255 / 0.3);
+  --rd-button-secondary-ink: var(--rd-chalk);
+  /** Inclinación synthwave de botones y tarjetas. */
+  --rd-skew: -12deg;
 
   --rd-radius: 10px;
-  --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff4fd8 0 10px, #2de2e6 10px 20px);
-  --rd-neon-pink: #ff4fd8;
-  --rd-neon-cyan: #2de2e6;
+  --rd-kerb-stripe: repeating-linear-gradient(90deg, #ff2eba 0 10px, #33e6ff 10px 20px);
+  /** Paleta Neon Coast: violeta y magenta de la guía de estilo. */
+  --rd-violet: #2a0f6a;
+  --rd-magenta: #c026d3;
+  --rd-glow: #ffe6ff;
+  --rd-neon-pink: #ff2eba;
+  --rd-neon-cyan: #33e6ff;
   /** Colores de las medallas (y de la liga de cada piloto en los rankings). */
   --rd-medal-bronze: #f0a066;
   --rd-medal-silver: #e6edf7;

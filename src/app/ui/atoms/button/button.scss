@@ -28,16 +28,72 @@
   filter: brightness(1.08);
 }
 
+:host(.rd-button--primary),
+:host(.rd-button--secondary) {
+  position: relative;
+  isolation: isolate;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  // La forma inclinada sobresale un poco por los lados: hueco para que no se corte
+  margin-inline: 6px;
+}
+
 :host(.rd-button--primary) {
-  background: var(--rd-button-primary-bg);
+  --rd-btn-fill: var(--rd-button-primary-bg);
+  --rd-btn-ring: var(--rd-button-primary-ring);
+  --rd-btn-glow: var(--rd-neon-pink);
+  --rd-px-a: var(--rd-signal);
+  --rd-px-b: var(--rd-neon-pink);
+  --rd-px-base: color-mix(in srgb, var(--rd-magenta) 70%, var(--rd-asphalt));
   color: var(--rd-button-primary-ink);
-  box-shadow: var(--rd-button-primary-shadow);
+  text-shadow: var(--rd-button-primary-text-shadow);
 }
 
 :host(.rd-button--secondary) {
-  background: var(--rd-asphalt-3);
+  --rd-btn-fill: var(--rd-button-secondary-bg);
+  --rd-btn-ring: var(--rd-button-secondary-shadow);
+  --rd-btn-glow: var(--rd-neon-cyan);
+  --rd-px-a: var(--rd-neon-cyan);
+  --rd-px-b: var(--rd-neon-pink);
   color: var(--rd-button-secondary-ink);
-  box-shadow: var(--rd-button-secondary-shadow);
+}
+
+// Paralelogramo detrás del texto; la esquina de arriba a la derecha es la escalera de píxeles
+.shape {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  transform: skewX(var(--rd-skew));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--rd-btn-glow) 45%, transparent));
+  pointer-events: none;
+}
+
+.fill {
+  --c: var(--rd-px-cell);
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: var(--rd-btn-fill);
+  box-shadow: var(--rd-btn-ring);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--c) * 3) 0,
+    calc(100% - var(--c) * 3) var(--c),
+    calc(100% - var(--c) * 2) var(--c),
+    calc(100% - var(--c) * 2) calc(var(--c) * 2),
+    calc(100% - var(--c)) calc(var(--c) * 2),
+    calc(100% - var(--c)) calc(var(--c) * 3),
+    100% calc(var(--c) * 3),
+    100% 100%,
+    0 100%
+  );
+}
+
+:host(.rd-button--primary:active),
+:host(.rd-button--secondary:active) {
+  transform: scale(0.96);
+  filter: brightness(1.2);
 }
 
 :host(.rd-button--ghost) {
