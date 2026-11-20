@@ -6,7 +6,12 @@
   <div class="top">
     <button rdButton variant="ghost" type="button" class="exit" [attr.aria-label]="'hud.exit' | t" (click)="exit.emit()">✕</button>
     <div class="center">
-      <span class="map">{{ mapName() }}</span>
+      <span class="map">
+        @if (state().lab) {
+          <i class="lab">{{ 'lab.badge' | t }}</i>
+        }
+        {{ mapName() }}
+      </span>
       <span class="time" [class.pulse]="state().lapBanner !== null">{{ time() }}</span>
       <span class="row">
         @if (state().lap; as lap) {

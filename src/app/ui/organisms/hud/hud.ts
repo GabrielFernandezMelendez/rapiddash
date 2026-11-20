@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { CAR_TUNING } from '../../../core/domain/car/car-tuning';
+import { tuning } from '../../../core/domain/car/car-tuning';
 import { RaceViewState } from '../../../core/application/use-cases/race-session';
 import { MedalTargets, medalFor, nextMedal } from '../../../core/domain/medals/medals';
 import { formatDelta, formatTime, NO_TIME } from '../../../shared/format-time';
@@ -105,7 +105,7 @@ export class Hud {
   protected readonly aheadFlash = computed(() => this.state().time - this.aheadFlashAt() < 1.1);
   protected readonly kmh = computed(() => String(Math.round(this.kmhShown())).padStart(3, '0'));
   protected readonly speedRatio = computed(
-    () => this.kmhShown() / (CAR_TUNING.maxSpeed * KMH_FACTOR),
+    () => this.kmhShown() / (tuning().maxSpeed * KMH_FACTOR),
   );
   protected readonly litSegments = computed(() =>
     Math.round(Math.min(1, this.speedRatio()) * SEGMENTS),

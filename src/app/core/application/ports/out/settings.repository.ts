@@ -24,6 +24,9 @@ export abstract class SettingsRepository {
   /** Modo debug (7 toques en la versión): abre todo el contenido y todos los mapas. */
   abstract getDebug(): boolean;
   abstract setDebug(on: boolean): void;
+  /** Laboratorio de física (debug): los parámetros cambiados, tal cual se guardaron. */
+  abstract getPhysicsLab(): unknown;
+  abstract setPhysicsLab(values: object | null): void;
   /** Coches ganados con el cubo azul del mapa del día. */
   abstract getWonCars(): number[];
   abstract addWonCar(car: number): void;

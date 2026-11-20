@@ -11,7 +11,7 @@ import {
   showsGo,
   stepRace,
 } from '../../domain/race/race';
-import { CAR_TUNING } from '../../domain/car/car-tuning';
+import { isCustomTuning, tuning } from '../../domain/car/car-tuning';
 import { DriveInput } from '../../domain/car/car';
 import { RaceMap } from '../../domain/track/race-map';
 import { Track } from '../../domain/track/track';
@@ -55,6 +55,8 @@ export interface RaceViewState {
   readonly lapBanner: LapBanner | null;
   /** Posición lateral del coche (el HUD se inclina en los cambios de carril). */
   readonly lateral: number;
+  /** Se corre con el laboratorio de física cambiado (no cuentan los récords). */
+  readonly lab: boolean;
 }
 
 /** Quien recibe cada récord nuevo para publicarlo (el ranking online). */
@@ -216,7 +218,7 @@ export class RaceSession {
     this.ports.audio.update({
       phase: race.phase,
       accelerating: car.accelerating,
-      speedRatio: car.speed / CAR_TUNING.maxSpeed,
+      speedRatio: car.speed / tuning().maxSpeed,
     });
     this.listener(this.viewState());
   }
@@ -226,7 +228,8 @@ export class RaceSession {
     const previousBest = this.best?.time ?? null;
     const isRecord = previousBest === null || time < previousBest;
     this.result = { time, previousBest, isRecord, lapTimes: this.race.lapTimes };
-    if (isRecord) {
+    // Con el laboratorio de física cambiado la carrera es de prueba: ni se guarda ni se sube
+    if (isRecord && !isCustomTuning()) {
       const run: BestRun = {
         mapId: this.boardId,
         time,
@@ -271,6 +274,7 @@ export class RaceSession {
           ? this.banner
           : null,
       lateral: race.car.lateral,
+      lab: isCustomTuning(),
     };
   }
 }

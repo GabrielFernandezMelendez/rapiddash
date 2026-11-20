@@ -62,6 +62,18 @@
   color: rgb(244 236 255 / 0.75);
 }
 
+// Laboratorio de física activo: los récords no cuentan
+.lab {
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--rd-neon-cyan);
+  color: #0d0420;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
 .time {
   font-family: var(--rd-font-hud-time);
   font-size: 42px;

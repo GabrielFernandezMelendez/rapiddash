@@ -47,6 +47,9 @@ import { LapBannerComponent } from '../../organisms/lap-banner/lap-banner';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { ResultsPanel } from '../../organisms/results-panel/results-panel';
 import { RaceLayout } from '../../templates/race-layout/race-layout';
+import { PhysicsLab } from '../../organisms/physics-lab/physics-lab';
+import { CarTuning, setActiveTuning, tuning } from '../../../core/domain/car/car-tuning';
+import { labDiff, sanitizeLab } from '../../../core/domain/car/physics-lab';
 import { MEDALS, medalFor } from '../../../core/domain/medals/medals';
 import { mapMedalTargets } from '../../../core/domain/medals/map-medals';
 import { ResultMedal } from '../../organisms/results-panel/results-panel';
@@ -61,7 +64,7 @@ const FINISH_BANNER_MS = 1300;
 
 @Component({
   selector: 'rd-race-page',
-  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe],
+  imports: [RaceLayout, Hud, Countdown, ResultsPanel, Tutorial, MoreAttempts, LapBannerComponent, PrizeRoulette, TranslatePipe, PhysicsLab],
   providers: [provideRaceAdapters()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -110,7 +113,25 @@ const FINISH_BANNER_MS = 1300;
           }
         }
       }
+      @if (debugTools()) {
+        <!-- Laboratorio de física (solo en debug) -->
+        <button
+          type="button"
+          class="lab-toggle"
+          [attr.aria-label]="'lab.open' | t"
+          (pointerdown)="$event.stopPropagation()"
+          (click)="labOpen.set(!labOpen())"
+        >⚙</button>
+      }
     </rd-race-layout>
+    @if (labOpen()) {
+      <rd-physics-lab
+        [values]="labValues()"
+        (changed)="applyLab($event)"
+        (reset)="resetLab()"
+        (closed)="labOpen.set(false)"
+      />
+    }
     @if (tutorialOpen()) {
       <rd-tutorial (closed)="tutorialDone()" />
     }
@@ -128,6 +149,20 @@ const FINISH_BANNER_MS = 1300;
     .scene {
       position: absolute;
       inset: 0;
+    }
+    .lab-toggle {
+      position: absolute;
+      top: calc(14px + env(safe-area-inset-top, 0px));
+      right: 14px;
+      z-index: 8;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      background: rgb(13 4 32 / 0.6);
+      color: var(--rd-neon-cyan);
+      font-size: 20px;
+      pointer-events: auto;
     }
   `,
 })
@@ -234,6 +269,9 @@ export class RacePage {
   /** Tutorial antes de la primera carrera: el semáforo espera a que se cierre. */
   protected readonly tutorialOpen = signal(false);
   private tutorialClosed: (() => void) | null = null;
+  /** Laboratorio de física (debug): panel abierto y parámetros en uso. */
+  protected readonly labOpen = signal(false);
+  protected readonly labValues = signal<CarTuning>(tuning());
 
   constructor() {
     // El lienzo necesita el DOM real: arrancamos tras el primer render
@@ -245,7 +283,23 @@ export class RacePage {
       this.audio.stopRace();
       // Al salir, por si era el último intento (también si se abandona a medias)
       void this.closeDuelRun();
+      // Fuera de la carrera, siempre la física de serie
+      setActiveTuning(null);
     });
+  }
+
+  /** Cambia un parámetro del laboratorio: se aplica al momento y se guarda en el móvil. */
+  protected applyLab(change: Partial<CarTuning>): void {
+    setActiveTuning({ ...tuning(), ...change });
+    this.labValues.set(tuning());
+    const diff = labDiff(tuning());
+    this.settings.setPhysicsLab(Object.keys(diff).length ? diff : null);
+  }
+
+  protected resetLab(): void {
+    setActiveTuning(null);
+    this.labValues.set(tuning());
+    this.settings.setPhysicsLab(null);
   }
 
   protected tutorialDone(): void {
@@ -394,6 +448,9 @@ export class RacePage {
   }
 
   private async boot(): Promise<void> {
+    // Laboratorio de física: con el modo debug, los parámetros guardados; si no, los de serie
+    setActiveTuning(this.debugTools() ? sanitizeLab(this.settings.getPhysicsLab()) : null);
+    this.labValues.set(tuning());
     const map = this.map();
     if (!map) {
       this.exit();

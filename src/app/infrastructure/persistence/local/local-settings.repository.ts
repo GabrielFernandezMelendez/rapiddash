@@ -3,7 +3,7 @@ import { isLanguage, Language } from '../../../core/domain/settings/language';
 import { toVolumes, Volumes } from '../../../core/domain/settings/volume';
 import { RIVAL_CHOICES, RivalChoice } from '../../../core/domain/race/ranking';
 import { GarageChoice } from '../../../core/domain/garage/garage';
-import { readJson, writeJson } from './safe-storage';
+import { readJson, removeKey, writeJson } from './safe-storage';
 
 const LANGUAGE_KEY = 'rapiddash.language';
 const RIVALS_KEY = 'rapiddash.rivals';
@@ -12,6 +12,7 @@ const VOLUMES_KEY = 'rapiddash.volumes';
 const PHOTO_DECLINED_KEY = 'rapiddash.photoDeclined';
 const GARAGE_KEY = 'rapiddash.garage';
 const DEBUG_KEY = 'rapiddash.debug';
+const PHYSICS_LAB_KEY = 'rapiddash.physicsLab';
 const WON_CARS_KEY = 'rapiddash.wonCars';
 const WON_FX_KEY = 'rapiddash.wonFx';
 const CUBE_DAY_KEY = 'rapiddash.cubeDay';
@@ -74,6 +75,15 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setDebug(on: boolean): void {
     writeJson(DEBUG_KEY, on);
+  }
+
+  getPhysicsLab(): unknown {
+    return readJson<unknown>(PHYSICS_LAB_KEY);
+  }
+
+  setPhysicsLab(values: object | null): void {
+    if (values) writeJson(PHYSICS_LAB_KEY, values);
+    else removeKey(PHYSICS_LAB_KEY);
   }
 
   getWonCars(): number[] {

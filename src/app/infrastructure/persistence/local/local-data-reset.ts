@@ -9,6 +9,7 @@ const KEPT_KEYS = new Set([
   'rapiddash.tutorialSeen',
   'rapiddash.garage',
   'rapiddash.debug',
+  'rapiddash.physicsLab',
   'rapiddash.wonCars',
   'rapiddash.wonFx',
   'rapiddash.cubeDay',

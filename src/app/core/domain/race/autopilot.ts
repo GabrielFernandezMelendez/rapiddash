@@ -1,5 +1,6 @@
 import { CarState, DriveInput, Swipe } from '../car/car';
 import { Track } from '../track/track';
+import { tuning } from '../car/car-tuning';
 import { createRace, stepRace } from './race';
 
 /**
@@ -24,7 +25,15 @@ export function autopilot(car: CarState, track: Track): DriveInput {
       swipes.push(car.lateral > 0 ? 'left' : 'right');
     }
   }
-  return { throttle: true, swipes };
+  // Con el modelo de agarre, suelta un momento si la curva pide más de lo que agarra (así no se
+  // abre contra el muro): conduce como un buen piloto, que es lo que miden las medallas
+  const sample = track.sampleAt(car.leg, car.distance);
+  const t = tuning();
+  const overGrip =
+    t.curveModel === 'grip' &&
+    sample.kind === 'arc' &&
+    car.speed * car.speed * Math.abs(sample.curvature) > t.gripAccel * 0.97;
+  return { throttle: !overGrip, swipes };
 }
 
 /** Tiempo que hace el piloto automático en esa pista (referencia de las medallas). */
