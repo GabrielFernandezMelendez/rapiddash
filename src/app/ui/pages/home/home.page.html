@@ -108,6 +108,8 @@
     (allMaps)="openAllMaps()"
     [buttonFx]="buttonFx.enabled()"
     (buttonFxChange)="buttonFx.set($event)"
+    [install]="installState()"
+    (installApp)="installApp()"
   />
 }
 

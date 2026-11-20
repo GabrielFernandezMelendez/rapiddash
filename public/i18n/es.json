@@ -447,6 +447,12 @@
   "maps.canyonRingPlanet": "Anillo del Cañón · Mini planeta",
   "maps.lighthouseOvalTube": "Óvalo del Faro · Tubo",
   "maps.summitGpCoaster": "Gran Premio de la Cumbre · Montaña rusa",
+  "settings.install": "Instalar",
+  "settings.installButton": "Instalar RapidDash",
+  "settings.installHint": "Icono en tu pantalla de inicio y a pantalla completa",
+  "settings.installed": "Instalada: ya juegas desde la app",
+  "settings.installIos": "En Safari: toca Compartir y luego «Añadir a pantalla de inicio».",
+  "settings.installManual": "Desde el menú del navegador: «Instalar app» o «Añadir a pantalla de inicio».",
   "settings.visual": "Efectos",
   "settings.buttonFx": "Píxeles en los botones",
   "settings.buttonFxHint": "La esquina de los botones se deshace y se recompone"
