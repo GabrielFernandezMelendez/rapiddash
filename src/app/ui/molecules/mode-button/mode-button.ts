@@ -14,7 +14,7 @@ import { PixelCorner } from '../../atoms/pixel-corner/pixel-corner';
     <button type="button" [class.highlight]="highlight()" (click)="pressed.emit()">
       <span class="shape" aria-hidden="true">
         <span class="fill"></span>
-        <rd-pixel-corner [cell]="7" />
+        <rd-pixel-corner />
       </span>
       <span class="icon"><ng-content select="[mode-icon]" /></span>
       <span class="text">
@@ -31,9 +31,8 @@ import { PixelCorner } from '../../atoms/pixel-corner/pixel-corner';
     }
     button {
       --ring: var(--rd-neon-cyan);
-      --rd-px-cell: 7px;
-      --rd-px-a: var(--ring);
-      --rd-px-b: var(--rd-neon-pink);
+      --rd-px-ring: var(--ring);
+      --rd-px-neon: var(--ring);
       position: relative;
       isolation: isolate;
       display: flex;
@@ -54,7 +53,6 @@ import { PixelCorner } from '../../atoms/pixel-corner/pixel-corner';
     }
     button.highlight {
       --ring: var(--rd-neon-pink);
-      --rd-px-b: var(--rd-signal);
     }
     .shape {
       position: absolute;
@@ -65,15 +63,11 @@ import { PixelCorner } from '../../atoms/pixel-corner/pixel-corner';
       pointer-events: none;
     }
     .fill {
-      --c: var(--rd-px-cell);
       position: absolute;
       inset: 0;
       border-radius: 6px;
       background: linear-gradient(90deg, color-mix(in srgb, var(--rd-violet) 80%, var(--rd-asphalt)), color-mix(in srgb, var(--rd-asphalt) 90%, transparent));
       box-shadow: inset 0 0 0 2px var(--ring), inset 0 0 18px color-mix(in srgb, var(--ring) 30%, transparent);
-      clip-path: polygon(0 0, calc(100% - var(--c) * 3) 0, calc(100% - var(--c) * 3) var(--c), calc(100% - var(--c) * 2) var(--c),
-        calc(100% - var(--c) * 2) calc(var(--c) * 2), calc(100% - var(--c)) calc(var(--c) * 2), calc(100% - var(--c)) calc(var(--c) * 3),
-        100% calc(var(--c) * 3), 100% 100%, 0 100%);
     }
     .icon {
       display: inline-grid;

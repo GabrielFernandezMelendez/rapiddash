@@ -4,13 +4,14 @@ import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
 import { Button } from '../../atoms/button/button';
+import { Switch } from '../../atoms/switch/switch';
 import { LanguageSwitch } from '../../molecules/language-switch/language-switch';
 import { Modal } from '../../molecules/modal/modal';
 import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
 
 @Component({
   selector: 'rd-settings-dialog',
-  imports: [Modal, LanguageSwitch, VolumeSlider, Button, TranslatePipe],
+  imports: [Modal, LanguageSwitch, VolumeSlider, Button, Switch, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <rd-modal [label]="'settings.title' | t" (dismiss)="closed.emit()">
@@ -19,6 +20,7 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
         <span class="label">{{ 'settings.sound' | t }}</span>
         <rd-volume-slider
           inputId="vol-music"
+          icon="music"
           [label]="'settings.music' | t"
           [value]="volumes().music"
           (changed)="setVolume('music', $event)"
@@ -26,10 +28,20 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
         />
         <rd-volume-slider
           inputId="vol-effects"
+          icon="effects"
           [label]="'settings.effects' | t"
           [value]="volumes().effects"
           (changed)="setVolume('effects', $event)"
           (released)="preview.emit('effects')"
+        />
+      </div>
+      <div class="field">
+        <span class="label">{{ 'settings.visual' | t }}</span>
+        <rd-switch
+          [on]="buttonFx()"
+          [label]="'settings.buttonFx' | t"
+          [hint]="'settings.buttonFxHint' | t"
+          (toggled)="buttonFxChange.emit($event)"
         />
       </div>
       <div class="field">
@@ -161,6 +173,9 @@ export class SettingsDialog {
   readonly versionTap = output<void>();
   readonly debugOff = output<void>();
   readonly allMaps = output<void>();
+  /** Efecto de píxeles de los botones (se puede apagar). */
+  readonly buttonFx = input(true);
+  readonly buttonFxChange = output<boolean>();
   protected readonly version = APP_VERSION;
 
   protected setVolume(channel: VolumeChannel, value: number): void {

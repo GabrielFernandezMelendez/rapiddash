@@ -446,5 +446,8 @@
   "maps.lighthouseOvalHills": "Óvalo del Faro · Colinas",
   "maps.canyonRingPlanet": "Anillo del Cañón · Mini planeta",
   "maps.lighthouseOvalTube": "Óvalo del Faro · Tubo",
-  "maps.summitGpCoaster": "Gran Premio de la Cumbre · Montaña rusa"
+  "maps.summitGpCoaster": "Gran Premio de la Cumbre · Montaña rusa",
+  "settings.visual": "Efectos",
+  "settings.buttonFx": "Píxeles en los botones",
+  "settings.buttonFxHint": "La esquina de los botones se deshace y se recompone"
 }

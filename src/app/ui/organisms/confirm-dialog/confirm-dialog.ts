@@ -50,7 +50,7 @@ import { Modal } from '../../molecules/modal/modal';
     .danger.danger {
       --rd-btn-fill: var(--rd-kerb);
       --rd-btn-glow: var(--rd-kerb);
-      --rd-px-a: var(--rd-signal);
+      --rd-px-neon: var(--rd-signal);
       color: #fff;
     }
   `,
