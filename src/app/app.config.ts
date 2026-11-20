@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
+import { InstallPort } from './core/application/ports/out/install.port';
 import { provideAppAdapters } from './infrastructure/di/app.providers';
 import { AccountService } from './shared/account/account.service';
 import { CloudRecordsService } from './shared/account/cloud-records.service';
@@ -20,5 +21,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AccountService).init()),
     // Crea el servicio para que suba los récords pendientes cuando haya piloto
     provideAppInitializer(() => void inject(CloudRecordsService)),
+    // Escucha desde el arranque el aviso de instalación del navegador (solo llega una vez)
+    provideAppInitializer(() => void inject(InstallPort)),
   ],
 };

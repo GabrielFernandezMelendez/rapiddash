@@ -10,6 +10,8 @@ import { DuelRepository } from '../../core/application/ports/out/duel.repository
 import { TournamentPhotoRepository } from '../../core/application/ports/out/tournament-photo.repository';
 import { TournamentRepository } from '../../core/application/ports/out/tournament.repository';
 import { SettingsRepository } from '../../core/application/ports/out/settings.repository';
+import { InstallPort } from '../../core/application/ports/out/install.port';
+import { BrowserInstallAdapter } from '../pwa/browser-install.adapter';
 import { CachedProfileRepository } from '../firebase/cached-profile.repository';
 import { LazyCloudRecordRepository } from '../firebase/lazy-cloud-record.repository';
 import { LazyDuelRepository } from '../firebase/lazy-duel.repository';
@@ -41,5 +43,7 @@ export function provideAppAdapters(): Provider[] {
     { provide: TournamentRepository, useClass: LazyTournamentRepository },
     { provide: TournamentPhotoRepository, useClass: LazyTournamentPhotoRepository },
     { provide: DuelRepository, useClass: LazyDuelRepository },
+    // Instalar como app: se crea al arrancar (ver app.config) para no perder el aviso del navegador
+    { provide: InstallPort, useClass: BrowserInstallAdapter },
   ];
 }

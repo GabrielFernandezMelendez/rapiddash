@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { APP_VERSION } from '../../../core/domain/settings/app-version';
+import { InstallState } from '../../../core/domain/settings/install';
 import { Language } from '../../../core/domain/settings/language';
 import { VolumeChannel, Volumes } from '../../../core/domain/settings/volume';
 import { TranslatePipe } from '../../../shared/i18n/translate.pipe';
@@ -15,6 +16,33 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
   template: `
     <rd-modal [label]="'settings.title' | t" (dismiss)="closed.emit()">
       <span modal-title>{{ 'settings.title' | t }}</span>
+      <!-- Instalar como app: botón si el navegador lo ofrece; si no, cómo hacerlo a mano -->
+      <div class="field">
+        <span class="label">{{ 'settings.install' | t }}</span>
+        @switch (install()) {
+          @case ('available') {
+            <button rdButton variant="secondary" type="button" class="install" (click)="installApp.emit()">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="6" y="2" width="12" height="20" rx="2"></rect><path d="M12 7v8M8.5 11.5 12 15l3.5-3.5"></path>
+              </svg>
+              <span class="install-text">
+                <b>{{ 'settings.installButton' | t }}</b>
+                <small>{{ 'settings.installHint' | t }}</small>
+              </span>
+            </button>
+          }
+          @case ('installed') {
+            <p class="installed">✓ {{ 'settings.installed' | t }}</p>
+          }
+          @case ('ios') {
+            <small class="hint">{{ 'settings.installIos' | t }}</small>
+          }
+          @default {
+            <small class="hint">{{ 'settings.installManual' | t }}</small>
+          }
+        }
+      </div>
       <div class="field">
         <span class="label">{{ 'settings.sound' | t }}</span>
         <rd-volume-slider
@@ -134,6 +162,35 @@ import { VolumeSlider } from '../../molecules/volume-slider/volume-slider';
       font-size: 13px;
       color: var(--rd-muted);
     }
+    .install {
+      justify-content: flex-start;
+      gap: 12px;
+      min-height: 64px;
+      padding-block: 8px;
+      text-align: left;
+    }
+    .install-text {
+      display: grid;
+      gap: 1px;
+    }
+    .install-text b {
+      font-weight: 800;
+      font-size: 17px;
+    }
+    .install-text small {
+      font-family: var(--rd-font-body);
+      font-style: normal;
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--rd-muted);
+    }
+    .installed {
+      margin: 0;
+      font-weight: 600;
+      color: var(--rd-go);
+    }
     .version {
       justify-self: center;
       padding: 6px 10px;
@@ -161,6 +218,9 @@ export class SettingsDialog {
   readonly versionTap = output<void>();
   readonly debugOff = output<void>();
   readonly allMaps = output<void>();
+  /** Instalar como app: qué se enseña y el botón que abre el aviso del navegador. */
+  readonly install = input<InstallState>('manual');
+  readonly installApp = output<void>();
   protected readonly version = APP_VERSION;
 
   protected setVolume(channel: VolumeChannel, value: number): void {
