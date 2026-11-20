@@ -16,6 +16,8 @@ interface Cell {
   readonly d: number;
   gone: boolean;
   busy: boolean;
+  readonly col: number;
+  readonly row: number;
 }
 
 /** Ritmos (ms) y cuánto falta de media: lento para que sea agradable de mirar. */
@@ -38,8 +40,8 @@ const within = ([a, b]: readonly [number, number]) => rnd(a, b);
  * y se apagan al encajar. Los de la punta se van mucho más. Al pulsar el botón, una ráfaga
  * arranca más de la mitad y al soltar se recompone.
  *
- * Va dentro de la forma inclinada del botón, junto a su `.fill`: recorta ese fondo y lo pinta en
- * los trozos. Colores del botón: `--rd-px-ring` (borde; `transparent` si no tiene),
+ * Va dentro de la forma inclinada del botón, junto a su `.fill`: le abre un agujero donde falta
+ * un píxel y pinta ese trozo con el mismo fondo. Colores del botón: `--rd-px-ring` (borde; `transparent` si no tiene),
  * `--rd-px-top` (sombra del borde de arriba) y `--rd-px-neon` (contorno al irse).
  * Apagado en Ajustes o con «Reducir movimiento»: no hace nada y la esquina queda normal.
  */
@@ -68,6 +70,7 @@ export class PixelCorner {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly fx = inject(ButtonFxService);
   private cells: Cell[] = [];
+  private readonly holes = new Set<Cell>();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private observer: ResizeObserver | undefined;
   private target = MISSING;
@@ -107,13 +110,14 @@ export class PixelCorner {
     const h = rows * c;
     this.host.style.width = `${w}px`;
     this.host.style.height = `${h}px`;
-    // El fondo deja libre la esquina: la pintan los trozos
-    fill.style.clipPath = `polygon(0 0, calc(100% - ${w}px) 0, calc(100% - ${w}px) ${h}px, 100% ${h}px, 100% 100%, 0 100%)`;
     const style = getComputedStyle(this.host);
     const ring = style.getPropertyValue('--rd-px-ring').trim() || 'transparent';
     const top = style.getPropertyValue('--rd-px-top').trim() || `inset 0 2px 0 ${ring}`;
     const neon = style.getPropertyValue('--rd-px-neon').trim() || ring;
-    const lit = `inset 0 0 0 1.5px ${neon}, inset 0 0 0 0 transparent, 0 0 7px ${neon}`;
+    // Resplandor de dentro del borde (los secundarios lo llevan): sin él la esquina se vería más oscura
+    const glow = ring === 'transparent' ? 'transparent' : `color-mix(in srgb, ${ring} 30%, transparent)`;
+    const none = 'inset 0 0 0 0 transparent';
+    const lit = `inset 0 0 0 1.5px ${neon}, ${none}, ${none}, ${none}, 0 0 7px ${neon}`;
     const image = getComputedStyle(fill).backgroundImage;
     const tip = Math.hypot(cols - 1, rows - 1);
     for (let r = 0; r < rows; r++) {
@@ -124,6 +128,8 @@ export class PixelCorner {
           position: 'absolute',
           display: 'block',
           willChange: 'transform, opacity',
+          // En reposo se ve el fondo del botón tal cual; el trozo solo aparece al irse o al volver
+          opacity: '0',
           left: `${k * c}px`,
           top: `${r * c}px`,
           width: `${c + 0.6}px`,
@@ -131,12 +137,18 @@ export class PixelCorner {
           backgroundImage: image,
         });
         // Mismo borde que el botón donde toca (arriba y a la derecha)
-        const edges = [r === 0 ? top : 'inset 0 0 0 transparent', k === cols - 1 ? `inset -2px 0 0 ${ring}` : 'inset 0 0 0 transparent', '0 0 0 transparent'];
+        const edges = [
+          r === 0 ? top : none,
+          k === cols - 1 ? `inset -2px 0 0 ${ring}` : none,
+          r === 0 ? `inset 0 12px 14px -10px ${glow}` : none,
+          k === cols - 1 ? `inset -12px 0 14px -10px ${glow}` : none,
+          '0 0 0 0 transparent',
+        ];
         el.style.boxShadow = edges.join(',');
         el.dataset['calm'] = edges.join(',');
         el.dataset['lit'] = lit;
         this.host.append(el);
-        this.cells.push({ el, d: Math.hypot(cols - 1 - k, r) / tip, gone: false, busy: false });
+        this.cells.push({ el, d: Math.hypot(cols - 1 - k, r) / tip, gone: false, busy: false, col: k, row: r });
       }
     }
     this.place(fill);
@@ -186,8 +198,33 @@ export class PixelCorner {
     }
     this.cells = [];
     this.target = MISSING;
+    this.holes.clear();
+    this.cutHoles();
+  }
+
+  /**
+   * Agujeros en el fondo del botón donde falta un píxel (máscara con un cuadrado por hueco).
+   * Así, entero, el botón es su propio fondo, sin rayas entre trozos.
+   */
+  private cutHoles(): void {
     const fill = this.fill;
-    if (fill) fill.style.clipPath = '';
+    if (!fill) return;
+    if (!this.holes.size) {
+      fill.style.removeProperty('mask');
+      fill.style.removeProperty('-webkit-mask');
+      return;
+    }
+    const c = this.cell();
+    const cols = this.cols();
+    const layers = ['linear-gradient(#000 0 0) 0 0 / 100% 100% no-repeat'];
+    for (const cell of this.holes) {
+      const right = (cols - 1 - cell.col) * c;
+      layers.push(`linear-gradient(#000 0 0) right ${right}px top ${cell.row * c}px / ${c}px ${c}px no-repeat`);
+    }
+    fill.style.setProperty('mask', layers.join(','));
+    fill.style.setProperty('mask-composite', 'exclude');
+    fill.style.setProperty('-webkit-mask', layers.join(','));
+    fill.style.setProperty('-webkit-mask-composite', 'xor');
   }
 
   /** Los de la punta se van mucho más que los de dentro. */
@@ -230,6 +267,9 @@ export class PixelCorner {
   private detach(cell: Cell, fast: boolean): void {
     cell.busy = true;
     cell.gone = true;
+    // Se abre el hueco en el fondo y el trozo, idéntico, sale de ahí
+    this.holes.add(cell);
+    this.cutHoles();
     const { calm, lit } = cell.el.dataset;
     const sink = `translate3d(${rnd(4, 26)}px, ${-rnd(2, 22)}px, -420px) rotate(${rnd(-150, 150)}deg)`;
     cell.el
@@ -241,7 +281,13 @@ export class PixelCorner {
         ],
         { duration: within(fast ? FALL_FAST : FALL), easing: 'cubic-bezier(.55,0,.95,.45)', fill: 'forwards' },
       )
-      .finished.then(() => (cell.busy = false), () => undefined);
+      .finished.then(
+        (a) => {
+          a.cancel();
+          cell.busy = false;
+        },
+        () => undefined,
+      );
   }
 
   /** Vuelve encendido (a veces parpadeando, como si costara) y se apaga al encajar. */
@@ -265,6 +311,15 @@ export class PixelCorner {
         ];
     cell.el
       .animate(frames, { duration: flicker ? 620 : 440, easing: 'ease-out', fill: 'forwards' })
-      .finished.then(() => (cell.busy = false), () => undefined);
+      .finished.then(
+        (a) => {
+          // Encajado: se cierra el hueco y vuelve a verse el fondo del botón
+          this.holes.delete(cell);
+          this.cutHoles();
+          a.cancel();
+          cell.busy = false;
+        },
+        () => undefined,
+      );
   }
 }
