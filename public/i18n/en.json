@@ -446,5 +446,11 @@
   "maps.lighthouseOvalHills": "Lighthouse Oval · Hills",
   "maps.canyonRingPlanet": "Canyon Ring · Mini planet",
   "maps.lighthouseOvalTube": "Lighthouse Oval · Tube",
-  "maps.summitGpCoaster": "Summit Grand Prix · Roller coaster"
+  "maps.summitGpCoaster": "Summit Grand Prix · Roller coaster",
+  "settings.install": "Install",
+  "settings.installButton": "Install RapidDash",
+  "settings.installHint": "Icon on your home screen, full screen",
+  "settings.installed": "Installed: you're playing from the app",
+  "settings.installIos": "In Safari: tap Share, then “Add to Home Screen”.",
+  "settings.installManual": "From the browser menu: “Install app” or “Add to Home screen”."
 }

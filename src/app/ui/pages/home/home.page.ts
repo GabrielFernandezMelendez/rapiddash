@@ -12,6 +12,7 @@ import {
 import { Router } from '@angular/router';
 import { BestRunRepository } from '../../../core/application/ports/out/best-run.repository';
 import { SettingsRepository } from '../../../core/application/ports/out/settings.repository';
+import { InstallPort } from '../../../core/application/ports/out/install.port';
 import { AudioPort } from '../../../core/application/ports/out/audio.port';
 import { MenuBackdropPort } from '../../../core/application/ports/out/menu-backdrop.port';
 import { APP_VERSION } from '../../../core/domain/settings/app-version';
@@ -69,6 +70,9 @@ export class HomePage implements OnInit {
   protected readonly tournamentsRunning = signal(0);
   private readonly settings = inject(SettingsRepository);
   private readonly audio = inject(AudioPort);
+  private readonly installer = inject(InstallPort);
+  /** Instalar como app (cambia cuando el navegador da su aviso o al instalarse). */
+  protected readonly installState = signal(this.installer.state());
   protected readonly volumes = signal<Volumes>(this.settings.getVolumes());
   /** Aviso de vincular la cuenta (cada 5 días, solo invitados). */
   protected readonly reminderOpen = signal(false);
@@ -85,6 +89,7 @@ export class HomePage implements OnInit {
     // Fondo 3D en cuanto el hueco está en pantalla
     afterNextRender(() => void this.backdrop.attach(this.backdropHost().nativeElement));
     inject(DestroyRef).onDestroy(() => this.backdrop.dispose());
+    inject(DestroyRef).onDestroy(this.installer.onChange((state) => this.installState.set(state)));
   }
 
   ngOnInit(): void {
@@ -115,6 +120,11 @@ export class HomePage implements OnInit {
 
   protected openDaily(): void {
     void this.router.navigate(['/daily']);
+  }
+
+  protected async installApp(): Promise<void> {
+    await this.installer.install();
+    this.installState.set(this.installer.state());
   }
 
   protected setVolumes(volumes: Volumes): void {
