@@ -43,9 +43,10 @@
   --rd-btn-fill: var(--rd-button-primary-bg);
   --rd-btn-ring: var(--rd-button-primary-ring);
   --rd-btn-glow: var(--rd-neon-pink);
-  --rd-px-a: var(--rd-signal);
-  --rd-px-b: var(--rd-neon-pink);
-  --rd-px-base: color-mix(in srgb, var(--rd-magenta) 70%, var(--rd-asphalt));
+  // Esquina de píxeles: sin borde, con el brillo de arriba y neón amarillo al irse
+  --rd-px-ring: transparent;
+  --rd-px-top: inset 0 2px 0 rgb(255 255 255 / 0.4);
+  --rd-px-neon: var(--rd-signal);
   color: var(--rd-button-primary-ink);
   text-shadow: var(--rd-button-primary-text-shadow);
 }
@@ -54,8 +55,8 @@
   --rd-btn-fill: var(--rd-button-secondary-bg);
   --rd-btn-ring: var(--rd-button-secondary-shadow);
   --rd-btn-glow: var(--rd-neon-cyan);
-  --rd-px-a: var(--rd-neon-cyan);
-  --rd-px-b: var(--rd-neon-pink);
+  --rd-px-ring: var(--rd-neon-cyan);
+  --rd-px-neon: var(--rd-neon-cyan);
   color: var(--rd-button-secondary-ink);
 }
 
@@ -70,24 +71,11 @@
 }
 
 .fill {
-  --c: var(--rd-px-cell);
   position: absolute;
   inset: 0;
   border-radius: 5px;
   background: var(--rd-btn-fill);
   box-shadow: var(--rd-btn-ring);
-  clip-path: polygon(
-    0 0,
-    calc(100% - var(--c) * 3) 0,
-    calc(100% - var(--c) * 3) var(--c),
-    calc(100% - var(--c) * 2) var(--c),
-    calc(100% - var(--c) * 2) calc(var(--c) * 2),
-    calc(100% - var(--c)) calc(var(--c) * 2),
-    calc(100% - var(--c)) calc(var(--c) * 3),
-    100% calc(var(--c) * 3),
-    100% 100%,
-    0 100%
-  );
 }
 
 :host(.rd-button--primary:active),

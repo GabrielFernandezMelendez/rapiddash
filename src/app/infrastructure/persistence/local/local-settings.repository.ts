@@ -16,6 +16,7 @@ const WON_CARS_KEY = 'rapiddash.wonCars';
 const WON_FX_KEY = 'rapiddash.wonFx';
 const CUBE_DAY_KEY = 'rapiddash.cubeDay';
 const PATCH_SEEN_KEY = 'rapiddash.patchSeen';
+const BUTTON_FX_KEY = 'rapiddash.buttonFx';
 
 export class LocalSettingsRepository extends SettingsRepository {
   getLanguage(): Language | null {
@@ -103,6 +104,14 @@ export class LocalSettingsRepository extends SettingsRepository {
 
   setCubeDay(key: string): void {
     writeJson(CUBE_DAY_KEY, key);
+  }
+
+  getButtonFx(): boolean {
+    return readJson<unknown>(BUTTON_FX_KEY) !== false;
+  }
+
+  setButtonFx(on: boolean): void {
+    writeJson(BUTTON_FX_KEY, on);
   }
 
   getPatchSeen(): string | null {

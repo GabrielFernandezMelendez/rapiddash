@@ -452,5 +452,8 @@
   "settings.installHint": "Icon on your home screen, full screen",
   "settings.installed": "Installed: you're playing from the app",
   "settings.installIos": "In Safari: tap Share, then “Add to Home Screen”.",
-  "settings.installManual": "From the browser menu: “Install app” or “Add to Home screen”."
+  "settings.installManual": "From the browser menu: “Install app” or “Add to Home screen”.",
+  "settings.visual": "Effects",
+  "settings.buttonFx": "Pixels on buttons",
+  "settings.buttonFxHint": "Button corners break apart and rebuild"
 }

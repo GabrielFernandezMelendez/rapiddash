@@ -34,6 +34,10 @@ export abstract class SettingsRepository {
   abstract getCubeDay(): string | null;
   abstract setCubeDay(key: string): void;
   /** Última versión cuyas novedades se vieron (null: ninguna). */
+  /** Efecto de píxeles en la esquina de los botones (por defecto, encendido). */
+  abstract getButtonFx(): boolean;
+  abstract setButtonFx(on: boolean): void;
+
   abstract getPatchSeen(): string | null;
   abstract setPatchSeen(version: string): void;
 }

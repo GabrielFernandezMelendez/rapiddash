@@ -16,7 +16,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'light' | 'link'
     @if (shaped()) {
       <span class="shape" aria-hidden="true">
         <span class="fill"></span>
-        <rd-pixel-corner [cell]="cell()" />
+        <rd-pixel-corner />
       </span>
     }
     <ng-content />
@@ -29,7 +29,6 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'light' | 'link'
     '[class.rd-button--light]': "variant() === 'light'",
     '[class.rd-button--link]': "variant() === 'link'",
     '[class.rd-button--block]': 'block()',
-    '[style.--rd-px-cell.px]': 'cell()',
   },
   styleUrl: './button.scss',
 })
@@ -37,5 +36,4 @@ export class Button {
   readonly variant = input<ButtonVariant>('primary');
   readonly block = input(false);
   protected readonly shaped = computed(() => this.variant() === 'primary' || this.variant() === 'secondary');
-  protected readonly cell = computed(() => (this.variant() === 'primary' ? 8 : 7));
 }

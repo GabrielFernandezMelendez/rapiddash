@@ -106,6 +106,8 @@
     (versionTap)="tapVersion()"
     (debugOff)="garage.setDebug(false)"
     (allMaps)="openAllMaps()"
+    [buttonFx]="buttonFx.enabled()"
+    (buttonFxChange)="buttonFx.set($event)"
     [install]="installState()"
     (installApp)="installApp()"
   />

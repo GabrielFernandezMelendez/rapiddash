@@ -41,6 +41,7 @@ import { Tutorial } from '../../organisms/tutorial/tutorial';
 import { MenuLayout } from '../../templates/menu-layout/menu-layout';
 import { debugTap } from '../../../core/domain/garage/garage';
 import { GarageService } from '../../../shared/garage/garage.service';
+import { ButtonFxService } from '../../../shared/settings/button-fx.service';
 import { authErrorKey } from '../welcome/auth-error-key';
 
 @Component({
@@ -59,6 +60,7 @@ export class HomePage implements OnInit {
   private readonly bestRuns = inject(BestRunRepository);
   protected readonly settingsOpen = signal(false);
   protected readonly garage = inject(GarageService);
+  protected readonly buttonFx = inject(ButtonFxService);
   private readonly daily = inject(DailyService);
   private readonly dailyToday = this.daily.today(ALL_MAPS);
   protected readonly dailyMap = this.dailyToday.map;
