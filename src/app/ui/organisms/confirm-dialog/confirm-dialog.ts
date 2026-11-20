@@ -48,9 +48,10 @@ import { Modal } from '../../molecules/modal/modal';
       filter: brightness(1.25);
     }
     .danger.danger {
-      background: var(--rd-kerb);
+      --rd-btn-fill: var(--rd-kerb);
+      --rd-btn-glow: var(--rd-kerb);
+      --rd-px-a: var(--rd-signal);
       color: #fff;
-      box-shadow: 0 4px 0 rgb(0 0 0 / 0.35);
     }
   `,
 })
